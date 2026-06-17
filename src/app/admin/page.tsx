@@ -7,7 +7,7 @@ import { db, ResearchRequest } from '@/lib/db';
 import { auth, AuthSession } from '@/lib/auth';
 import { 
   Shield, LogOut, FileText, CheckCircle2, Clock, Loader2, 
-  Send, Edit3, X, RefreshCw 
+  Send, Edit3, X, RefreshCw, Sparkles 
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [editingRequest, setEditingRequest] = useState<ResearchRequest | null>(null);
   const [reportContent, setReportContent] = useState('');
   const [publishing, setPublishing] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // Route Guard & Load Admin Data
   useEffect(() => {
@@ -84,6 +85,41 @@ export default function AdminDashboard() {
 ## 3. 크리에이터를 위한 맞춤 전략 가이드
 - 여기에 핵심 전략을 서술하세요.
 `);
+  };
+
+  // AI 초안 자동 작성 API 호출 핸들러
+  const handleGenerateAIReport = async () => {
+    if (!editingRequest) return;
+    
+    setAiGenerating(true);
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: editingRequest.topic,
+          targetAudience: editingRequest.targetAudience,
+          specialRequests: editingRequest.specialRequests || ''
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.reportContent) {
+        setReportContent(data.reportContent);
+        if (data.isMock) {
+          alert('가상 AI 모드로 보고서 초안이 생성되었습니다! (.env.local에 API Key를 넣으면 실제 ChatGPT 리포트가 작동합니다.)');
+        } else {
+          alert('OpenAI ChatGPT가 작성한 맞춤 보고서 초안이 로드되었습니다!');
+        }
+      } else {
+        alert(data.error || 'AI 보고서 생성 중 오류가 발생했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('AI 서버 통신 에러가 발생했습니다.');
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   const handlePublishReport = async (e: React.FormEvent) => {
@@ -193,7 +229,7 @@ export default function AdminDashboard() {
         {/* Requests Management Table */}
         <section className="bg-[#0b1329] border border-slate-800 rounded-3xl overflow-hidden shadow-sm">
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-50 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-slate-55 flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
               <span>크리에이터 리서치 요청 통합 관리 목록</span>
             </h2>
@@ -201,7 +237,7 @@ export default function AdminDashboard() {
               onClick={fetchAllRequests}
               className="w-8 h-8 rounded-lg border border-slate-800 flex items-center justify-center hover:bg-slate-900"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+              <RefreshCw className="w-3.5 h-3.5 text-slate-505" />
             </button>
           </div>
 
@@ -312,7 +348,7 @@ export default function AdminDashboard() {
                 </div>
                 <button
                   onClick={() => setEditingRequest(null)}
-                  className="w-8 h-8 rounded-lg border border-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
+                  className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -347,11 +383,34 @@ export default function AdminDashboard() {
                     )}
                   </div>
 
-                  {/* Editor */}
-                  <div className="space-y-2 flex-1 flex flex-col min-h-[300px]">
+                  {/* Editor Header with AI Button */}
+                  <div className="flex items-center justify-between">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
                       보고서 본문 내용 (Markdown 포맷)
                     </label>
+                    
+                    <button
+                      type="button"
+                      disabled={aiGenerating}
+                      onClick={handleGenerateAIReport}
+                      className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-gradient-to-r from-primary to-purple-600 disabled:opacity-50 text-white px-3.5 py-1.5 rounded-lg shadow-md hover:shadow-primary/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                      {aiGenerating ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>AI가 리서칭 분석 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                          <span>🤖 AI 초안 작성하기</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Textarea */}
+                  <div className="space-y-2 flex-1 flex flex-col min-h-[300px]">
                     <textarea
                       required
                       value={reportContent}
