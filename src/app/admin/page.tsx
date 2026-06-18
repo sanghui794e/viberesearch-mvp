@@ -63,8 +63,30 @@ export default function AdminDashboard() {
     try {
       const success = await db.approveProfile(email);
       if (success) {
-        alert(`${email} 계정이 승인되었습니다!`);
         await fetchProfiles();
+        
+        // 가입 승인 이메일 발송 연동
+        try {
+          const emailRes = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const emailData = await emailRes.json();
+          
+          if (emailData.success) {
+            if (emailData.mode === 'mock') {
+              alert(`${email} 계정이 승인되었습니다!\n(개발 모드: 서버 콘솔에 가상 메일 발송 로그가 출력되었습니다. ⏳)`);
+            } else {
+              alert(`${email} 계정이 승인되었으며, 환영 안내 메일이 실시간으로 발송되었습니다! 📧`);
+            }
+          } else {
+            alert(`${email} 계정은 승인되었으나, 알림 메일 발송 중 오류가 발생했습니다: ${emailData.error}`);
+          }
+        } catch (emailErr) {
+          console.error('Failed to trigger email notification:', emailErr);
+          alert(`${email} 계정은 승인되었으나, 알림 메일 전송 API 호출에 실패했습니다.`);
+        }
       } else {
         alert('승인 처리에 실패했습니다.');
       }
