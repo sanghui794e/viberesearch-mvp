@@ -17,6 +17,7 @@ export interface UserProfile {
   id: string;
   email: string;
   isSubscribed: boolean;
+  isApproved: boolean; // 지인용 가입 승인 대기 가드 필드 추가!
   role: 'user' | 'admin';
 }
 
@@ -65,7 +66,7 @@ let inMemoryRequests: ResearchRequest[] = [
 3. **유료 구독(Premium Tier) 전환**: 매주 깊이 있는 에셋(Templates, Case Studies)을 독점 공개하여 월 $10 또는 연 $100 구독으로 유도.
 
 본 리서치가 고객님의 뉴스레터 창업에 유용한 가이드가 되기를 바랍니다.`,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3일 전
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'req-2',
@@ -84,12 +85,14 @@ let inMemoryProfiles: UserProfile[] = [
     id: 'user-1',
     email: 'creator@viberesearch.com',
     isSubscribed: true,
+    isApproved: true, // 기존 Mock 유저는 이미 승인된 상태로 셋업
     role: 'user',
   },
   {
     id: 'admin-1',
     email: 'admin@viberesearch.com',
     isSubscribed: true,
+    isApproved: true,
     role: 'admin',
   }
 ];
@@ -146,7 +149,7 @@ export const db = {
       const profiles = getLocalStorageData<UserProfile[]>(STORAGE_KEYS.PROFILES, inMemoryProfiles);
       const updated = [...profiles.filter(p => p.email !== profile.email), profile];
       setLocalStorageData(STORAGE_KEYS.PROFILES, updated);
-      inMemoryProfiles = updated; // 인메모리 업데이트
+      inMemoryProfiles = updated;
       return profile;
     }
   },
@@ -169,6 +172,43 @@ export const db = {
     }
   },
 
+  // 가입 지인 승인 업데이트 기능 구현!
+  async approveProfile(email: string): Promise<boolean> {
+    if (isUsingSupabase) {
+      const { error } = await supabase!
+        .from('profiles')
+        .update({ isApproved: true })
+        .eq('email', email);
+      return !error;
+    } else {
+      const profiles = getLocalStorageData<UserProfile[]>(STORAGE_KEYS.PROFILES, inMemoryProfiles);
+      const updated = profiles.map(p => 
+        p.email === email ? { ...p, isApproved: true } : p
+      );
+      setLocalStorageData(STORAGE_KEYS.PROFILES, updated);
+      inMemoryProfiles = updated;
+      return true;
+    }
+  },
+
+  // 전체 회원 프로필 조회 (어드민 회원 관리 탭용)
+  async getAllProfiles(): Promise<UserProfile[]> {
+    if (isUsingSupabase) {
+      const { data, error } = await supabase!
+        .from('profiles')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (error) return [];
+      return data as UserProfile[];
+    } else {
+      // 로컬스토리지 동기화 강제
+      if (typeof window !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.PROFILES)) {
+        setLocalStorageData(STORAGE_KEYS.PROFILES, inMemoryProfiles);
+      }
+      return getLocalStorageData<UserProfile[]>(STORAGE_KEYS.PROFILES, inMemoryProfiles);
+    }
+  },
+
   // --- Research Requests ---
   async getRequests(userId?: string): Promise<ResearchRequest[]> {
     if (isUsingSupabase) {
@@ -181,7 +221,6 @@ export const db = {
       return data as ResearchRequest[];
     } else {
       const requests = getLocalStorageData<ResearchRequest[]>(STORAGE_KEYS.REQUESTS, inMemoryRequests);
-      // 로컬 스토리지에 초기 데이터가 비어있다면 인메모리 데이터 저장
       if (typeof window !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.REQUESTS)) {
         setLocalStorageData(STORAGE_KEYS.REQUESTS, inMemoryRequests);
       }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db, ResearchRequest } from '@/lib/db';
+import { db, ResearchRequest, UserProfile } from '@/lib/db';
 import { auth, AuthSession } from '@/lib/auth';
 import { 
   Shield, LogOut, FileText, CheckCircle2, Clock, Loader2, 
@@ -19,6 +19,10 @@ export default function AdminDashboard() {
   // All requests
   const [requests, setRequests] = useState<ResearchRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
+
+  // Profiles (회원 목록)
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
   
   // Editor Modal states
   const [editingRequest, setEditingRequest] = useState<ResearchRequest | null>(null);
@@ -40,7 +44,35 @@ export default function AdminDashboard() {
     setAuthChecking(false);
 
     fetchAllRequests();
+    fetchProfiles();
   }, [router]);
+
+  const fetchProfiles = async () => {
+    setLoadingProfiles(true);
+    try {
+      const data = await db.getAllProfiles();
+      setProfiles(data);
+    } catch (err) {
+      console.error('Failed to fetch profiles for admin:', err);
+    } finally {
+      setLoadingProfiles(false);
+    }
+  };
+
+  const handleApproveProfile = async (email: string) => {
+    try {
+      const success = await db.approveProfile(email);
+      if (success) {
+        alert(`${email} 계정이 승인되었습니다!`);
+        await fetchProfiles();
+      } else {
+        alert('승인 처리에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    }
+  };
 
   const fetchAllRequests = async () => {
     setLoadingRequests(true);
@@ -225,6 +257,96 @@ export default function AdminDashboard() {
             </span>
           </div>
         </div>
+
+        {/* Profiles (Users) Management Table */}
+        <section className="bg-[#0b1329] border border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-50 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-500" />
+              <span>가입 회원 승인 및 결제 관리 목록</span>
+            </h2>
+            <button
+              onClick={fetchProfiles}
+              className="w-8 h-8 rounded-lg border border-slate-800 flex items-center justify-center hover:bg-slate-900"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          </div>
+
+          {loadingProfiles ? (
+            <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+              <span className="text-xs">회원 프로필 목록을 불러오고 있습니다...</span>
+            </div>
+          ) : profiles.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 text-xs">
+              가입된 회원 프로필이 없습니다.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-900/60 border-b border-slate-800">
+                    <th className="p-4 text-[10px] font-bold text-slate-500 tracking-wider">이메일</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 tracking-wider">구독 결제 상태</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 tracking-wider">가입 승인 상태</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 tracking-wider">역할 (Role)</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 tracking-wider text-right">작업</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-850">
+                  {profiles.map((profile) => (
+                    <tr key={profile.id} className="hover:bg-slate-900/30 transition-colors">
+                      <td className="p-4">
+                        <div className="text-xs font-bold text-slate-200">{profile.email}</div>
+                        <div className="text-[9px] font-mono text-slate-500 mt-0.5">ID: {profile.id}</div>
+                      </td>
+                      <td className="p-4">
+                        {profile.isSubscribed ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-900/40">
+                            결제 완료
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                            미결제
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {profile.isApproved ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-950/80 text-blue-400 border border-blue-900/40">
+                            승인 완료
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-400 border border-amber-900/40 animate-pulse">
+                            승인 대기중
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-[10px] font-mono ${profile.role === 'admin' ? 'text-purple-400 font-bold' : 'text-slate-400'}`}>
+                          {profile.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        {!profile.isApproved && profile.role !== 'admin' ? (
+                          <button
+                            onClick={() => handleApproveProfile(profile.email)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-1 rounded-lg transition-all shadow-sm"
+                          >
+                            <span>가입 승인하기</span>
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 italic">승인 완료됨</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {/* Requests Management Table */}
         <section className="bg-[#0b1329] border border-slate-800 rounded-3xl overflow-hidden shadow-sm">

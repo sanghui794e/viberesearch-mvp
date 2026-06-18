@@ -14,6 +14,7 @@ export default function UserDashboard() {
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
+  const [isApproved, setIsApproved] = useState<boolean>(true); // 기본적으로 승인 완료 상태로 시작 후 검사
   
   // Form States
   const [topic, setTopic] = useState('');
@@ -30,22 +31,40 @@ export default function UserDashboard() {
 
   // Route Guard & Load Data
   useEffect(() => {
-    const currentUser = auth.getCurrentUser();
-    
-    if (!currentUser) {
-      router.push('/login');
-      return;
-    }
+    const checkAuthAndApproveStatus = async () => {
+      const currentUser = auth.getCurrentUser();
+      
+      if (!currentUser) {
+        router.push('/login');
+        return;
+      }
 
-    if (!currentUser.isSubscribed && currentUser.role !== 'admin') {
-      router.push('/checkout');
-      return;
-    }
+      if (!currentUser.isSubscribed && currentUser.role !== 'admin') {
+        router.push('/checkout');
+        return;
+      }
 
-    setSession(currentUser);
-    setAuthChecking(false);
-    
-    fetchHistory(currentUser.email);
+      // DB에서 실시간 프로필 정보를 조회하여 승인 상태 검증
+      try {
+        const profile = await db.getProfile(currentUser.email);
+        if (profile) {
+          setIsApproved(profile.isApproved);
+        } else {
+          // 프로필 정보가 없으면 가드 처리
+          setIsApproved(false);
+        }
+      } catch (err) {
+        console.error('Failed to load profile for approval checking:', err);
+        setIsApproved(false);
+      }
+
+      setSession(currentUser);
+      setAuthChecking(false);
+      
+      fetchHistory(currentUser.email);
+    };
+
+    checkAuthAndApproveStatus();
   }, [router]);
 
   const fetchHistory = async (userId: string) => {
@@ -105,6 +124,65 @@ export default function UserDashboard() {
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
           <p className="text-xs text-slate-500 font-medium">인증 정보를 조회하고 있습니다...</p>
         </div>
+      </div>
+    );
+  }
+
+  // 승인되지 않은 일반 사용자 전용 아름다운 대기 화면
+  if (!isApproved && session?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-[#060a13] text-slate-100 flex items-center justify-center font-sans p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-[#0b1329] border border-slate-800 p-8 rounded-2xl shadow-xl shadow-black/40 text-center space-y-6"
+        >
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <Clock className="w-8 h-8 animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+              승인 대기 중입니다 ⏳
+            </h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              안녕하세요, 크리에이터님! VibeResearch의 프라이빗 테스트에 참여해 주셔서 감사합니다.
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              현재 무분별한 리서치 요청 남용을 방지하기 위해 가입 승인 대기제를 운영하고 있습니다. 운영자(지인)에게 승인을 요청해 주시면 신속히 확인하여 대시보드를 활성화해 드리겠습니다.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-800/80 p-4 rounded-xl text-left space-y-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">등록 정보</span>
+            <div className="text-xs font-semibold text-slate-300 break-all">{session?.email}</div>
+            <div className="text-[10px] text-amber-400/80 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>가상 결제 완료 ➡️ 승인 대기 중</span>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                // 승인 상태 재확인용 새로고침
+                window.location.reload();
+              }}
+              className="w-full h-11 bg-primary text-white font-bold rounded-xl text-xs hover:bg-primary/95 transition-all shadow-md shadow-primary/10"
+            >
+              승인 상태 확인하기
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full h-11 border border-slate-800 hover:bg-red-950/20 text-slate-400 hover:text-red-400 text-xs font-semibold rounded-xl transition-all"
+            >
+              다른 계정으로 로그인 (로그아웃)
+            </button>
+          </div>
+        </motion.div>
       </div>
     );
   }

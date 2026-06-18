@@ -43,6 +43,7 @@ export const auth = {
         id: data.user?.id || Math.random().toString(),
         email,
         isSubscribed: false, // 결제 전이므로 기본 false
+        isApproved: email === 'admin@viberesearch.com', // 관리자만 자동 승인, 일반 유저는 대기
         role: email === 'admin@viberesearch.com' ? 'admin' : 'user',
       });
       
@@ -61,6 +62,7 @@ export const auth = {
         id: `user-${Math.random().toString(36).substring(2, 9)}`,
         email,
         isSubscribed,
+        isApproved: email === 'admin@viberesearch.com', // 관리자만 자동 승인, 일반 유저는 대기
         role,
       });
 
