@@ -1,6 +1,6 @@
 import { supabase, isUsingSupabase, db, UserProfile } from './db';
 
-const AUTH_STORAGE_KEY = 'viberesearch_current_user';
+const AUTH_STORAGE_KEY = 'rewaveon_current_user';
 
 export interface AuthSession {
   email: string;
@@ -31,6 +31,7 @@ export const auth = {
 
   // 회원가입
   async signUp(email: string, passwordHash: string): Promise<{ success: boolean; error?: string; profile?: UserProfile }> {
+    const isAdmin = email === 'admin@rewaveon.com' || email === 'admin@viberesearch.com';
     if (isUsingSupabase && supabase) {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -43,8 +44,8 @@ export const auth = {
         id: data.user?.id || Math.random().toString(),
         email,
         isSubscribed: false, // 결제 전이므로 기본 false
-        isApproved: email === 'admin@viberesearch.com', // 관리자만 자동 승인, 일반 유저는 대기
-        role: email === 'admin@viberesearch.com' ? 'admin' : 'user',
+        isApproved: isAdmin, // 관리자만 자동 승인, 일반 유저는 대기
+        role: isAdmin ? 'admin' : 'user',
       });
       
       return { success: true, profile };
@@ -56,13 +57,13 @@ export const auth = {
       }
 
       const isSubscribed = false; // 기본 결제 미완료 상태
-      const role = email === 'admin@viberesearch.com' ? 'admin' : 'user';
+      const role = isAdmin ? 'admin' : 'user';
 
       const profile = await db.createProfile({
         id: `user-${Math.random().toString(36).substring(2, 9)}`,
         email,
         isSubscribed,
-        isApproved: email === 'admin@viberesearch.com', // 관리자만 자동 승인, 일반 유저는 대기
+        isApproved: isAdmin, // 관리자만 자동 승인, 일반 유저는 대기
         role,
       });
 
@@ -72,6 +73,7 @@ export const auth = {
 
   // 로그인
   async signIn(email: string, passwordHash: string): Promise<{ success: boolean; error?: string; session?: AuthSession }> {
+    const isAdmin = email === 'admin@rewaveon.com' || email === 'admin@viberesearch.com';
     if (isUsingSupabase && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -98,7 +100,7 @@ export const auth = {
       }
 
       // 비번 검증 (실제 프로덕션이 아니므로 모의 검증 - admin의 경우 admin1234, 일반 유저는 자유 통과)
-      if (email === 'admin@viberesearch.com' && passwordHash !== 'admin1234') {
+      if (isAdmin && passwordHash !== 'admin1234') {
         return { success: false, error: '관리자 비밀번호가 올바르지 않습니다.' };
       }
 

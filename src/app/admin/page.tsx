@@ -70,7 +70,7 @@ export default function AdminDashboard() {
           const emailRes = await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ type: 'approval', email })
           });
           const emailData = await emailRes.json();
           
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-[#060a13] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
           <p className="text-xs text-slate-500 font-medium">관리자 세션을 조율하는 중...</p>
@@ -215,17 +215,17 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#060a13] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-slate-100 flex flex-col font-sans">
       
       {/* Top Header */}
-      <header className="border-b border-slate-800 bg-[#0b1329] sticky top-0 z-40">
+      <header className="border-b border-border bg-card sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold shadow-md shadow-primary/20">
-              V
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-md shadow-primary/20">
+              R
             </div>
             <span className="text-lg font-bold tracking-tight text-slate-200 flex items-center gap-2">
-              <span>VibeResearch Admin</span>
+              <span>Rewaveon Admin</span>
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[9px] font-extrabold uppercase tracking-wider border border-amber-900/35">
                 Wizard of Oz Mode
               </span>

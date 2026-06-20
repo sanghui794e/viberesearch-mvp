@@ -61,9 +61,11 @@ ${specialRequests ? `- 특별 요청사항: ${specialRequests}` : ''}
       const lowerTopic = (topic + ' ' + targetAudience + ' ' + (specialRequests || '')).toLowerCase();
       const isLocalBusiness = 
         lowerTopic.includes('치킨') || 
+        lowerTopic.includes('피자') || 
+        lowerTopic.includes('떡볶이') || 
+        lowerTopic.includes('식당') || 
         lowerTopic.includes('가게') || 
         lowerTopic.includes('매장') || 
-        lowerTopic.includes('식당') || 
         lowerTopic.includes('카페') || 
         lowerTopic.includes('숍') || 
         lowerTopic.includes('네일') || 
@@ -71,15 +73,15 @@ ${specialRequests ? `- 특별 요청사항: ${specialRequests}` : ''}
         lowerTopic.includes('학원') || 
         lowerTopic.includes('꽃') || 
         lowerTopic.includes('로컬') || 
-        lowerTopic.includes('강원') || 
-        lowerTopic.includes('영월') ||
+        lowerTopic.includes('음식') || 
+        lowerTopic.includes('배달') || 
         lowerTopic.includes('점');
 
       let mockReport = '';
 
       if (isLocalBusiness) {
         // 로컬 매장 맞춤형 정교한 가상 리포트 양식
-        mockReport = `# [VibeResearch 분석] ${topic} 로컬 밀착형 마케팅 전략 제안서 📊
+        mockReport = `# [Rewaveon 분석] ${topic} 로컬 밀착형 마케팅 전략 제안서 📊
 
 ## 1. 지역 오디언스(소비자) 타겟팅 분석
 * **핵심 타겟**: ${targetAudience}
@@ -102,7 +104,7 @@ ${specialRequests ? `* **특별 피드백 반영 분석**: ${specialRequests}\n`
 3. **로컬 오프라인 혜택 셋팅**: 매장 방문 시 "숏폼 구독 화면"을 인증하면 음료수 또는 사이드 메뉴를 즉석 서비스 제공하여 재방문율 고정.`;
       } else {
         // 일반 지식 크리에이터 / 온라인 비즈니스용 정교한 가상 리포트 양식
-        mockReport = `# [VibeResearch 분석] ${topic} 지식 지향형 콘텐츠 비즈니스 전략 기획서 🎯
+        mockReport = `# [Rewaveon 분석] ${topic} 지식 지향형 콘텐츠 비즈니스 전략 기획서 🎯
 
 ## 1. 타겟 독자의 페르소나 및 깊은 니즈 분석
 * **핵심 타겟**: ${targetAudience}

@@ -1,4 +1,4 @@
--- VibeResearch Supabase 실전 연동용 데이터베이스 스키마 SQL 쿼리 🛠️
+-- ReWaveOn Supabase 실전 연동용 데이터베이스 스키마 SQL 쿼리 🛠️
 -- Supabase SQL Editor에 그대로 붙여넣고 실행(Run)해 주세요!
 
 -- 1. profiles 테이블 생성 (사용자 프로필 및 구독 정보)
@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   "isSubscribed" BOOLEAN DEFAULT false,
+  "isApproved" BOOLEAN DEFAULT false,
   role TEXT DEFAULT 'user',
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

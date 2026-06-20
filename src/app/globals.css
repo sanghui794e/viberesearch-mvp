@@ -1,49 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #090d16; /* 깊은 네이비블랙 */
+  --background: #0b0f14; /* Deep Charcoal */
+  --foreground: #ffffff; /* Pure White */
   
-  --primary: #2563eb; /* 일렉트릭 블루 */
-  --primary-foreground: #ffffff;
+  --primary: #00f2c3; /* Signal Mint */
+  --primary-foreground: #0b0f14; /* Deep Charcoal text for contrast */
   
-  --secondary: #0f172a; /* 다크 네이비 */
-  --secondary-foreground: #f8fafc;
+  --secondary: #2a323b; /* Slate Gray */
+  --secondary-foreground: #ffffff;
   
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
+  --muted: #141a24;
+  --muted-foreground: #94a3b8;
   
-  --border: #e2e8f0;
+  --border: #2a323b; /* Slate Gray border */
   
-  --card: #ffffff;
-  --card-foreground: #090d16;
+  --card: #141a24; /* Card background */
+  --card-foreground: #ffffff;
   
   --success: #10b981;
   --warning: #f59e0b;
   
   --radius: 0.75rem;
-}
-
-/* 시스템 다크 모드 대응 및 프리미엄 다크 네이비 감성 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #060a13; /* 깊고 신뢰감 있는 초다크 네이비 */
-    --foreground: #f8fafc;
-    
-    --primary: #3b82f6; /* 눈에 띄는 일렉트릭 블루 */
-    --primary-foreground: #ffffff;
-    
-    --secondary: #0f172a;
-    --secondary-foreground: #f8fafc;
-    
-    --muted: #0f172a;
-    --muted-foreground: #94a3b8;
-    
-    --border: #1e293b;
-    
-    --card: #0b1329;
-    --card-foreground: #f8fafc;
-  }
 }
 
 @theme inline {

@@ -29,6 +29,46 @@ export default function UserDashboard() {
   // Selected Report Modal
   const [selectedRequest, setSelectedRequest] = useState<ResearchRequest | null>(null);
 
+  // 이메일 발송 관련 상태 및 함수
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  const sendReportEmail = async (req: ResearchRequest) => {
+    if (!session?.email || !req.reportContent) return;
+    
+    setEmailSending(true);
+    setEmailSent(false);
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'report',
+          email: session.email,
+          topic: req.topic,
+          content: req.reportContent
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailSent(true);
+      }
+    } catch (err) {
+      console.error('Failed to send report email:', err);
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedRequest) {
+      sendReportEmail(selectedRequest);
+    } else {
+      setEmailSent(false);
+      setEmailSending(false);
+    }
+  }, [selectedRequest, session]);
+
   // Route Guard & Load Data
   useEffect(() => {
     const checkAuthAndApproveStatus = async () => {
@@ -148,7 +188,7 @@ export default function UserDashboard() {
               승인 대기 중입니다 ⏳
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              안녕하세요, 크리에이터님! VibeResearch의 프라이빗 테스트에 참여해 주셔서 감사합니다.
+              안녕하세요! 리웨이브온(Rewaveon)의 프라이빗 테스트에 참여해 주셔서 감사합니다.
             </p>
             <p className="text-xs text-slate-400 leading-relaxed">
               현재 무분별한 리서치 요청 남용을 방지하기 위해 가입 승인 대기제를 운영하고 있습니다. 운영자(지인)에게 승인을 요청해 주시면 신속히 확인하여 대시보드를 활성화해 드리겠습니다.
@@ -194,16 +234,16 @@ export default function UserDashboard() {
       <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-800 bg-[#0b1329] flex flex-col justify-between p-6">
         <div className="space-y-8">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold shadow-md shadow-primary/20">
-              V
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-md shadow-primary/20">
+              R
             </div>
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-              VibeResearch
+            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
+              Rewaveon
             </span>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">크리에이터 계정</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">멤버십 계정</span>
             <span className="text-xs font-semibold text-slate-300 break-all">{session?.email}</span>
             <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -227,7 +267,7 @@ export default function UserDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-50">Creator Dashboard</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-50">Rewaveon Dashboard</h1>
             <p className="text-xs text-slate-500 mt-1">
               리서치 요청을 남겨주시면 전담 비서가 48시간 이내에 세밀한 시장 보고서를 전달합니다.
             </p>
@@ -402,6 +442,112 @@ export default function UserDashboard() {
           )}
         </motion.section>
 
+        {/* 3. Reference Samples & Web Portfolio Section */}
+        <motion.section 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-[#0b1329] border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-50 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span>레퍼런스 샘플 & 웹 포트폴리오</span>
+            </h2>
+            <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 rounded-full font-bold">
+              구독자 전용 혜택
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-400 leading-relaxed">
+            리웨이브온이 직접 기획·구축하고 마케팅 전략을 설계한 로컬 비즈니스 성공 사례입니다. 대표님의 매장 웹사이트와 마케팅에 참고해 보세요.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 pt-2">
+            {/* 60계치킨 Portfolio Card */}
+            <div className="group bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden hover:border-primary/50 transition-all flex flex-col justify-between">
+              <div className="p-5 space-y-3">
+                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-900/50">
+                  로컬 음식점 매장 모델
+                </span>
+                <h3 className="text-sm font-bold text-slate-100 group-hover:text-primary transition-colors">
+                  60계치킨 영월점 쇼케이스 웹사이트
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  지역 밀착형 고객 유입을 타겟으로 설계된 고전환 랜딩 페이지입니다. 깨끗한 조리 과정(ASMR) 홍보와 오프라인 방문 혜택 쿠폰 연동을 통해 매출을 극대화한 핵심 모델입니다.
+                </p>
+              </div>
+              <div className="p-5 pt-0">
+                <a 
+                  href="https://youngwol-chicken.co.kr/#reservation" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-9 bg-slate-800 hover:bg-primary hover:text-primary-foreground text-slate-350 hover:text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <span>라이브 데모 사이트 보기</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+
+            {/* AI Mock Report Sample Card */}
+            <div className="group bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden hover:border-primary/50 transition-all flex flex-col justify-between">
+              <div className="p-5 space-y-3">
+                <span className="text-[9px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                  리서치 기획 모델
+                </span>
+                <h3 className="text-sm font-bold text-slate-100 group-hover:text-primary transition-colors">
+                  로컬 매장 마케팅 전략 샘플 리포트
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  피자점, 떡볶이점 등 로컬 상권을 보유한 매장들이 리웨이브온 비서를 통해 즉각적으로 수령할 수 있는 마케팅 분석 보고서의 모범 예시 파일입니다.
+                </p>
+              </div>
+              <div className="p-5 pt-0">
+                <button
+                  onClick={() => {
+                    setSelectedRequest({
+                      id: 'sample-local-report',
+                      userId: 'sample',
+                      userEmail: 'sample@rewaveon.com',
+                      topic: '[샘플] 영월 지역 로컬 피자점 마케팅 혁신 전략 리포트',
+                      targetAudience: '주말 야식 소비가 많은 캠핑족 및 20-30대 젊은 부모층',
+                      specialRequests: '배달 앱 의존도를 낮추고 다이렉트 주문(포장 주문) 비율을 높일 수 있는 묘안이 필요합니다.',
+                      status: 'Completed',
+                      reportContent: `# [Rewaveon 분석] 로컬 피자 전문점 마케팅 혁신 전략 제안서 🍕
+
+## 1. 지역 오디언스(소비자) 타겟팅 분석
+* **핵심 타겟**: 주말 캠핑족 및 20-30대 젊은 부모층
+* **소비 성향**: 주말 영월 인근 캠핑장을 방문하는 관광객과 주말 한 끼를 편하고 맛있게 해결하려는 젊은 가족 단위의 소규모 야식 수요가 결합되어 있습니다. 이들은 배달 속도보다는 '신선한 재료', '독창적인 시그니처 메뉴'에 기꺼이 높은 비용을 지불합니다.
+* **상권 차별화 포인트**: 타 브랜드 피자(일반 도미노/미스터피자 등)가 정형화된 냉동 도우와 가공육을 쓰는 반면, 매장 근처 자연 환경(계곡, 캠핑 등)과 어울리는 '로컬 특산 크러스트(메밀, 곤드레 등)' 또는 '수제 도우 화덕 피자' 브랜딩을 강화하면 희소성이 극대화됩니다.
+
+## 2. 지역 팬덤 확보를 위한 킬러 콘텐츠 및 마케팅 전략
+* **캠핑장 직배송 및 픽업 전용 패키징 콘텐츠**:
+  - 인근 주요 캠핑장의 지도와 텐트 앞까지 직접 전달되는 딜리버리 박스 언박싱 쇼츠 영상을 릴스에 주기적으로 업로드합니다.
+  - "영월 캠핑 갈 때 무조건 포장해야 할 피자 맛집" 테마로 로컬 숏폼 가이드 영상을 발행합니다.
+* **리웨이브온 연계 주문 혜택 설계**:
+  - 네이버 스마트플레이스 예약 시 포장 할인(최대 15%) 및 캠핑용 일회용 캠핑 테이블 매트 증정 혜택을 연동하여 플랫폼 직접 수수료를 줄이고 포장 비율을 자극합니다.
+
+## 3. 경쟁 매장 대비 우위 전략
+* **배달 플랫폼 의존도 극복**: 배달의민족/요기요의 과도한 수수료(10~15%)를 줄이기 위해, 자체 카카오톡 플러스친구 추가 시 첫 주문 포장 할인 쿠폰 발급 전략을 추진합니다. 플러스친구 메시지를 통해 주말 저녁 시간에 맞춘 로컬 주민 게릴라 타임세일 알림을 직접 발송합니다.
+
+## 4. 즉시 적용 가능한 3대 실행 로드맵
+1. **카카오 플러스친구 개설**: 카톡 친추 시 콜라 무료/포장 할인 이벤트 배너 매장 카운터에 전면 배치.
+2. **캠핑 키워드 SNS 장악**: 해시태그 '#영월캠핑맛집', '#영월피자'로 캠핑족 포장 팩 인스타그램 광고 집중 집행.
+3. **스마트플레이스 리뉴얼**: 대표 메뉴 3종의 화덕 굽는 고화질 쇼츠 비디오 및 대표 한 줄 리뷰 최상단 고정.`,
+                      createdAt: new Date().toISOString(),
+                    });
+                  }}
+                  className="w-full h-9 bg-slate-800 hover:bg-primary hover:text-primary-foreground text-slate-350 hover:text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <span>샘플 전략 리포트 보기</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
       </main>
 
       {/* 3. Framer Motion Report View Modal Popup */}
@@ -458,12 +604,28 @@ export default function UserDashboard() {
 
               {/* Modal Footer */}
               <div className="p-6 border-t border-slate-800 flex items-center justify-between">
-                <button
-                  onClick={() => setSelectedRequest(null)}
-                  className="px-4 h-10 border border-slate-800 text-slate-300 font-medium rounded-xl hover:bg-slate-900 transition-colors text-xs"
-                >
-                  닫기
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setSelectedRequest(null)}
+                    className="px-4 h-10 border border-slate-800 text-slate-300 font-medium rounded-xl hover:bg-slate-900 transition-colors text-xs"
+                  >
+                    닫기
+                  </button>
+
+                  {/* 이메일 발송 상태 안내 */}
+                  {emailSending && (
+                    <span className="text-xs text-amber-400 flex items-center gap-1.5 animate-pulse font-medium">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>이메일 전송 중...</span>
+                    </span>
+                  )}
+                  {emailSent && (
+                    <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>메일로 전송 완료 ({session?.email})</span>
+                    </span>
+                  )}
+                </div>
                 
                 <button
                   onClick={() => window.print()}

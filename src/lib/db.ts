@@ -34,8 +34,8 @@ export const supabase = isUsingSupabase
 
 // Mock Database 저장소 키
 const STORAGE_KEYS = {
-  REQUESTS: 'viberesearch_requests',
-  PROFILES: 'viberesearch_profiles',
+  REQUESTS: 'rewaveon_requests',
+  PROFILES: 'rewaveon_profiles',
 };
 
 // SSR 환경 대응용 인메모리 백업
@@ -43,7 +43,7 @@ let inMemoryRequests: ResearchRequest[] = [
   {
     id: 'req-1',
     userId: 'user-1',
-    userEmail: 'creator@viberesearch.com',
+    userEmail: 'creator@rewaveon.com',
     topic: '1인 지식창업 크리에이터를 위한 메일링 구독 서비스 비즈니스 모델 분석',
     targetAudience: '연 소득 5천만 원 이하의 주니어 크리에이터',
     specialRequests: '해외 사례(Substack, ConvertKit 활용 모델)를 중심으로 요약 보고서와 이메일 마케팅 시나리오를 첨부해주세요.',
@@ -71,7 +71,7 @@ let inMemoryRequests: ResearchRequest[] = [
   {
     id: 'req-2',
     userId: 'user-1',
-    userEmail: 'creator@viberesearch.com',
+    userEmail: 'creator@rewaveon.com',
     topic: 'IT 개발 지식을 활용한 B2B 사이드 프로젝트 기획 및 검증 방법',
     targetAudience: '사이드 프로젝트로 월 100만 원 파이프라인을 만들고 싶은 직장인 개발자',
     specialRequests: '빠르게 프로토타입을 만들어 검증할 수 있는 노코드(No-code) 툴 연동 로드맵이 필요합니다.',
@@ -83,14 +83,14 @@ let inMemoryRequests: ResearchRequest[] = [
 let inMemoryProfiles: UserProfile[] = [
   {
     id: 'user-1',
-    email: 'creator@viberesearch.com',
+    email: 'creator@rewaveon.com',
     isSubscribed: true,
     isApproved: true, // 기존 Mock 유저는 이미 승인된 상태로 셋업
     role: 'user',
   },
   {
     id: 'admin-1',
-    email: 'admin@viberesearch.com',
+    email: 'admin@rewaveon.com',
     isSubscribed: true,
     isApproved: true,
     role: 'admin',

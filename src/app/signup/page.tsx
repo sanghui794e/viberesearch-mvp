@@ -18,7 +18,7 @@ export default function SignupPage() {
   useEffect(() => {
     // 결제 성공 이력 확인 (Stripe 가상 결제 완료 플래그)
     if (typeof window !== 'undefined') {
-      const pending = localStorage.getItem('viberesearch_pending_checkout_email');
+      const pending = localStorage.getItem('rewaveon_pending_checkout_email');
       if (pending === 'true') {
         setIsSubscribedPending(true);
       }
@@ -53,7 +53,18 @@ export default function SignupPage() {
       // 구독 정보 연동 처리
       if (isSubscribedPending) {
         await db.updateSubscription(email, true);
-        localStorage.removeItem('viberesearch_pending_checkout_email');
+        localStorage.removeItem('rewaveon_pending_checkout_email');
+      }
+
+      // 가입 대기 환영 이메일 발송
+      try {
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'welcome', email })
+        });
+      } catch (emailErr) {
+        console.error('Failed to send welcome email:', emailErr);
       }
 
       // 자동 로그인 처리
@@ -71,39 +82,39 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#060a13] text-slate-800 dark:text-slate-100 flex items-center justify-center px-6 py-12 font-sans transition-colors duration-200">
-      <div className="max-w-md w-full bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-xl relative overflow-hidden">
+    <div className="min-h-screen bg-background text-slate-100 flex items-center justify-center px-6 py-12 font-sans selection:bg-primary/30 selection:text-white">
+      <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 shadow-xl relative overflow-hidden">
         {/* Glow decoration */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
         {/* Logo and Headings */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 shadow-md shadow-primary/20">
-            V
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-extrabold text-xl mx-auto mb-4 shadow-md shadow-primary/20">
+            R
           </div>
-          <h2 className="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-slate-50">VibeResearch 계정 생성</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">전담 리서치 비서를 맞이할 계정을 생성하세요.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-2 text-white">Rewaveon 계정 생성</h2>
+          <p className="text-sm text-slate-400">전담 리서치 비서를 맞이할 계정을 생성하세요.</p>
         </div>
 
         {/* Checkout verification banner */}
         {isSubscribedPending ? (
-          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div className="text-xs text-emerald-800 dark:text-emerald-300">
+          <div className="bg-emerald-950/40 border border-emerald-900/60 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-emerald-300">
               <span className="font-bold">결제가 확인되었습니다!</span> 가입 즉시 $99/월 플랜 구독 혜택이 적용되어 대시보드가 오픈됩니다.
             </div>
           </div>
         ) : (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-800 dark:text-amber-300">
+          <div className="bg-amber-950/40 border border-amber-900/60 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-300">
               <span className="font-bold">대시보드 구독 제한 모드:</span> 활성화된 결제가 확인되지 않았습니다. 가입 후 대시보드를 활성화하려면 <Link href="/checkout" className="underline font-bold text-primary">구독 결제</Link>를 진행하셔야 합니다.
             </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 p-3 rounded-xl text-xs mb-6 font-medium">
+          <div className="bg-red-950/40 border border-red-900/60 text-red-300 p-3 rounded-xl text-xs mb-6 font-medium">
             {error}
           </div>
         )}
@@ -111,7 +122,7 @@ export default function SignupPage() {
         <form onSubmit={handleSignup} className="space-y-5">
           {/* Email input */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase block">이메일 주소</label>
+            <label className="text-xs font-bold text-slate-350 uppercase block">이메일 주소</label>
             <div className="relative">
               <input
                 type="email"
@@ -119,15 +130,15 @@ export default function SignupPage() {
                 placeholder="creator@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+                className="w-full h-11 pl-10 pr-4 bg-slate-950 border border-border text-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
               />
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             </div>
           </div>
 
           {/* Password input */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase block">비밀번호 (6자 이상)</label>
+            <label className="text-xs font-bold text-slate-350 uppercase block">비밀번호 (6자 이상)</label>
             <div className="relative">
               <input
                 type="password"
@@ -135,9 +146,9 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+                className="w-full h-11 pl-10 pr-4 bg-slate-950 border border-border text-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
               />
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             </div>
           </div>
 
@@ -145,13 +156,19 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-primary/20"
+            className="w-full h-11 bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-primary/20"
           >
             {loading ? '계정 생성 중...' : '계정 만들기'}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        {/* 가입 안내 및 이메일 수신 공지 */}
+        <div className="mt-5 bg-slate-950/85 border border-border/60 rounded-xl p-3.5 text-[11px] text-slate-400 leading-relaxed">
+          <span className="font-bold text-slate-200 block mb-1">📬 가입 안내 메일 발송 공지</span>
+          가입 시 입력하신 이메일(아이디)로 **가입 신청 접수 및 대시보드 승인 대기 안내 메일**이 실시간 자동 발송됩니다. 반드시 메일 수신이 가능한 정확한 이메일 주소를 입력해 주세요.
+        </div>
+
+        <div className="mt-6 text-center text-xs text-slate-400">
           <span>이미 계정이 있으신가요? </span>
           <Link href="/login" className="font-bold text-primary hover:underline">
             로그인하기
