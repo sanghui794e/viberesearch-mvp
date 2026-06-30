@@ -62,25 +62,7 @@ export default function LoginPage() {
           <p className="text-sm text-slate-400">비즈니스의 보이지 않던 흐름을 보이는 성장으로 만드는 대시보드</p>
         </div>
 
-        {/* Test Admin / User Info Hint Box (Notion-style highlight callout) */}
-        <div className="bg-slate-950 border border-border rounded-xl p-4 mb-6 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-primary">
-            <Key className="w-3.5 h-3.5" />
-            <span>데모 모드 테스트 계정 정보</span>
-          </div>
-          <div className="text-[11px] text-slate-400 space-y-1">
-            <div>
-              <span className="font-bold text-slate-200">🙋‍♂️ 일반 구독 소상공인:</span> 
-              <br />이메일: <code className="bg-slate-900 px-1.5 py-0.5 rounded select-all text-slate-200">creator@rewaveon.com</code>
-              <br />비밀번호: <span className="italic">아무 비밀번호나 입력 (Mock 통과)</span>
-            </div>
-            <div className="pt-1.5 border-t border-border">
-              <span className="font-bold text-slate-200">🛠️ 오즈의 마법사 관리자:</span> 
-              <br />이메일: <code className="bg-slate-900 px-1.5 py-0.5 rounded select-all text-slate-200">admin@rewaveon.com</code>
-              <br />비밀번호: <code className="bg-slate-900 px-1.5 py-0.5 rounded select-all text-slate-200">admin1234</code>
-            </div>
-          </div>
-        </div>
+
 
         {error && (
           <div className="bg-red-950/40 border border-red-900/65 text-red-300 p-3 rounded-xl text-xs mb-6 font-medium">
