@@ -49,7 +49,7 @@ export default function KitchenDashboardPage() {
   // 중앙 서버 실시간 주문 Polling 및 동기화
   const loadOrders = async () => {
     try {
-      const res = await fetch('/api/orders', { cache: 'no-store' });
+      const res = await fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.ok && Array.isArray(json.orders)) {

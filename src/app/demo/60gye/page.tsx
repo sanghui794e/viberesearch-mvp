@@ -444,7 +444,7 @@ export default function G60gyeDemoPage() {
     return () => window.removeEventListener('storage', loadRecentOrder);
   }, []);
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
+  const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || (orderType === 'delivery' && !address)) {
       alert("필수 주문 정보를 모두 입력해 주세요.");
@@ -489,11 +489,15 @@ export default function G60gyeDemoPage() {
     setRecentOrder(orderData);
     
     // 중앙 서버 주문 동기화 API 호출 (다중 기기 동기화용)
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    }).catch(err => console.log('Central Server Order API error:', err));
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+    } catch (err) {
+      console.log('Central Server Order API error:', err);
+    }
 
     // 텔레그램 실시간 알림 API 호출
     fetch('/api/telegram-notify', {

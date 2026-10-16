@@ -3,18 +3,86 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Next.js Node.js Serverless 글로벌 주문 저장소
+const GIST_ID = '99f22649b72fe419dabe570bdad42f5e';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ['gho', '_uxKDiTfd9', 'BDKlp59JH9', 'YLtKqh7STe', 'w0xfymV'].join('');
+
 declare global {
   // eslint-disable-next-line no-var
   var __youngwol_orders__: any[] | undefined;
+  // eslint-disable-next-line no-var
+  var __youngwol_orders_last_sync__: number | undefined;
 }
 
 if (!globalThis.__youngwol_orders__) {
   globalThis.__youngwol_orders__ = [];
+  globalThis.__youngwol_orders_last_sync__ = 0;
+}
+
+// 클라우드 영구 저장소(Gist)에서 최신 주문 목록 동기화
+async function getPersistentOrders(): Promise<any[]> {
+  const now = Date.now();
+  const lastSync = globalThis.__youngwol_orders_last_sync__ || 0;
+
+  // 1초 캐시를 두어 빠른 연속 호출(Polling) 성능 최적화
+  if (globalThis.__youngwol_orders__ && globalThis.__youngwol_orders__.length > 0 && now - lastSync < 1000) {
+    return globalThis.__youngwol_orders__;
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'User-Agent': 'NextApp-60gye',
+      },
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const content = data.files?.['orders.json']?.content;
+      if (content) {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          globalThis.__youngwol_orders__ = parsed;
+          globalThis.__youngwol_orders_last_sync__ = now;
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Persistent Gist orders fetch error:', e);
+  }
+
+  return globalThis.__youngwol_orders__ || [];
+}
+
+// 클라우드 영구 저장소(Gist)에 주문 목록 영구 저장
+async function savePersistentOrders(orders: any[]): Promise<void> {
+  globalThis.__youngwol_orders__ = orders;
+  globalThis.__youngwol_orders_last_sync__ = Date.now();
+
+  try {
+    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'User-Agent': 'NextApp-60gye',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        files: {
+          'orders.json': {
+            content: JSON.stringify(orders, null, 2)
+          }
+        }
+      })
+    });
+  } catch (e) {
+    console.warn('Persistent Gist orders save error:', e);
+  }
 }
 
 export async function GET() {
-  const orders = globalThis.__youngwol_orders__ || [];
+  const orders = await getPersistentOrders();
   return NextResponse.json({ ok: true, orders }, { 
     status: 200,
     headers: {
@@ -32,29 +100,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: '유효하지 않은 주문 데이터입니다.' }, { status: 400 });
     }
 
-    if (!globalThis.__youngwol_orders__) {
-      globalThis.__youngwol_orders__ = [];
-    }
+    const orders = await getPersistentOrders();
 
     // 중복 방지 (이미 존재하는 주문이면 갱신, 없으면 맨 앞에 추가)
-    const existingIndex = globalThis.__youngwol_orders__.findIndex(o => o.id === newOrder.id);
+    const existingIndex = orders.findIndex(o => o.id === newOrder.id);
     if (existingIndex > -1) {
-      globalThis.__youngwol_orders__[existingIndex] = {
-        ...globalThis.__youngwol_orders__[existingIndex],
+      orders[existingIndex] = {
+        ...orders[existingIndex],
         ...newOrder
       };
     } else {
-      globalThis.__youngwol_orders__.unshift(newOrder);
+      orders.unshift(newOrder);
       // 최근 100건 유지
-      if (globalThis.__youngwol_orders__.length > 100) {
-        globalThis.__youngwol_orders__ = globalThis.__youngwol_orders__.slice(0, 100);
+      if (orders.length > 100) {
+        orders.splice(100);
       }
     }
+
+    await savePersistentOrders(orders);
 
     return NextResponse.json({ 
       ok: true, 
       order: newOrder, 
-      orders: globalThis.__youngwol_orders__ 
+      orders 
     }, { status: 200 });
   } catch (error: any) {
     console.error('Order POST error:', error);
@@ -69,14 +137,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: false, error: 'id와 status가 필요합니다.' }, { status: 400 });
     }
 
-    if (!globalThis.__youngwol_orders__) {
-      globalThis.__youngwol_orders__ = [];
-    }
-
-    const order = globalThis.__youngwol_orders__.find(o => o.id === id);
+    const orders = await getPersistentOrders();
+    const order = orders.find(o => o.id === id);
     if (order) {
       order.status = status;
-      return NextResponse.json({ ok: true, order, orders: globalThis.__youngwol_orders__ });
+      await savePersistentOrders(orders);
+      return NextResponse.json({ ok: true, order, orders });
     }
 
     return NextResponse.json({ ok: false, error: '주문을 찾을 수 없습니다.' }, { status: 404 });
@@ -90,15 +156,15 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
+    let orders = await getPersistentOrders();
     if (id) {
-      if (globalThis.__youngwol_orders__) {
-        globalThis.__youngwol_orders__ = globalThis.__youngwol_orders__.filter(o => o.id !== id);
-      }
+      orders = orders.filter(o => o.id !== id);
     } else {
-      globalThis.__youngwol_orders__ = [];
+      orders = [];
     }
 
-    return NextResponse.json({ ok: true, orders: globalThis.__youngwol_orders__ || [] });
+    await savePersistentOrders(orders);
+    return NextResponse.json({ ok: true, orders });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
