@@ -554,21 +554,24 @@ export default function G60gyeDemoPage() {
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            {recentOrder && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCurrentOrderId(recentOrder.id);
-                  setCurrentOrderState(recentOrder);
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const target = currentOrderState || recentOrder;
+                if (target) {
+                  setCurrentOrderId(target.id);
+                  setCurrentOrderState(target);
                   setCurrentStep(3);
-                }}
-                className="h-8 px-2.5 rounded-full bg-[#f39c12]/20 hover:bg-[#f39c12]/30 border border-[#f39c12]/50 text-[#f39c12] text-[10px] font-black flex items-center gap-1 transition-colors animate-pulse"
-              >
-                <span>내 주문 🧾</span>
-              </button>
-            )}
-            <a href="tel:033-374-6660" className="w-8 h-8 rounded-full bg-[#f39c12]/15 hover:bg-[#f39c12]/20 text-[#f39c12] flex items-center justify-center transition-colors">
+                } else {
+                  alert('아직 접수된 주문 내역이 없습니다. 메뉴를 선택하신 후 주문해 주세요! 😊');
+                }
+              }}
+              className="h-8 px-2.5 rounded-full bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] text-[11px] font-black flex items-center gap-1 transition-all shadow-md active:scale-95 shrink-0"
+            >
+              <span>🧾 내 주문</span>
+            </button>
+            <a href="tel:033-374-6660" className="w-8 h-8 rounded-full bg-[#f39c12]/15 hover:bg-[#f39c12]/20 text-[#f39c12] flex items-center justify-center transition-colors shrink-0">
               <Phone className="w-4 h-4" />
             </a>
           </div>
@@ -624,7 +627,7 @@ export default function G60gyeDemoPage() {
           <div className="space-y-6 animate-fade-in">
             
             {/* 최근 주문이 있을 경우 최상단에 노출되는 직통 영수증 배너 */}
-            {recentOrder && (
+            {recentOrder ? (
               <div 
                 onClick={() => {
                   setCurrentOrderId(recentOrder.id);
@@ -654,6 +657,21 @@ export default function G60gyeDemoPage() {
                 </div>
                 <span className="text-[11px] font-black text-[#1a1210] bg-[#f39c12] hover:bg-[#e67e22] px-3 py-2 rounded-xl shrink-0 transition-colors shadow">
                   영수증 보기
+                </span>
+              </div>
+            ) : (
+              <div 
+                onClick={() => {
+                  alert('아직 접수된 주문 내역이 없습니다. 아래 메뉴판에서 원하시는 치킨을 장바구니에 담아 주문해 보세요! 🍗');
+                }}
+                className="cursor-pointer bg-[#1c1310] border border-[#3d2c27] hover:border-[#f39c12]/50 rounded-xl p-3 flex items-center justify-between transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🧾</span>
+                  <span className="text-xs font-bold text-slate-300">내가 주문한 내역이 궁금하신가요?</span>
+                </div>
+                <span className="text-[10px] text-[#f39c12] font-extrabold bg-[#f39c12]/10 px-2 py-1 rounded-lg border border-[#f39c12]/20">
+                  주문 내역 조회 &gt;
                 </span>
               </div>
             )}
