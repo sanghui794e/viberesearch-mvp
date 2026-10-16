@@ -48,6 +48,8 @@ export default function KitchenDashboardPage() {
   const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(false);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
+  // 전광판 화면에서 지운(삭제한) 주문 ID 목록 (부활 방지 블랙리스트)
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
   // 거절 사유 모달 상태
   const [rejectModalOrder, setRejectModalOrder] = useState<Order | null>(null);
@@ -81,13 +83,39 @@ export default function KitchenDashboardPage() {
     }
   };
 
-  // 취소된 주문 카드를 주방 전광판 화면에서 즉시 영구 제거
-  const dismissOrder = (orderId: string) => {
+  // 로컬 저장소에서 지운 주문 ID 목록 불러오기
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedDismissed = localStorage.getItem('youngwol_dismissed_orders');
+        if (savedDismissed) {
+          const parsed = JSON.parse(savedDismissed);
+          if (Array.isArray(parsed)) setDismissedIds(parsed);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  // 취소된 주문 카드를 주방 전광판 및 서버에서 즉시 영구 제거 (부활 원천 차단)
+  const dismissOrder = async (orderId: string) => {
+    // 1. 화면 상태에서 즉시 제거
     const updated = orders.filter(o => o.id !== orderId);
     setOrders(updated);
+
+    // 2. 브라우저 블랙리스트에 등록하여 1.5초 서버 폴링 시에도 절대 재등장하지 못하도록 차단
+    const nextDismissed = Array.from(new Set([...dismissedIds, orderId]));
+    setDismissedIds(nextDismissed);
     if (typeof window !== 'undefined') {
+      localStorage.setItem('youngwol_dismissed_orders', JSON.stringify(nextDismissed));
       localStorage.setItem('youngwol_orders', JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
+    }
+
+    // 3. 중앙 클라우드 영구 저장소(Gist)에서도 DELETE API 호출로 영구 삭제
+    try {
+      await fetch(`/api/orders?id=${orderId}`, { method: 'DELETE' });
+    } catch (e) {
+      console.log('Dismiss order server DELETE error:', e);
     }
   };
 
@@ -119,9 +147,19 @@ export default function KitchenDashboardPage() {
             prevOrderCountRef.current = serverOrders.length;
             isInitialLoadRef.current = false;
 
-            setOrders(serverOrders);
+            // 지운 주문(dismissed)은 서버에서 내려오더라도 화면 표시 및 저장에서 제외
+            let currentDismissed: string[] = dismissedIds;
             if (typeof window !== 'undefined') {
-              localStorage.setItem('youngwol_orders', JSON.stringify(serverOrders));
+              try {
+                const storedD = localStorage.getItem('youngwol_dismissed_orders');
+                if (storedD) currentDismissed = JSON.parse(storedD);
+              } catch (e) {}
+            }
+            const activeOrders = serverOrders.filter(o => !currentDismissed.includes(o.id));
+
+            setOrders(activeOrders);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('youngwol_orders', JSON.stringify(activeOrders));
             }
           }
           if (json.storeSettings) {
@@ -970,19 +1008,14 @@ export default function KitchenDashboardPage() {
                         )}
 
                         {order.status === 'cancelled' && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-extrabold text-red-400 bg-red-950/40 border border-red-800 px-2.5 py-1.5 rounded-xl">
-                              취소 / 거절됨 🚫
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => dismissOrder(order.id)}
-                              className="h-8 px-2.5 bg-red-600 hover:bg-red-500 text-white text-[11px] font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1"
-                              title="이 취소 주문을 주방 전광판에서 완전히 지웁니다."
-                            >
-                              <span>지우기 ✕</span>
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => dismissOrder(order.id)}
+                            className="h-9 px-4 bg-red-600 hover:bg-red-500 active:scale-95 text-white text-xs font-black rounded-xl transition-all shadow-lg flex items-center gap-1.5 animate-pulse"
+                            title="이 취소 주문을 확인하고 주방 화면에서 즉시 지웁니다."
+                          >
+                            <span>🗑️ 거절/취소 확인 (화면에서 지우기 ✕)</span>
+                          </button>
                         )}
                       </div>
                     </div>
