@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Next.js Node.js Serverless 글로벌 주문 저장소
 declare global {
   // eslint-disable-next-line no-var

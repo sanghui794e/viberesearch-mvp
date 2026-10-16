@@ -512,16 +512,20 @@ export default function G60gyeDemoPage() {
 
   // 주방 상태와 실시간 100% 동기화 렌더링
   useEffect(() => {
-    if (currentStep === 3 && currentOrderId) {
+    if (currentStep === 3) {
       const syncStatus = async () => {
+        const orderIdToFind = currentOrderId || recentOrder?.id || (typeof window !== 'undefined' ? localStorage.getItem('youngwol_latest_order_id') : '');
+        if (!orderIdToFind) return;
+
         try {
-          const res = await fetch('/api/orders', { cache: 'no-store' });
+          const res = await fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' });
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {
-              const found = json.orders.find((o: any) => o.id === currentOrderId);
+              const found = json.orders.find((o: any) => o.id === orderIdToFind);
               if (found) {
                 setCurrentOrderState(found);
+                setRecentOrder(found);
                 if (found.status === 'cooking') setTrackStep(3);
                 else if (found.status === 'done') setTrackStep(4);
                 else if (found.status === 'accepted') setTrackStep(2);
@@ -535,16 +539,19 @@ export default function G60gyeDemoPage() {
         }
 
         // 로컬 스토리지 Fallback
-        const data = localStorage.getItem('youngwol_orders');
-        if (data) {
-          const list = JSON.parse(data);
-          const found = list.find((o: any) => o.id === currentOrderId);
-          if (found) {
-            setCurrentOrderState(found);
-            if (found.status === 'cooking') setTrackStep(3);
-            else if (found.status === 'done') setTrackStep(4);
-            else if (found.status === 'accepted') setTrackStep(2);
-            else setTrackStep(1);
+        if (typeof window !== 'undefined') {
+          const data = localStorage.getItem('youngwol_orders');
+          if (data) {
+            const list = JSON.parse(data);
+            const found = list.find((o: any) => o.id === orderIdToFind);
+            if (found) {
+              setCurrentOrderState(found);
+              setRecentOrder(found);
+              if (found.status === 'cooking') setTrackStep(3);
+              else if (found.status === 'done') setTrackStep(4);
+              else if (found.status === 'accepted') setTrackStep(2);
+              else setTrackStep(1);
+            }
           }
         }
       };
@@ -557,7 +564,7 @@ export default function G60gyeDemoPage() {
         clearInterval(interval);
       };
     }
-  }, [currentStep, currentOrderId]);
+  }, [currentStep, currentOrderId, recentOrder]);
 
   return (
     <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans selection:bg-[#f39c12]/30 selection:text-white pb-20">

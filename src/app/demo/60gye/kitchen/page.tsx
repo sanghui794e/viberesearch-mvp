@@ -38,6 +38,7 @@ interface Order {
 
 export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'cooking' | 'done'>('all');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
@@ -302,162 +303,260 @@ export default function KitchenDashboardPage() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
         
         {/* Left 2 Cols: Orders Board */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between border-b border-[#2d1d19] pb-3">
-            <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <span>실시간 수신 목록</span>
-              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                대기 {orders.filter(o => o.status === 'pending').length}건
-              </span>
-            </h2>
+        <div className="lg:col-span-2 space-y-4">
+          
+          {/* Header & Filter Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2d1d19] pb-3 gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+              <button
+                type="button"
+                onClick={() => setFilterTab('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                  filterTab === 'all'
+                    ? 'bg-[#f39c12] text-[#1a1210] shadow'
+                    : 'bg-[#1c1310] text-slate-400 hover:text-white border border-[#3d2c27]'
+                }`}
+              >
+                전체 ({orders.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('pending')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                  filterTab === 'pending'
+                    ? 'bg-amber-500 text-[#1a1210] shadow'
+                    : 'bg-[#1c1310] text-amber-400 hover:text-white border border-[#3d2c27]'
+                }`}
+              >
+                <span>대기 🔔</span>
+                <span>({orders.filter(o => o.status === 'pending').length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('cooking')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                  filterTab === 'cooking'
+                    ? 'bg-orange-500 text-white shadow'
+                    : 'bg-[#1c1310] text-orange-400 hover:text-white border border-[#3d2c27]'
+                }`}
+              >
+                <span>조리 중 🔥</span>
+                <span>({orders.filter(o => o.status === 'cooking').length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('done')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                  filterTab === 'done'
+                    ? 'bg-emerald-500 text-white shadow'
+                    : 'bg-[#1c1310] text-emerald-400 hover:text-white border border-[#3d2c27]'
+                }`}
+              >
+                <span>완료 🛍️</span>
+                <span>({orders.filter(o => o.status === 'done').length})</span>
+              </button>
+            </div>
+
             <button 
               onClick={loadOrders}
-              className="text-xs text-[#f39c12] hover:underline font-semibold flex items-center gap-1"
+              className="text-xs text-[#f39c12] hover:underline font-semibold flex items-center gap-1 shrink-0 self-end sm:self-auto"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>새로고침</span>
             </button>
           </div>
 
-          {orders.length === 0 ? (
-            <div className="bg-[#1c1310] border border-[#3d2c27] rounded-3xl p-12 text-center space-y-3">
-              <ShoppingBag className="w-12 h-12 text-slate-600 mx-auto animate-pulse" />
-              <h3 className="text-sm font-bold text-white">접수된 주문이 없습니다.</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                모바일 주문창([http://localhost:3001/demo/60gye](/demo/60gye))을 새 탭으로 열어 주문을 전송해 보세요! 주방 전광판에 즉시 띵동 소리와 함께 주문이 실시간으로 날아옵니다.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {orders.map((order) => (
-                <div 
-                  key={order.id}
-                  className={`bg-[#1c1310] border rounded-2xl p-4 flex flex-col justify-between transition-all ${
-                    order.status === 'pending' 
-                      ? 'border-[#f39c12] shadow-lg shadow-[#f39c12]/5 ring-1 ring-[#f39c12]/30' 
-                      : 'border-[#3d2c27]'
-                  }`}
-                >
-                  <div className="space-y-3">
-                    {/* Header line */}
-                    <div className="flex justify-between items-start border-b border-[#2d1d19] pb-2">
-                      <div>
-                        <span className="text-[10px] text-slate-550 block">주문시각 {order.timestamp}</span>
-                        <h4 className="text-sm font-extrabold text-white mt-0.5">{order.name} 님</h4>
-                      </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                        order.orderType === 'takeout' 
-                          ? 'bg-[#f39c12]/15 text-[#f39c12] border border-[#f39c12]/20' 
-                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      }`}>
-                        {order.orderType === 'takeout' ? '🛍️ 포장' : '🛵 배달'}
-                      </span>
-                    </div>
+          {/* Filtered Orders List */}
+          {(() => {
+            const filteredOrders = orders.filter(o => {
+              if (filterTab === 'all') return true;
+              return o.status === filterTab;
+            });
 
-                    {/* 대형 조리/방문 완료 목표 시간 뱃지 */}
-                    <div className="bg-[#241712] border border-[#f39c12]/40 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                      <span className="text-[10px] font-bold text-slate-400">조리/방문 목표</span>
-                      <span className="text-sm font-black text-[#f39c12] flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-[#f39c12]" />
-                        <span>{order.targetPickupTime || '18:10'} 완료</span>
-                        <span className="text-[9px] text-slate-400 font-normal">({order.pickupTime || '45분 뒤'})</span>
-                      </span>
-                    </div>
-
-                    {/* Order Details */}
-                    <div className="space-y-1.5 text-xs text-slate-300">
-                      <div className="flex gap-2">
-                        <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                        <span className="font-semibold">{order.phone}</span>
-                      </div>
-                      {order.orderType === 'delivery' ? (
-                        <div className="flex gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <span className="leading-tight">{order.address}</span>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <span className="text-[#f39c12] font-semibold">{order.pickupTime} 방문</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Items List */}
-                    <div className="bg-[#0e0908] border border-[#2b1d19] rounded-xl p-3 space-y-2">
-                      <h5 className="text-[10px] font-black text-slate-450 uppercase tracking-widest">주문 제품</h5>
-                      <div className="space-y-1.5">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-xs">
-                            <span className="font-bold text-white">
-                              {item.name} 
-                              <span className="text-[#f39c12] text-[9px] bg-[#f39c12]/10 px-1.5 py-0.5 rounded ml-1.5">{item.type}</span>
-                              {item.isCustom && item.customDetails && (
-                                <span className="block text-[9px] text-red-400 mt-0.5 font-normal italic">*요구사항: {item.customDetails}</span>
-                              )}
-                            </span>
-                            <span className="text-slate-400">{item.quantity}개</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Request text */}
-                    {order.requestText && (
-                      <div className="text-[11px] bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-amber-300 italic leading-snug">
-                        <strong>요청:</strong> {order.requestText}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions & Price */}
-                  <div className="border-t border-[#2d1d19] pt-3 mt-4 flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] text-slate-500 block">결제: {getPaymentLabel(order.paymentMethod)}</span>
-                      <span className="text-sm font-black text-white">{order.total.toLocaleString()}원</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {order.status === 'pending' ? (
-                        <>
-                          <button
-                            onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                            className="w-8 h-8 rounded-xl bg-red-950/20 hover:bg-red-900 border border-red-900/50 hover:text-white text-red-400 flex items-center justify-center transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              updateOrderStatus(order.id, 'cooking');
-                              handlePrintClick(order);
-                            }}
-                            className="h-8 px-3 bg-[#f39c12] hover:bg-[#f39c12]/90 text-[#1a1210] font-black rounded-xl text-[11px] flex items-center gap-1 transition-all"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>접수 & 프린트</span>
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex gap-2 items-center">
-                          <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest bg-[#2d1d19] py-1 px-2.5 rounded-lg border border-[#3d2c27]">
-                            {order.status === 'cooking' ? '🔥 조리 중' : '✅ 완료됨'}
-                          </span>
-                          <button
-                            onClick={() => handlePrintClick(order)}
-                            className="w-8 h-8 rounded-xl bg-slate-900 border border-[#3d2c27] hover:border-[#f39c12] text-slate-300 flex items-center justify-center transition-all"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
+            if (filteredOrders.length === 0) {
+              return (
+                <div className="bg-[#1c1310] border border-[#3d2c27] rounded-3xl p-12 text-center space-y-3">
+                  <ShoppingBag className="w-12 h-12 text-slate-600 mx-auto animate-pulse" />
+                  <h3 className="text-sm font-bold text-white">
+                    {filterTab === 'all' 
+                      ? '접수된 주문이 없습니다.' 
+                      : filterTab === 'pending' 
+                        ? '대기 중인 신규 주문이 없습니다.'
+                        : filterTab === 'cooking'
+                          ? '현재 조리 중인 치킨이 없습니다.'
+                          : '완료된 주문이 없습니다.'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    손님이 스마트폰 주문앱에서 주문을 완료하면 실시간으로 띵동 소리와 함께 이곳에 주문 카드가 똬악 뜹니다!
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredOrders.map((order) => (
+                  <div 
+                    key={order.id}
+                    className={`bg-[#1c1310] border rounded-2xl p-4 flex flex-col justify-between transition-all ${
+                      order.status === 'pending' 
+                        ? 'border-[#f39c12] shadow-lg shadow-[#f39c12]/15 ring-2 ring-[#f39c12]/40' 
+                        : order.status === 'cooking'
+                          ? 'border-orange-500/70 shadow-lg shadow-orange-500/10'
+                          : 'border-emerald-500/40 bg-[#161412]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      {/* Header line */}
+                      <div className="flex justify-between items-start border-b border-[#2d1d19] pb-2">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-slate-500 font-mono">#{order.id.slice(-6)}</span>
+                            <span className="text-[10px] text-slate-400">• {order.timestamp}</span>
+                          </div>
+                          <h4 className="text-sm font-extrabold text-white mt-0.5">{order.name} 님</h4>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                            order.status === 'pending'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+                              : order.status === 'cooking'
+                                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
+                                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          }`}>
+                            {order.status === 'pending' ? '⏳ 승인 대기' : order.status === 'cooking' ? '🔥 조리 중' : '🛍️ 준비 완료'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            order.orderType === 'takeout' 
+                              ? 'bg-[#f39c12]/15 text-[#f39c12] border border-[#f39c12]/20' 
+                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}>
+                            {order.orderType === 'takeout' ? '방문 포장' : '배달'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 대형 조리/방문 완료 목표 시간 뱃지 */}
+                      <div className="bg-[#241712] border border-[#f39c12]/40 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[10px] font-bold text-slate-400">조리/방문 목표</span>
+                        <span className="text-sm font-black text-[#f39c12] flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-[#f39c12]" />
+                          <span>{order.targetPickupTime || '18:10'} 완료</span>
+                          <span className="text-[9px] text-slate-400 font-normal">({order.pickupTime || '45분 뒤'})</span>
+                        </span>
+                      </div>
+
+                      {/* Order Details */}
+                      <div className="space-y-1 text-xs text-slate-300">
+                        <div className="flex gap-2">
+                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                          <a href={`tel:${order.phone}`} className="font-semibold text-slate-200 hover:text-[#f39c12] underline decoration-dotted">
+                            {order.phone}
+                          </a>
+                        </div>
+                        {order.orderType === 'delivery' ? (
+                          <div className="flex gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                            <span className="leading-tight text-slate-200">{order.address}</span>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                            <span className="text-[#f39c12] font-semibold">{order.pickupTime} 방문</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Items List */}
+                      <div className="bg-[#0e0908] border border-[#2b1d19] rounded-xl p-3 space-y-2">
+                        <h5 className="text-[10px] font-black text-slate-450 uppercase tracking-widest">주문 제품</h5>
+                        <div className="space-y-1.5">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-xs">
+                              <span className="font-bold text-white">
+                                {item.name} 
+                                <span className="text-[#f39c12] text-[9px] bg-[#f39c12]/10 px-1.5 py-0.5 rounded ml-1.5">{item.type}</span>
+                                {item.isCustom && item.customDetails && (
+                                  <span className="block text-[9px] text-red-400 mt-0.5 font-normal italic">*요구사항: {item.customDetails}</span>
+                                )}
+                              </span>
+                              <span className="text-slate-400 font-bold">{item.quantity}개</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Request text */}
+                      {order.requestText && (
+                        <div className="text-[11px] bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-amber-300 italic leading-snug">
+                          <strong>요청:</strong> "{order.requestText}"
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions & Price */}
+                    <div className="border-t border-[#2d1d19] pt-3 mt-4 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[9px] text-slate-500 block">결제: {getPaymentLabel(order.paymentMethod)}</span>
+                        <span className="text-sm font-black text-white">{order.total.toLocaleString()}원</span>
+                      </div>
+
+                      {/* Action Buttons by Status */}
+                      <div className="flex gap-1.5 items-center">
+                        <button
+                          type="button"
+                          onClick={() => handlePrintClick(order)}
+                          title="영수증 인쇄"
+                          className="h-8 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-[#3d2c27] hover:border-[#f39c12] text-slate-300 flex items-center gap-1 transition-all text-xs"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="hidden sm:inline text-[10px]">인쇄</span>
+                        </button>
+
+                        {order.status === 'pending' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                              title="주문 거절"
+                              className="h-8 px-2.5 rounded-xl bg-red-950/30 hover:bg-red-900 border border-red-900/50 text-red-400 hover:text-white flex items-center transition-colors text-[10px] font-bold"
+                            >
+                              거절
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateOrderStatus(order.id, 'cooking')}
+                              className="h-8 px-3.5 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl text-xs flex items-center gap-1 transition-all shadow-md active:scale-95"
+                            >
+                              <span>🔥 조리 시작</span>
+                            </button>
+                          </>
+                        )}
+
+                        {order.status === 'cooking' && (
+                          <button
+                            type="button"
+                            onClick={() => updateOrderStatus(order.id, 'done')}
+                            className="h-8 px-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-xs flex items-center gap-1 transition-all shadow-md active:scale-95 animate-pulse"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>🛍️ 조리 완료</span>
+                          </button>
+                        )}
+
+                        {order.status === 'done' && (
+                          <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/40 border border-emerald-800 px-2.5 py-1.5 rounded-xl">
+                            완료 처리됨 ✅
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
         {/* Right 1 Col: Printer Hardware Connection Guide */}
         <div className="space-y-6">
