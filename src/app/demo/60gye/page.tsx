@@ -474,17 +474,24 @@ export default function G60gyeDemoPage() {
     if (typeof window !== 'undefined') {
       try {
         const latestId = localStorage.getItem('youngwol_latest_order_id');
+        if (!latestId) {
+          // 활성 주문 식별자가 없으면 최근 주문 상태를 null로 비움 (과거 주문 임의 로딩 방지)
+          setRecentOrder(null);
+          return;
+        }
         const ordersData = localStorage.getItem('youngwol_orders');
         if (ordersData) {
           const list = JSON.parse(ordersData);
           if (Array.isArray(list) && list.length > 0) {
-            const found = latestId ? list.find((o: any) => o.id === latestId) : list[0];
+            const found = list.find((o: any) => o.id === latestId);
             if (found) {
               setRecentOrder(found);
               if (!currentOrderId && found.id) {
                 setCurrentOrderId(found.id);
                 setCurrentOrderState(found);
               }
+            } else {
+              setRecentOrder(null);
             }
           }
         }
@@ -492,6 +499,20 @@ export default function G60gyeDemoPage() {
         console.error('loadRecentOrder error:', e);
       }
     }
+  };
+
+  // 주문 영수증 및 활성 주문 완전 초기화 (취소 후 새 주문 시작 시)
+  const resetAndClearOrder = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('youngwol_latest_order_id');
+      window.dispatchEvent(new Event('storage'));
+    }
+    setCurrentOrderId('');
+    setCurrentOrderState(null);
+    setRecentOrder(null);
+    setCart([]);
+    setCurrentStep(1);
+    setTrackStep(1);
   };
 
   useEffect(() => {
@@ -730,10 +751,15 @@ export default function G60gyeDemoPage() {
                 alert('아직 접수된 주문 내역이 없습니다. 먼저 메뉴를 주문해 주세요!');
               }
             }}
-            className={`pb-1 transition-all flex items-center justify-center gap-1 ${currentStep === 3 ? 'text-[#f39c12] border-b-2 border-[#f39c12] font-black' : (recentOrder ? 'text-amber-400 font-bold hover:text-white' : 'hover:text-slate-300')}`}
+            className={`pb-1 transition-all flex items-center justify-center gap-1 ${currentStep === 3 ? 'text-[#f39c12] border-b-2 border-[#f39c12] font-black' : (recentOrder && recentOrder.status !== 'cancelled' ? 'text-amber-400 font-bold hover:text-white' : (recentOrder && recentOrder.status === 'cancelled' ? 'text-red-400/80 hover:text-red-300' : 'hover:text-slate-300'))}`}
           >
             <span>3. 실시간 대기</span>
-            {recentOrder && <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>}
+            {recentOrder && recentOrder.status !== 'cancelled' && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+            )}
+            {recentOrder && recentOrder.status === 'cancelled' && (
+              <span className="text-[9px] bg-red-950 text-red-400 border border-red-700/60 px-1 rounded font-bold">취소</span>
+            )}
           </button>
         </div>
 
@@ -741,8 +767,8 @@ export default function G60gyeDemoPage() {
         {currentStep === 1 && (
           <div className="space-y-6 animate-fade-in">
             
-            {/* 최근 주문이 있을 경우 최상단에 노출되는 직통 영수증 배너 */}
-            {recentOrder ? (
+            {/* 최근 주문이 활성(조리/완료/대기) 상태일 때 노출되는 직통 영수증 배너 */}
+            {recentOrder && recentOrder.status !== 'cancelled' ? (
               <div 
                 onClick={() => {
                   setCurrentOrderId(recentOrder.id);
@@ -773,6 +799,43 @@ export default function G60gyeDemoPage() {
                 <span className="text-[11px] font-black text-[#1a1210] bg-[#f39c12] hover:bg-[#e67e22] px-3 py-2 rounded-xl shrink-0 transition-colors shadow">
                   영수증 보기
                 </span>
+              </div>
+            ) : recentOrder && recentOrder.status === 'cancelled' ? (
+              <div className="bg-red-950/30 border border-red-500/50 rounded-2xl p-3.5 flex items-center justify-between gap-2 animate-fade-in">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center text-base shrink-0">
+                    🚫
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-red-300">최근 주문이 취소되었습니다</span>
+                      <span className="text-[9px] bg-red-900/60 text-red-200 border border-red-600 px-1 rounded font-bold">취소 완료</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">
+                      {recentOrder.cancelReason || '매장 사정 또는 고객 요청에 의해 취소되었습니다.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentOrderId(recentOrder.id);
+                      setCurrentOrderState(recentOrder);
+                      setCurrentStep(3);
+                    }}
+                    className="text-[10px] font-bold text-slate-300 bg-slate-900 hover:bg-slate-800 border border-[#3d2c27] px-2.5 py-1.5 rounded-lg transition-colors"
+                  >
+                    사유 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetAndClearOrder}
+                    className="text-[10px] font-extrabold text-red-300 hover:text-white bg-red-950/80 hover:bg-red-900 border border-red-700 px-2.5 py-1.5 rounded-lg transition-colors shadow"
+                  >
+                    영수증 지우기 ✕
+                  </button>
+                </div>
               </div>
             ) : (
               <div 
@@ -1345,13 +1408,10 @@ export default function G60gyeDemoPage() {
                     </a>
                     <button
                       type="button"
-                      onClick={() => {
-                        setCart([]);
-                        setCurrentStep(1);
-                      }}
+                      onClick={resetAndClearOrder}
                       className="w-full h-11 bg-[#1f1715] hover:bg-[#2b1f1c] border border-[#442c23] text-slate-200 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
                     >
-                      <span>🍗 다른 치킨 메뉴 둘러보기</span>
+                      <span>🍗 취소 확인 및 새 주문하기 (영수증 정리)</span>
                     </button>
                   </div>
                 </div>
@@ -1468,10 +1528,26 @@ export default function G60gyeDemoPage() {
                   <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-[#f39c12]/15 text-[#f39c12] border border-[#f39c12]/30">
                     {orderType === 'takeout' ? '방문 포장' : '안전 배달'}
                   </span>
+                  {(currentOrderState?.status === 'cancelled' || recentOrder?.status === 'cancelled') && (
+                    <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-700">
+                      취소됨
+                    </span>
+                  )}
                 </div>
-                <span className="text-[9px] text-slate-500 font-mono">
-                  {currentOrderId ? `#${currentOrderId.slice(-6)}` : ''}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-slate-500 font-mono">
+                    {currentOrderId ? `#${currentOrderId.slice(-6)}` : ''}
+                  </span>
+                  {(currentOrderState?.status === 'cancelled' || recentOrder?.status === 'cancelled') && (
+                    <button
+                      type="button"
+                      onClick={resetAndClearOrder}
+                      className="text-[9px] text-red-300 hover:text-white bg-red-950/80 hover:bg-red-900 border border-red-700 px-2 py-1 rounded-md transition-colors font-bold"
+                    >
+                      영수증 지우기 ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 주문 품목 리스트 */}
@@ -1584,13 +1660,10 @@ export default function G60gyeDemoPage() {
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  setCart([]);
-                  setCurrentStep(1);
-                }}
+                onClick={resetAndClearOrder}
                 className="h-11 px-6 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-350 hover:text-white font-bold rounded-xl text-xs transition-colors"
               >
-                신규 주문으로 돌아가기
+                신규 주문으로 돌아가기 (영수증 초기화)
               </button>
             </div>
 
