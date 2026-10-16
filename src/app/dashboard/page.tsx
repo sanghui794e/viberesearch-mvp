@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, ResearchRequest } from '@/lib/db';
 import { auth, AuthSession } from '@/lib/auth';
@@ -242,6 +243,25 @@ export default function UserDashboard() {
             </span>
           </div>
 
+          {/* 에이전트 바로가기 배너 */}
+          <Link href="/agent" className="block group">
+            <div className="bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/45 p-3 rounded-xl transition-all space-y-1.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                  <span>AI-NATIVE 신기능</span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              </div>
+              <span className="text-xs font-bold text-slate-200 block group-hover:text-primary transition-colors">
+                의사결정 에이전트 (Focus)
+              </span>
+              <p className="text-[9px] text-slate-500 leading-normal">
+                0초 의사결정 대안 3가지 제안 및 자율 배포 파이프라인 체험
+              </p>
+            </div>
+          </Link>
+
           <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">멤버십 계정</span>
             <span className="text-xs font-semibold text-slate-300 break-all">{session?.email}</span>
@@ -477,16 +497,23 @@ export default function UserDashboard() {
                   지역 밀착형 고객 유입을 타겟으로 설계된 고전환 랜딩 페이지입니다. 깨끗한 조리 과정(ASMR) 홍보와 오프라인 방문 혜택 쿠폰 연동을 통해 매출을 극대화한 핵심 모델입니다.
                 </p>
               </div>
-              <div className="p-5 pt-0">
+              <div className="p-5 pt-0 flex gap-2">
                 <a 
                   href="https://youngwol-chicken.co.kr/#reservation" 
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-9 bg-slate-800 hover:bg-primary hover:text-primary-foreground text-slate-350 hover:text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all"
+                  className="flex-1 h-9 bg-slate-800 hover:bg-slate-700 text-slate-350 hover:text-white font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-all"
                 >
-                  <span>라이브 데모 사이트 보기</span>
+                  <span>기존 홈페이지 보기</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </a>
+                <Link 
+                  href="/demo/60gye"
+                  className="flex-1 h-9 bg-primary hover:bg-primary/95 text-white font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-all shadow-md shadow-primary/10"
+                >
+                  <span>간편 주문 리디자인 시안</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
 

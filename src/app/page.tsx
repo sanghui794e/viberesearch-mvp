@@ -62,6 +62,13 @@ export default function LandingPage() {
             <Link href="#how-it-works" className="text-xs font-semibold text-slate-400 hover:text-primary transition-colors">
               이용 방법
             </Link>
+            <Link href="/pricing" className="text-xs font-semibold text-slate-400 hover:text-primary transition-colors">
+              요금제
+            </Link>
+            <Link href="/agent" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              <span>의사결정 에이전트</span>
+            </Link>
             
             {session ? (
               <Link
