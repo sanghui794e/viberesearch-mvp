@@ -61,7 +61,35 @@ export default function KitchenDashboardPage() {
   const [pauseReasonInput, setPauseReasonInput] = useState<string>('매장 주문 폭주로 인해 잠시 주문 접수를 일시 정지합니다.');
 
   const prevOrderCountRef = useRef<number>(0);
+  const prevOrdersRef = useRef<Order[]>([]);
   const isInitialLoadRef = useRef<boolean>(true);
+
+  // 고객 주문 취소 감지 시 음성 낭독 (경보음 없이 차분하게 "주문이 취소되었습니다."만 방송)
+  const playOrderCancelledVoice = () => {
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance('주문이 취소되었습니다.');
+        utter.lang = 'ko-KR';
+        utter.volume = Math.min(1, volume * 1.3);
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+      }
+    } catch (e) {
+      console.warn('Voice cancel announce error:', e);
+    }
+  };
+
+  // 취소된 주문 카드를 주방 전광판 화면에서 즉시 영구 제거
+  const dismissOrder = (orderId: string) => {
+    const updated = orders.filter(o => o.id !== orderId);
+    setOrders(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
 
   // 중앙 서버 실시간 주문 Polling 및 동기화
   const loadOrders = async () => {
@@ -73,12 +101,21 @@ export default function KitchenDashboardPage() {
           if (Array.isArray(json.orders)) {
             const serverOrders: Order[] = json.orders;
             
-            // 새 주문 감지 시 띵동 알림음 울리기!
-            if (!isInitialLoadRef.current && serverOrders.length > prevOrderCountRef.current) {
-              if (soundEnabled) {
-                playAlertSound();
+            // 취소된 주문 감지 (이전에는 취소가 아니었는데 이번에 cancelled가 된 경우)
+            if (!isInitialLoadRef.current && prevOrdersRef.current.length > 0) {
+              const newlyCancelled = serverOrders.find(so => 
+                so.status === 'cancelled' && 
+                prevOrdersRef.current.some(po => po.id === so.id && po.status !== 'cancelled')
+              );
+              if (newlyCancelled) {
+                playOrderCancelledVoice();
+              } else if (serverOrders.length > prevOrderCountRef.current) {
+                if (soundEnabled) {
+                  playAlertSound();
+                }
               }
             }
+            prevOrdersRef.current = serverOrders;
             prevOrderCountRef.current = serverOrders.length;
             isInitialLoadRef.current = false;
 
@@ -933,9 +970,19 @@ export default function KitchenDashboardPage() {
                         )}
 
                         {order.status === 'cancelled' && (
-                          <span className="text-[10px] font-extrabold text-red-400 bg-red-950/40 border border-red-800 px-2.5 py-1.5 rounded-xl">
-                            거절 완료 🚫
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-extrabold text-red-400 bg-red-950/40 border border-red-800 px-2.5 py-1.5 rounded-xl">
+                              취소 / 거절됨 🚫
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => dismissOrder(order.id)}
+                              className="h-8 px-2.5 bg-red-600 hover:bg-red-500 text-white text-[11px] font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1"
+                              title="이 취소 주문을 주방 전광판에서 완전히 지웁니다."
+                            >
+                              <span>지우기 ✕</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

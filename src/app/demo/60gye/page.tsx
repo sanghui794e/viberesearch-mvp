@@ -389,6 +389,30 @@ export default function G60gyeDemoPage() {
   const getTotalPrice = () => getSubtotal() - getDiscount() + getDeliveryFee();
 
   // 픽업/배달 완료 목표 시각 계산 헬퍼
+  // 픽업/완료 목표 시각까지 남은 분(Minutes) 계산 헬퍼
+  const getRemainingMinutes = () => {
+    try {
+      const orderIdStr = currentOrderId || currentOrderState?.id || '';
+      if (orderIdStr.startsWith('ord-')) {
+        const createdMs = parseInt(orderIdStr.replace('ord-', ''), 10);
+        if (!isNaN(createdMs)) {
+          const totalDuration = currentOrderState?.minutesToAdd || 30;
+          const passedMin = (Date.now() - createdMs) / 60000;
+          return Math.max(0, Math.floor(totalDuration - passedMin));
+        }
+      }
+      const targetStr = currentOrderState?.targetPickupTime;
+      if (targetStr && targetStr.includes(':')) {
+        const [h, m] = targetStr.split(':').map(Number);
+        const now = new Date();
+        const target = new Date();
+        target.setHours(h, m, 0, 0);
+        return Math.max(0, Math.floor((target.getTime() - now.getTime()) / 60000));
+      }
+    } catch (e) {}
+    return 30;
+  };
+
   const getTargetPickupTime = (type: 'takeout' | 'delivery', selectedPickupStr: string) => {
     const now = new Date();
     let minutesToAdd = 30; // 기본 30분
@@ -1823,36 +1847,56 @@ export default function G60gyeDemoPage() {
               </a>
             </div>
 
-            {/* 조리 전(대기 상태) 고객 직접 취소 버튼 */}
-            {currentOrderState?.status === 'pending' && (
-              <div className="pt-1 max-w-sm mx-auto space-y-1.5">
+            {/* [방어선 1] 사장님이 이미 조리 시작(cooking) 또는 완료(done)한 경우 (로스 방어) */}
+            {(currentOrderState?.status === 'cooking' || currentOrderState?.status === 'done') && (
+              <div className="pt-1 max-w-sm mx-auto space-y-1.5 animate-fade-in">
+                <div className="bg-orange-950/40 border border-orange-500/50 rounded-2xl p-3.5 text-left space-y-1 shadow-lg">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-orange-400">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>🔥 치킨 조리 진행 중 (앱 직접 취소 마감)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    주방에서 깨끗한 새 기름으로 치킨을 이미 튀기는 중이므로 앱 직접 취소가 마감되었습니다. 급한 일정 변경이나 취소 문의는 매장 직통 전화(033-374-6660)로 직접 문의해 주시기 바랍니다.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* [방어선 2] 조리 시작 전(pending)이지만, 남은 시간이 20분 이내로 진입한 경우 (대표님 20분 전 마감 룰) */}
+            {currentOrderState?.status === 'pending' && getRemainingMinutes() <= 20 && (
+              <div className="pt-1 max-w-sm mx-auto space-y-1.5 animate-fade-in">
+                <div className="bg-amber-950/40 border border-amber-500/60 rounded-2xl p-3.5 text-left space-y-1.5 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-400">
+                      <Clock className="w-4 h-4" />
+                      <span>조리 준비 골든타임 진입 (남은 시간 20분 이내)</span>
+                    </div>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-full border border-amber-500/30">
+                      남은 시간 {getRemainingMinutes()}분
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    조리 완료 20분 전부터는 식재료 반죽 및 튀김 준비에 들어가므로 앱 직접 취소가 마감되었습니다. 부득이한 취소나 요청은 매장(033-374-6660)으로 직접 전화 주세요.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* [방어선 3] 조리 시작 전(pending)이고 남은 시간이 20분 초과인 경우 (즉시 직접 취소 가능) */}
+            {currentOrderState?.status === 'pending' && getRemainingMinutes() > 20 && (
+              <div className="pt-1 max-w-sm mx-auto space-y-1.5 animate-fade-in">
                 <button
                   type="button"
                   onClick={() => setShowCustomerCancelModal(true)}
-                  className="w-full h-11 bg-red-950/30 hover:bg-red-900/50 border border-red-800/60 text-red-400 hover:text-white font-extrabold rounded-2xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                  className="w-full h-11 bg-red-950/40 hover:bg-red-900/60 border border-red-700/70 text-red-300 hover:text-white font-extrabold rounded-2xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
                 >
                   <X className="w-4 h-4" />
                   <span>주문 취소하기 (조리 전 즉시 취소)</span>
                 </button>
-                <p className="text-[10px] text-slate-500">
-                  *아직 주방에서 치킨을 튀기기 전이므로 즉시 취소하실 수 있습니다.
-                </p>
-              </div>
-            )}
-
-            {/* 조리 진행 중 / 완료 상태일 때 취소 안내 버튼 */}
-            {(currentOrderState?.status === 'cooking' || currentOrderState?.status === 'done') && (
-              <div className="pt-1 max-w-sm mx-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    alert("⚠️ 이미 주방에서 깨끗한 새 기름으로 치킨을 맛있게 튀기는 중입니다!\n\n식재료 조리가 시작된 이후에는 앱에서 임의 취소가 불가하오니, 변경이나 취소가 급하신 경우 매장(033-374-6660)으로 직접 전화 주시면 빠르게 도와드리겠습니다. 😊");
-                  }}
-                  className="w-full h-9 bg-slate-900 border border-[#3d2c27] text-slate-400 hover:text-white font-medium rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
-                  <span>치킨 조리 시작 후 취소/변경 안내</span>
-                </button>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                  <span>*조리 시작 전 및 남은 시간 20분 전까지만 즉시 취소 가능</span>
+                  <span className="text-amber-400 font-bold">취소 가능 잔여: 약 {getRemainingMinutes() - 20}분</span>
+                </div>
               </div>
             )}
 
