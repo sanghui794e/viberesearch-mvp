@@ -436,6 +436,8 @@ export default function G60gyeDemoPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [currentOrderState, setCurrentOrderState] = useState<any | null>(null);
   const [recentOrder, setRecentOrder] = useState<any | null>(null);
+  // 동일 고객의 모든 주문 내역 목록 (복수/다중 주문 지원)
+  const [myOrders, setMyOrders] = useState<any[]>([]);
   const [storeSettings, setStoreSettings] = useState<{ isPaused: boolean; pauseReason: string }>({ isPaused: false, pauseReason: '' });
 
   useEffect(() => {
@@ -493,32 +495,33 @@ export default function G60gyeDemoPage() {
     }
   };
 
-  // 로컬스토리지에서 최근 주문을 실시간 감지하여 불러오는 함수
+  // 로컬스토리지에서 나의 모든 주문 목록 및 활성 주문을 실시간 불러오는 함수
   const loadRecentOrder = () => {
     if (typeof window !== 'undefined') {
       try {
-        const latestId = localStorage.getItem('youngwol_latest_order_id');
-        if (!latestId) {
-          // 활성 주문 식별자가 없으면 최근 주문 상태를 null로 비움 (과거 주문 임의 로딩 방지)
-          setRecentOrder(null);
-          return;
-        }
         const ordersData = localStorage.getItem('youngwol_orders');
         if (ordersData) {
           const list = JSON.parse(ordersData);
           if (Array.isArray(list) && list.length > 0) {
-            const found = list.find((o: any) => o.id === latestId);
+            setMyOrders(list);
+
+            const latestId = localStorage.getItem('youngwol_latest_order_id');
+            // 현재 선택된 ID가 목록에 있으면 그것을, 없으면 최신 ID를, 그것도 없으면 첫 번째 주문을 선택
+            const targetId = currentOrderId || latestId || list[0].id;
+            const found = list.find((o: any) => o.id === targetId) || list[0];
+
             if (found) {
               setRecentOrder(found);
-              if (!currentOrderId && found.id) {
+              if (!currentOrderId) {
                 setCurrentOrderId(found.id);
                 setCurrentOrderState(found);
               }
-            } else {
-              setRecentOrder(null);
             }
+            return;
           }
         }
+        setMyOrders([]);
+        setRecentOrder(null);
       } catch (e) {
         console.error('loadRecentOrder error:', e);
       }
@@ -634,8 +637,10 @@ export default function G60gyeDemoPage() {
     };
 
     const existingOrders = JSON.parse(localStorage.getItem('youngwol_orders') || '[]');
-    localStorage.setItem('youngwol_orders', JSON.stringify([orderData, ...existingOrders]));
+    const updatedOrderList = [orderData, ...existingOrders];
+    localStorage.setItem('youngwol_orders', JSON.stringify(updatedOrderList));
     localStorage.setItem('youngwol_latest_order_id', orderId);
+    setMyOrders(updatedOrderList);
     setRecentOrder(orderData);
     
     // 중앙 서버 주문 동기화 API 호출 (다중 기기 동기화용)
@@ -677,6 +682,14 @@ export default function G60gyeDemoPage() {
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {
+              // 나의 모든 주문 목록 상태를 서버 최신 상태와 동기화
+              setMyOrders(prevList => {
+                return prevList.map(localOrd => {
+                  const serverMatch = json.orders.find((so: any) => so.id === localOrd.id);
+                  return serverMatch ? { ...localOrd, ...serverMatch } : localOrd;
+                });
+              });
+
               const found = json.orders.find((o: any) => o.id === orderIdToFind);
               if (found) {
                 setCurrentOrderState(found);
@@ -867,7 +880,9 @@ export default function G60gyeDemoPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-[#f39c12]">방금 주문하신 내역이 있습니다!</span>
+                      <span className="text-xs font-black text-[#f39c12]">
+                        {myOrders.length > 1 ? `총 ${myOrders.length}건의 주문 내역이 있습니다!` : '방금 주문하신 내역이 있습니다!'}
+                      </span>
                       <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-extrabold">
                         {recentOrder.status === 'cooking' ? '🔥 맛있게 조리 중' : recentOrder.status === 'done' ? '🛍️ 준비 완료' : '접수 완료'}
                       </span>
@@ -1525,6 +1540,67 @@ export default function G60gyeDemoPage() {
         {/* STEP 3: ORDER TRACKING SIMULATOR */}
         {currentStep === 3 && (
           <div className="space-y-6 animate-fade-in text-center py-6">
+
+            {/* 복수 주문 전환 탭 바 (동일 고객 다중 주문 완벽 지원) */}
+            {myOrders.length > 1 && (
+              <div className="bg-[#18100e] border-2 border-[#f39c12]/60 rounded-2xl p-3 max-w-sm mx-auto shadow-2xl space-y-2 text-left animate-fade-in">
+                <div className="flex items-center justify-between border-b border-[#2d1f1b] pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">📋</span>
+                    <span className="text-xs font-black text-white">내가 주문한 내역 (총 {myOrders.length}건)</span>
+                  </div>
+                  <span className="text-[10px] text-[#f39c12] font-black bg-[#f39c12]/15 px-2 py-0.5 rounded-full border border-[#f39c12]/30">
+                    탭하여 이전 주문 전환
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {myOrders.map((ord, idx) => {
+                    const isSelected = ord.id === (currentOrderId || currentOrderState?.id);
+                    return (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        onClick={() => {
+                          setCurrentOrderId(ord.id);
+                          setCurrentOrderState(ord);
+                          if (ord.status === 'cancelled') setTrackStep(-1);
+                          else if (ord.status === 'cooking') setTrackStep(3);
+                          else if (ord.status === 'done') setTrackStep(4);
+                          else if (ord.status === 'accepted') setTrackStep(2);
+                          else setTrackStep(1);
+                        }}
+                        className={`p-2.5 rounded-xl text-left border transition-all ${
+                          isSelected
+                            ? 'bg-[#f39c12] text-[#1a1210] border-[#f39c12] font-black shadow-lg scale-[1.02]'
+                            : 'bg-[#0d0705] text-slate-300 border-[#3d2720] hover:border-[#f39c12]/50 font-bold'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] mb-1">
+                          <span className={isSelected ? 'text-[#1a1210] font-black' : 'text-[#f39c12]'}>
+                            {idx === 0 ? '최신 주문' : `이전 주문 #${myOrders.length - idx}`}
+                          </span>
+                          <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded ${
+                            isSelected 
+                              ? 'bg-[#1a1210] text-white' 
+                              : (ord.status === 'cooking' ? 'bg-orange-500/20 text-orange-400' : ord.status === 'done' ? 'bg-emerald-500/20 text-emerald-400' : ord.status === 'cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-300')
+                          }`}>
+                            {ord.status === 'cooking' ? '조리중' : ord.status === 'done' ? '완료' : ord.status === 'cancelled' ? '취소' : '대기중'}
+                          </span>
+                        </div>
+                        <div className="text-xs truncate font-bold">
+                          {ord.items?.[0]?.name} {ord.items?.length > 1 ? `외 ${ord.items.length - 1}건` : ''}
+                        </div>
+                        <div className={`text-[10px] mt-1 flex justify-between items-center ${isSelected ? 'text-[#1a1210]/80 font-bold' : 'text-slate-400'}`}>
+                          <span>{ord.total?.toLocaleString()}원</span>
+                          <span className="font-mono text-[9px]">{ord.targetPickupTime || ord.timestamp}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             {/* CANCELLATION STATE VIEW */}
             {currentOrderState?.status === 'cancelled' || trackStep === -1 ? (

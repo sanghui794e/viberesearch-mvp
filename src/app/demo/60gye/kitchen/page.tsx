@@ -881,6 +881,12 @@ export default function KitchenDashboardPage() {
                           }`}>
                             {order.orderType === 'takeout' ? '방문 포장' : '배달'}
                           </span>
+                          {/* 동일 고객 다중 주문 감지 뱃지 */}
+                          {orders.filter(o => o.id !== order.id && o.phone === order.phone && o.status !== 'cancelled').length > 0 && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
+                              ⚡ 동일고객 추가주문
+                            </span>
+                          )}
                         </div>
                       </div>
 
