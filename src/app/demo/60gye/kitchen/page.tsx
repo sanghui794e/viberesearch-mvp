@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Printer, Check, X, ShieldCheck, HelpCircle, Volume2, 
-  Clock, ShoppingBag, MapPin, Phone, AlertCircle, ArrowLeft, RefreshCw
+  Clock, ShoppingBag, MapPin, Phone, AlertCircle, ArrowLeft, RefreshCw,
+  PauseCircle, Play, AlertTriangle
 } from 'lucide-react';
 
 interface OrderItem {
@@ -34,14 +35,26 @@ interface Order {
   total: number;
   timestamp: string;
   status: 'pending' | 'accepted' | 'cooking' | 'done' | 'cancelled';
+  cancelReason?: string;
 }
 
 export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'cooking' | 'done'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'cooking' | 'done' | 'cancelled'>('all');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
+
+  // 거절 사유 모달 상태
+  const [rejectModalOrder, setRejectModalOrder] = useState<Order | null>(null);
+  const [selectedRejectReason, setSelectedRejectReason] = useState<string>('🍗 재료 소진 / 품절');
+  const [customRejectReason, setCustomRejectReason] = useState<string>('');
+  const [alsoPauseStoreOnReject, setAlsoPauseStoreOnReject] = useState<boolean>(false);
+
+  // 매장 주문 일시정지 (품절 접수 중단) 상태
+  const [isStorePaused, setIsStorePaused] = useState<boolean>(false);
+  const [pauseModalOpen, setPauseModalOpen] = useState<boolean>(false);
+  const [pauseReasonInput, setPauseReasonInput] = useState<string>('매장 주문 폭주로 인해 잠시 주문 접수를 일시 정지합니다.');
 
   const prevOrderCountRef = useRef<number>(0);
   const isInitialLoadRef = useRef<boolean>(true);
@@ -52,21 +65,26 @@ export default function KitchenDashboardPage() {
       const res = await fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        if (json.ok && Array.isArray(json.orders)) {
-          const serverOrders: Order[] = json.orders;
-          
-          // 새 주문 감지 시 띵동 알림음 울리기!
-          if (!isInitialLoadRef.current && serverOrders.length > prevOrderCountRef.current) {
-            if (soundEnabled) {
-              playAlertSound();
+        if (json.ok) {
+          if (Array.isArray(json.orders)) {
+            const serverOrders: Order[] = json.orders;
+            
+            // 새 주문 감지 시 띵동 알림음 울리기!
+            if (!isInitialLoadRef.current && serverOrders.length > prevOrderCountRef.current) {
+              if (soundEnabled) {
+                playAlertSound();
+              }
+            }
+            prevOrderCountRef.current = serverOrders.length;
+            isInitialLoadRef.current = false;
+
+            setOrders(serverOrders);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('youngwol_orders', JSON.stringify(serverOrders));
             }
           }
-          prevOrderCountRef.current = serverOrders.length;
-          isInitialLoadRef.current = false;
-
-          setOrders(serverOrders);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('youngwol_orders', JSON.stringify(serverOrders));
+          if (json.storeSettings) {
+            setIsStorePaused(!!json.storeSettings.isPaused);
           }
           return;
         }
@@ -141,10 +159,14 @@ export default function KitchenDashboardPage() {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status'], cancelReason?: string) => {
     const updated = orders.map(ord => {
       if (ord.id === orderId) {
-        return { ...ord, status: newStatus };
+        return { 
+          ...ord, 
+          status: newStatus,
+          ...(cancelReason ? { cancelReason } : {})
+        };
       }
       return ord;
     });
@@ -157,11 +179,56 @@ export default function KitchenDashboardPage() {
       await fetch('/api/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: orderId, status: newStatus })
+        body: JSON.stringify({ 
+          id: orderId, 
+          status: newStatus,
+          cancelReason 
+        })
       });
     } catch (e) {
       console.log('Central Server PATCH error:', e);
     }
+  };
+
+  // 매장 주문 일시정지 모드 토글
+  const toggleStorePause = async (pause: boolean, reason?: string) => {
+    setIsStorePaused(pause);
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isStorePaused: pause,
+          pauseReason: reason || (pause ? '현재 매장 주문 폭주로 인해 잠시 주문 접수를 일시 정지합니다.' : '')
+        })
+      });
+    } catch (e) {
+      console.log('Store pause toggle error:', e);
+    }
+  };
+
+  // 거절 버튼 클릭 시 모달 열기
+  const handleRejectClick = (order: Order) => {
+    setRejectModalOrder(order);
+    setSelectedRejectReason('🍗 재료 소진 / 품절');
+    setCustomRejectReason('');
+    setAlsoPauseStoreOnReject(false);
+  };
+
+  // 거절 모달에서 사유 선택 후 최종 전송
+  const confirmRejectOrder = async () => {
+    if (!rejectModalOrder) return;
+    const finalReason = selectedRejectReason === 'custom'
+      ? (customRejectReason.trim() || '매장 사정으로 인한 주문 취소')
+      : selectedRejectReason;
+
+    await updateOrderStatus(rejectModalOrder.id, 'cancelled', finalReason);
+
+    if (alsoPauseStoreOnReject) {
+      await toggleStorePause(true, finalReason);
+    }
+
+    setRejectModalOrder(null);
   };
 
   const handlePrintClick = (order: Order) => {
@@ -219,54 +286,57 @@ export default function KitchenDashboardPage() {
             <div>고객 성함: {selectedOrderForPrint.name} 님</div>
             <div>연락처: {selectedOrderForPrint.phone}</div>
             {selectedOrderForPrint.orderType === 'delivery' && (
-              <div className="font-bold">주소: {selectedOrderForPrint.address}</div>
+              <div className="font-bold">배달 주소: {selectedOrderForPrint.address}</div>
+            )}
+            {selectedOrderForPrint.requestText && (
+              <div className="bg-slate-100 p-1 rounded font-bold border border-slate-300">
+                요청: {selectedOrderForPrint.requestText}
+              </div>
             )}
           </div>
 
-          <div className="border-b border-dashed border-black pb-1.5 mb-2">
-            <div className="grid grid-cols-12 font-bold mb-1 border-b border-black pb-1">
-              <span className="col-span-8">메뉴명 (옵션)</span>
-              <span className="col-span-2 text-center">수량</span>
-              <span className="col-span-2 text-right">금액</span>
+          <div className="border-b border-black pb-2 mb-2">
+            <div className="font-bold border-b border-slate-200 pb-1 mb-1 flex justify-between">
+              <span>품명 [부위]</span>
+              <span>수량</span>
             </div>
             {selectedOrderForPrint.items.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 mb-1">
-                <div className="col-span-8">
-                  {item.name}
-                  <span className="block text-[10px] text-gray-700">-{item.type}</span>
-                  {item.isCustom && item.customDetails && (
-                    <span className="block text-[9px] text-red-700">요청: {item.customDetails}</span>
-                  )}
-                </div>
-                <span className="col-span-2 text-center">{item.quantity}</span>
-                <span className="col-span-2 text-right">{(item.price * item.quantity).toLocaleString()}</span>
+              <div key={idx} className="flex justify-between py-0.5 font-bold">
+                <span>{item.name} [{item.type}]</span>
+                <span>{item.quantity}</span>
               </div>
             ))}
           </div>
 
-          <div className="space-y-1 text-right text-[11px] mb-2 border-b border-dashed border-black pb-2">
-            <div>상품 금액: {selectedOrderForPrint.subtotal.toLocaleString()}원</div>
-            {selectedOrderForPrint.discount > 0 && <div>포장 할인: -{selectedOrderForPrint.discount.toLocaleString()}원</div>}
-            {selectedOrderForPrint.deliveryFee > 0 && <div>배달료: +{selectedOrderForPrint.deliveryFee.toLocaleString()}원</div>}
-            <div className="font-extrabold text-sm mt-1">합계 금액: {selectedOrderForPrint.total.toLocaleString()}원</div>
+          <div className="text-right space-y-0.5 text-[11px]">
+            <div>주문 금액: {selectedOrderForPrint.subtotal.toLocaleString()}원</div>
+            {selectedOrderForPrint.discount > 0 && (
+              <div>할인 (포장 혜택): -{selectedOrderForPrint.discount.toLocaleString()}원</div>
+            )}
+            {selectedOrderForPrint.deliveryFee > 0 && (
+              <div>배달 요금: +{selectedOrderForPrint.deliveryFee.toLocaleString()}원</div>
+            )}
+            <div className="text-sm font-black border-t border-black pt-1 mt-1">
+              최종 결제: {selectedOrderForPrint.total.toLocaleString()}원
+            </div>
+            <div className="text-[10px] text-slate-600">결제 방식: {getPaymentLabel(selectedOrderForPrint.paymentMethod)}</div>
           </div>
 
-          <div className="text-[11px] mb-4">
-            <span className="font-bold block">[요청 사항]</span>
-            <span className="block italic">{selectedOrderForPrint.requestText || '요청사항 없음'}</span>
-          </div>
-
-          <div className="text-center text-[10px] pt-2 border-t border-dashed border-black">
-            - 신선한 새 기름으로 60마리만 튀깁니다 -<br/>
-            이용해 주셔서 대단히 감사합니다.
+          <div className="text-center text-[10px] mt-4 border-t border-dashed border-black pt-2">
+            매일 새 기름(기름 한 통으로 60마리만!)<br/>
+            맛있고 정직하게 튀겼습니다. 감사합니다!
           </div>
         </div>
       )}
 
-      {/* Main Dashboard Screen Area */}
-      <header className="border-b border-[#32231e] bg-[#1a1210] px-6 py-4 flex items-center justify-between print:hidden">
+      {/* Screen Header Bar */}
+      <header className="bg-[#140e0c] border-b border-[#2d1d19] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
-          <Link href="/demo/60gye" className="text-slate-400 hover:text-white transition-colors">
+          <Link 
+            href="/demo/60gye"
+            className="p-2 bg-[#1f1715] hover:bg-[#2b1f1c] rounded-xl text-slate-400 hover:text-white transition-colors"
+            title="고객 주문앱으로 돌아가기"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -278,23 +348,45 @@ export default function KitchenDashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 매장 주문 일시정지 (품절 접수 중단) 스위치 */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isStorePaused) {
+                toggleStorePause(false);
+              } else {
+                setPauseModalOpen(true);
+              }
+            }}
+            className={`h-9 px-3.5 rounded-xl border text-xs font-black flex items-center gap-1.5 transition-all shadow-md ${
+              isStorePaused
+                ? 'bg-red-600 hover:bg-red-500 border-red-400 text-white animate-pulse'
+                : 'bg-amber-950/30 hover:bg-amber-900/50 border-amber-600/40 text-amber-300'
+            }`}
+            title="주문 폭주 또는 재료 준비 시 모바일 주문 일시정지"
+          >
+            <PauseCircle className="w-4 h-4" />
+            <span>{isStorePaused ? '⚠️ [영업 일시정지 중] 해제' : '⏸️ 주문 일시정지 (품절)'}</span>
+          </button>
+
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`h-9 px-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`h-9 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
               soundEnabled 
                 ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' 
                 : 'bg-slate-900 border-[#3d2c27] text-slate-500'
             }`}
           >
             <Volume2 className="w-4 h-4" />
-            <span>신규 주문 알림음: {soundEnabled ? 'ON' : 'OFF'}</span>
+            <span>알림음: {soundEnabled ? 'ON' : 'OFF'}</span>
           </button>
+
           <button
             onClick={clearAllOrders}
-            className="h-9 px-3.5 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"
+            className="h-9 px-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"
           >
-            모든 주문 리셋
+            주문 리셋
           </button>
         </div>
       </header>
@@ -355,6 +447,18 @@ export default function KitchenDashboardPage() {
                 <span>완료 🛍️</span>
                 <span>({orders.filter(o => o.status === 'done').length})</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('cancelled')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                  filterTab === 'cancelled'
+                    ? 'bg-red-600 text-white shadow'
+                    : 'bg-[#1c1310] text-red-400 hover:text-white border border-[#3d2c27]'
+                }`}
+              >
+                <span>거절/취소 🚫</span>
+                <span>({orders.filter(o => o.status === 'cancelled').length})</span>
+              </button>
             </div>
 
             <button 
@@ -384,7 +488,9 @@ export default function KitchenDashboardPage() {
                         ? '대기 중인 신규 주문이 없습니다.'
                         : filterTab === 'cooking'
                           ? '현재 조리 중인 치킨이 없습니다.'
-                          : '완료된 주문이 없습니다.'}
+                          : filterTab === 'done'
+                            ? '완료된 주문이 없습니다.'
+                            : '취소/거절된 주문이 없습니다.'}
                   </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                     손님이 스마트폰 주문앱에서 주문을 완료하면 실시간으로 띵동 소리와 함께 이곳에 주문 카드가 똬악 뜹니다!
@@ -403,7 +509,9 @@ export default function KitchenDashboardPage() {
                         ? 'border-[#f39c12] shadow-lg shadow-[#f39c12]/15 ring-2 ring-[#f39c12]/40' 
                         : order.status === 'cooking'
                           ? 'border-orange-500/70 shadow-lg shadow-orange-500/10'
-                          : 'border-emerald-500/40 bg-[#161412]'
+                          : order.status === 'done'
+                            ? 'border-emerald-500/40 bg-[#161412]'
+                            : 'border-red-600/50 bg-[#190d0b]'
                     }`}
                   >
                     <div className="space-y-3">
@@ -422,9 +530,17 @@ export default function KitchenDashboardPage() {
                               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
                               : order.status === 'cooking'
                                 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
-                                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                : order.status === 'done'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                  : 'bg-red-500/20 text-red-400 border border-red-500/40'
                           }`}>
-                            {order.status === 'pending' ? '⏳ 승인 대기' : order.status === 'cooking' ? '🔥 조리 중' : '🛍️ 준비 완료'}
+                            {order.status === 'pending' 
+                              ? '⏳ 승인 대기' 
+                              : order.status === 'cooking' 
+                                ? '🔥 조리 중' 
+                                : order.status === 'done'
+                                  ? '🛍️ 준비 완료'
+                                  : '🚫 주문 거절됨'}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                             order.orderType === 'takeout' 
@@ -436,33 +552,41 @@ export default function KitchenDashboardPage() {
                         </div>
                       </div>
 
+                      {/* 거절된 주문인 경우 사유 표시 */}
+                      {order.status === 'cancelled' && (
+                        <div className="bg-red-950/40 border border-red-800/50 rounded-xl p-2.5 text-xs text-red-350 space-y-1">
+                          <div className="font-bold text-red-400 flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>고객에게 전송된 거절 사유</span>
+                          </div>
+                          <p className="text-[11px] text-slate-200 pl-4 border-l border-red-500/40">
+                            {order.cancelReason || '🍗 재료 소진 / 품절'}
+                          </p>
+                        </div>
+                      )}
+
                       {/* 대형 조리/방문 완료 목표 시간 뱃지 */}
-                      <div className="bg-[#241712] border border-[#f39c12]/40 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[10px] font-bold text-slate-400">조리/방문 목표</span>
-                        <span className="text-sm font-black text-[#f39c12] flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-[#f39c12]" />
-                          <span>{order.targetPickupTime || '18:10'} 완료</span>
-                          <span className="text-[9px] text-slate-400 font-normal">({order.pickupTime || '45분 뒤'})</span>
-                        </span>
-                      </div>
+                      {order.status !== 'cancelled' && (
+                        <div className="bg-[#241712] border border-[#f39c12]/40 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                          <span className="text-[10px] font-bold text-slate-400">조리/방문 목표</span>
+                          <span className="text-sm font-black text-[#f39c12] flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-[#f39c12]" />
+                            <span>{order.targetPickupTime || '18:10'} 완료</span>
+                            <span className="text-[9px] text-slate-400 font-normal">({order.pickupTime || '45분 뒤'})</span>
+                          </span>
+                        </div>
+                      )}
 
                       {/* Order Details */}
                       <div className="space-y-1 text-xs text-slate-300">
-                        <div className="flex gap-2">
-                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <a href={`tel:${order.phone}`} className="font-semibold text-slate-200 hover:text-[#f39c12] underline decoration-dotted">
-                            {order.phone}
-                          </a>
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="w-3 h-3 text-slate-500" />
+                          <span className="font-mono">{order.phone}</span>
                         </div>
-                        {order.orderType === 'delivery' ? (
-                          <div className="flex gap-2">
-                            <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                            <span className="leading-tight text-slate-200">{order.address}</span>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                            <span className="text-[#f39c12] font-semibold">{order.pickupTime} 방문</span>
+                        {order.orderType === 'delivery' && (
+                          <div className="flex items-start gap-1.5 text-slate-400">
+                            <MapPin className="w-3 h-3 text-slate-500 mt-0.5 shrink-0" />
+                            <span className="leading-tight">{order.address || '주소 정보 없음'}</span>
                           </div>
                         )}
                       </div>
@@ -517,11 +641,12 @@ export default function KitchenDashboardPage() {
                           <>
                             <button
                               type="button"
-                              onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                              title="주문 거절"
-                              className="h-8 px-2.5 rounded-xl bg-red-950/30 hover:bg-red-900 border border-red-900/50 text-red-400 hover:text-white flex items-center transition-colors text-[10px] font-bold"
+                              onClick={() => handleRejectClick(order)}
+                              title="주문 거절 및 사유 선택"
+                              className="h-8 px-3 rounded-xl bg-red-950/40 hover:bg-red-900 border border-red-800 text-red-400 hover:text-white flex items-center gap-1 transition-colors text-xs font-bold active:scale-95"
                             >
-                              거절
+                              <X className="w-3.5 h-3.5" />
+                              <span>거절</span>
                             </button>
                             <button
                               type="button"
@@ -547,6 +672,12 @@ export default function KitchenDashboardPage() {
                         {order.status === 'done' && (
                           <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/40 border border-emerald-800 px-2.5 py-1.5 rounded-xl">
                             완료 처리됨 ✅
+                          </span>
+                        )}
+
+                        {order.status === 'cancelled' && (
+                          <span className="text-[10px] font-extrabold text-red-400 bg-red-950/40 border border-red-800 px-2.5 py-1.5 rounded-xl">
+                            거절 완료 🚫
                           </span>
                         )}
                       </div>
@@ -641,6 +772,159 @@ export default function KitchenDashboardPage() {
         </div>
 
       </main>
+
+      {/* REJECTION REASON MODAL DIALOG */}
+      {rejectModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1c1310] border-2 border-red-500/60 rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl relative text-left">
+            <button
+              type="button"
+              onClick={() => setRejectModalOrder(null)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white text-lg font-bold"
+            >
+              ×
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-red-400 bg-red-950/60 px-2.5 py-0.5 rounded-full border border-red-800 inline-block">
+                주문 취소 및 거절 사유 선택
+              </span>
+              <h3 className="text-base font-black text-white">
+                {rejectModalOrder.name} 님의 주문을 거절하시겠습니까?
+              </h3>
+              <p className="text-xs text-slate-400">
+                선택하신 사유는 고객님의 스마트폰 화면에 즉시 정중한 안내문으로 표시됩니다.
+              </p>
+            </div>
+
+            {/* Quick Reason Buttons */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-350 block">거절 사유 선택</label>
+              {[
+                { id: '🍗 재료 소진 / 품절', text: '🍗 [재료 소진/품절] 주문하신 치킨 재료가 모두 소진되었습니다.' },
+                { id: '🔥 매장 주문 폭주 / 조리 지연', text: '🔥 [매장 주문 폭주] 현재 주문 폭주로 추가 조리가 어렵습니다.' },
+                { id: '🌙 영업 마감 (주문 조기 마감)', text: '🌙 [영업 마감] 금일 매장 영업 및 주문 접수가 마감되었습니다.' },
+                { id: '🛵 배달 불가 지역 / 기상 악화', text: '🛵 [배달 불가] 기상 악화 또는 배달 불가 지역입니다.' },
+                { id: '📞 고객 요청에 의한 취소', text: '📞 [고객 요청] 고객님의 유선 요청으로 주문을 취소합니다.' },
+                { id: 'custom', text: '✍️ 직접 사유 입력하기' }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedRejectReason(item.id)}
+                  className={`w-full text-left p-3 rounded-xl text-xs font-bold transition-all border ${
+                    selectedRejectReason === item.id
+                      ? 'bg-red-950/60 border-red-500 text-white shadow-md'
+                      : 'bg-[#140b09] border-[#3d2c27] text-slate-300 hover:border-red-900'
+                  }`}
+                >
+                  {item.text}
+                </button>
+              ))}
+
+              {selectedRejectReason === 'custom' && (
+                <textarea
+                  value={customRejectReason}
+                  onChange={(e) => setCustomRejectReason(e.target.value)}
+                  placeholder="고객님께 전달할 정중한 취소 사유를 입력해 주세요."
+                  className="w-full h-20 bg-[#140b09] border border-[#3d2c27] focus:border-red-500 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none"
+                />
+              )}
+            </div>
+
+            {/* Also Pause Store Checkbox */}
+            <label className="flex items-center gap-2 p-3 bg-[#140b09] border border-[#3d2c27] rounded-xl cursor-pointer hover:border-amber-700/50">
+              <input
+                type="checkbox"
+                checked={alsoPauseStoreOnReject}
+                onChange={(e) => setAlsoPauseStoreOnReject(e.target.checked)}
+                className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
+              />
+              <span className="text-xs font-bold text-amber-300">
+                ⚠️ 거절과 함께 [매장 주문 일시정지 (품절)]를 즉시 켜기
+              </span>
+            </label>
+
+            {/* Modal Actions */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setRejectModalOrder(null)}
+                className="flex-1 h-11 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition-colors"
+              >
+                닫기 (취소)
+              </button>
+              <button
+                type="button"
+                onClick={confirmRejectOrder}
+                className="flex-1 h-11 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg transition-transform active:scale-95"
+              >
+                <X className="w-4 h-4" />
+                <span>🚨 고객에게 거절 및 사유 전송</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STORE PAUSE / RESUME MODAL DIALOG */}
+      {pauseModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1c1310] border-2 border-amber-500/60 rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl relative text-left">
+            <button
+              type="button"
+              onClick={() => setPauseModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white text-lg font-bold"
+            >
+              ×
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-800 inline-block">
+                매장 모바일 주문 일시정지
+              </span>
+              <h3 className="text-base font-black text-white">
+                신규 모바일 주문 접수를 일시정지하시겠습니까?
+              </h3>
+              <p className="text-xs text-slate-400">
+                일시정지를 켜면 고객 주문앱 화면 상단에 경고 배너가 표시되며 신규 주문 접수가 안전하게 차단됩니다.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-350 block">고객 안내 사유 문구</label>
+              <input
+                type="text"
+                value={pauseReasonInput}
+                onChange={(e) => setPauseReasonInput(e.target.value)}
+                placeholder="예: 매장 주문 폭주로 인해 잠시 주문 접수를 일시 정지합니다."
+                className="w-full h-10 bg-[#140b09] border border-[#3d2c27] focus:border-amber-500 rounded-xl px-3 text-xs text-white placeholder-slate-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPauseModalOpen(false)}
+                className="flex-1 h-11 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition-colors"
+              >
+                닫기 (취소)
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await toggleStorePause(true, pauseReasonInput);
+                  setPauseModalOpen(false);
+                }}
+                className="flex-1 h-11 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg"
+              >
+                <PauseCircle className="w-4 h-4" />
+                <span>일시정지 가동하기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

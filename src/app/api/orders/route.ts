@@ -6,26 +6,37 @@ export const revalidate = 0;
 const GIST_ID = '99f22649b72fe419dabe570bdad42f5e';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ['gho', '_uxKDiTfd9', 'BDKlp59JH9', 'YLtKqh7STe', 'w0xfymV'].join('');
 
+export interface StoreSettings {
+  isPaused: boolean;
+  pauseReason: string;
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __youngwol_orders__: any[] | undefined;
+  // eslint-disable-next-line no-var
+  var __youngwol_store_settings__: StoreSettings | undefined;
   // eslint-disable-next-line no-var
   var __youngwol_orders_last_sync__: number | undefined;
 }
 
 if (!globalThis.__youngwol_orders__) {
   globalThis.__youngwol_orders__ = [];
+  globalThis.__youngwol_store_settings__ = { isPaused: false, pauseReason: '' };
   globalThis.__youngwol_orders_last_sync__ = 0;
 }
 
-// 클라우드 영구 저장소(Gist)에서 최신 주문 목록 동기화
-async function getPersistentOrders(): Promise<any[]> {
+// 클라우드 영구 저장소(Gist)에서 최신 주문 목록 및 매장 설정 동기화
+async function getPersistentData(): Promise<{ orders: any[], storeSettings: StoreSettings }> {
   const now = Date.now();
   const lastSync = globalThis.__youngwol_orders_last_sync__ || 0;
 
   // 1초 캐시를 두어 빠른 연속 호출(Polling) 성능 최적화
   if (globalThis.__youngwol_orders__ && globalThis.__youngwol_orders__.length > 0 && now - lastSync < 1000) {
-    return globalThis.__youngwol_orders__;
+    return {
+      orders: globalThis.__youngwol_orders__,
+      storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+    };
   }
 
   try {
@@ -44,7 +55,20 @@ async function getPersistentOrders(): Promise<any[]> {
         if (Array.isArray(parsed)) {
           globalThis.__youngwol_orders__ = parsed;
           globalThis.__youngwol_orders_last_sync__ = now;
-          return parsed;
+          return {
+            orders: parsed,
+            storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+          };
+        } else if (parsed && Array.isArray(parsed.orders)) {
+          globalThis.__youngwol_orders__ = parsed.orders;
+          if (parsed.storeSettings) {
+            globalThis.__youngwol_store_settings__ = parsed.storeSettings;
+          }
+          globalThis.__youngwol_orders_last_sync__ = now;
+          return {
+            orders: parsed.orders,
+            storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+          };
         }
       }
     }
@@ -52,13 +76,24 @@ async function getPersistentOrders(): Promise<any[]> {
     console.warn('Persistent Gist orders fetch error:', e);
   }
 
-  return globalThis.__youngwol_orders__ || [];
+  return {
+    orders: globalThis.__youngwol_orders__ || [],
+    storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+  };
 }
 
-// 클라우드 영구 저장소(Gist)에 주문 목록 영구 저장
-async function savePersistentOrders(orders: any[]): Promise<void> {
+// 클라우드 영구 저장소(Gist)에 주문 목록 및 매장 설정 영구 저장
+async function savePersistentData(orders: any[], storeSettings?: StoreSettings): Promise<void> {
   globalThis.__youngwol_orders__ = orders;
+  if (storeSettings) {
+    globalThis.__youngwol_store_settings__ = storeSettings;
+  }
   globalThis.__youngwol_orders_last_sync__ = Date.now();
+
+  const payloadToSave = {
+    orders,
+    storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+  };
 
   try {
     await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -71,7 +106,7 @@ async function savePersistentOrders(orders: any[]): Promise<void> {
       body: JSON.stringify({
         files: {
           'orders.json': {
-            content: JSON.stringify(orders, null, 2)
+            content: JSON.stringify(payloadToSave, null, 2)
           }
         }
       })
@@ -82,8 +117,8 @@ async function savePersistentOrders(orders: any[]): Promise<void> {
 }
 
 export async function GET() {
-  const orders = await getPersistentOrders();
-  return NextResponse.json({ ok: true, orders }, { 
+  const { orders, storeSettings } = await getPersistentData();
+  return NextResponse.json({ ok: true, orders, storeSettings }, { 
     status: 200,
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -100,7 +135,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: '유효하지 않은 주문 데이터입니다.' }, { status: 400 });
     }
 
-    const orders = await getPersistentOrders();
+    const { orders, storeSettings } = await getPersistentData();
 
     // 중복 방지 (이미 존재하는 주문이면 갱신, 없으면 맨 앞에 추가)
     const existingIndex = orders.findIndex(o => o.id === newOrder.id);
@@ -117,12 +152,13 @@ export async function POST(request: Request) {
       }
     }
 
-    await savePersistentOrders(orders);
+    await savePersistentData(orders, storeSettings);
 
     return NextResponse.json({ 
       ok: true, 
       order: newOrder, 
-      orders 
+      orders,
+      storeSettings 
     }, { status: 200 });
   } catch (error: any) {
     console.error('Order POST error:', error);
@@ -132,20 +168,44 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { id, status } = await request.json();
-    if (!id || !status) {
-      return NextResponse.json({ ok: false, error: 'id와 status가 필요합니다.' }, { status: 400 });
+    const body = await request.json();
+    const { id, status, cancelReason, isStorePaused, pauseReason } = body;
+
+    const { orders, storeSettings } = await getPersistentData();
+
+    // 매장 일시정지 상태 갱신
+    if (isStorePaused !== undefined) {
+      storeSettings.isPaused = !!isStorePaused;
+      if (pauseReason !== undefined) {
+        storeSettings.pauseReason = pauseReason;
+      }
     }
 
-    const orders = await getPersistentOrders();
-    const order = orders.find(o => o.id === id);
-    if (order) {
-      order.status = status;
-      await savePersistentOrders(orders);
-      return NextResponse.json({ ok: true, order, orders });
+    // 개별 주문 상태 및 거절 사유 갱신
+    if (id && status) {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        order.status = status;
+        if (cancelReason !== undefined) {
+          order.cancelReason = cancelReason;
+        }
+        await savePersistentData(orders, storeSettings);
+        return NextResponse.json({ 
+          ok: true, 
+          order, 
+          orders, 
+          storeSettings 
+        });
+      }
+      return NextResponse.json({ ok: false, error: '주문을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: false, error: '주문을 찾을 수 없습니다.' }, { status: 404 });
+    await savePersistentData(orders, storeSettings);
+    return NextResponse.json({ 
+      ok: true, 
+      orders, 
+      storeSettings 
+    });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
@@ -156,15 +216,15 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    let orders = await getPersistentOrders();
+    let { orders, storeSettings } = await getPersistentData();
     if (id) {
       orders = orders.filter(o => o.id !== id);
     } else {
       orders = [];
     }
 
-    await savePersistentOrders(orders);
-    return NextResponse.json({ ok: true, orders });
+    await savePersistentData(orders, storeSettings);
+    return NextResponse.json({ ok: true, orders, storeSettings });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }

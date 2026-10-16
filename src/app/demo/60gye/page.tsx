@@ -412,6 +412,18 @@ export default function G60gyeDemoPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [currentOrderState, setCurrentOrderState] = useState<any | null>(null);
   const [recentOrder, setRecentOrder] = useState<any | null>(null);
+  const [storeSettings, setStoreSettings] = useState<{ isPaused: boolean; pauseReason: string }>({ isPaused: false, pauseReason: '' });
+
+  useEffect(() => {
+    fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.storeSettings) {
+          setStoreSettings(d.storeSettings);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // 로컬스토리지에서 최근 주문을 실시간 감지하여 불러오는 함수
   const loadRecentOrder = () => {
@@ -446,6 +458,11 @@ export default function G60gyeDemoPage() {
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (storeSettings.isPaused) {
+      alert(`⚠️ 현재 60계치킨 영월점은 주문 폭주(또는 재료 준비)로 인해 주문 접수가 일시 정지되었습니다.\n\n사유: ${storeSettings.pauseReason || '매장 사정'}\n\n매장 직통 전화(033-374-6660)로 직접 문의해 주시기 바랍니다.`);
+      return;
+    }
+
     if (!name || !phone || (orderType === 'delivery' && !address)) {
       alert("필수 주문 정보를 모두 입력해 주세요.");
       return;
@@ -530,10 +547,17 @@ export default function G60gyeDemoPage() {
               if (found) {
                 setCurrentOrderState(found);
                 setRecentOrder(found);
-                if (found.status === 'cooking') setTrackStep(3);
-                else if (found.status === 'done') setTrackStep(4);
-                else if (found.status === 'accepted') setTrackStep(2);
-                else setTrackStep(1);
+                if (found.status === 'cancelled') {
+                  setTrackStep(-1);
+                } else if (found.status === 'cooking') {
+                  setTrackStep(3);
+                } else if (found.status === 'done') {
+                  setTrackStep(4);
+                } else if (found.status === 'accepted') {
+                  setTrackStep(2);
+                } else {
+                  setTrackStep(1);
+                }
                 return;
               }
             }
@@ -551,10 +575,17 @@ export default function G60gyeDemoPage() {
             if (found) {
               setCurrentOrderState(found);
               setRecentOrder(found);
-              if (found.status === 'cooking') setTrackStep(3);
-              else if (found.status === 'done') setTrackStep(4);
-              else if (found.status === 'accepted') setTrackStep(2);
-              else setTrackStep(1);
+              if (found.status === 'cancelled') {
+                setTrackStep(-1);
+              } else if (found.status === 'cooking') {
+                setTrackStep(3);
+              } else if (found.status === 'done') {
+                setTrackStep(4);
+              } else if (found.status === 'accepted') {
+                setTrackStep(2);
+              } else {
+                setTrackStep(1);
+              }
             }
           }
         }
@@ -609,6 +640,14 @@ export default function G60gyeDemoPage() {
           </div>
         </div>
       </header>
+
+      {/* Store Pause Alert Banner */}
+      {storeSettings.isPaused && (
+        <div className="bg-red-950/90 border-b border-red-500/60 px-4 py-2.5 text-center text-xs font-bold text-red-200 flex items-center justify-center gap-2 sticky top-14 z-30 shadow-lg">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
+          <span>⚠️ {storeSettings.pauseReason || '현재 매장 주문 폭주로 인해 모바일 주문이 잠시 일시 정지되었습니다.'} (문의: 033-374-6660)</span>
+        </div>
+      )}
 
       {/* Constraints container */}
       <div className="w-full max-w-md mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
@@ -1219,105 +1258,163 @@ export default function G60gyeDemoPage() {
         {currentStep === 3 && (
           <div className="space-y-6 animate-fade-in text-center py-6">
             
-            <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-[#f39c12]/5 border border-[#f39c12]/20 animate-ping" />
-              <div className="absolute w-24 h-24 rounded-full bg-[#f39c12]/10 flex items-center justify-center border border-[#f39c12]/30">
-                <ShoppingBag className="w-10 h-10 text-[#f39c12] animate-bounce" />
+            {/* CANCELLATION STATE VIEW */}
+            {currentOrderState?.status === 'cancelled' || trackStep === -1 ? (
+              <div className="space-y-6 animate-fade-in text-center py-4">
+                <div className="bg-red-950/40 border-2 border-red-500/70 rounded-3xl p-6 text-center space-y-4 shadow-2xl shadow-red-950/60 max-w-sm mx-auto">
+                  <div className="w-16 h-16 bg-red-500/20 border-2 border-red-500/50 rounded-full flex items-center justify-center mx-auto text-3xl">
+                    🚫
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-black text-red-300 bg-red-900/60 px-3 py-1 rounded-full border border-red-600 inline-block">
+                      주문 접수 취소 / 거절
+                    </span>
+                    <h2 className="text-base font-black text-white pt-1">
+                      매장 사정으로 주문이 접수되지 못했습니다
+                    </h2>
+                    <p className="text-xs text-slate-350 leading-relaxed">
+                      이용에 큰 불편을 드려 진심으로 사과드립니다.<br />
+                      결제는 청구되지 않았으며, 안전하게 취소되었습니다.
+                    </p>
+                  </div>
+
+                  {/* 사장님 안내 사유 박스 */}
+                  <div className="bg-[#140b09] border border-red-500/40 rounded-2xl p-4 text-left space-y-1.5">
+                    <div className="text-[11px] font-extrabold text-red-400 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>사장님의 정중한 취소 사유 안내</span>
+                    </div>
+                    <p className="text-sm font-black text-white pl-3 border-l-2 border-red-500 py-0.5 leading-snug">
+                      {currentOrderState?.cancelReason || '🍗 재료 소진 / 품절: 주문하신 메뉴의 재료가 모두 소진되어 부득이하게 취소되었습니다.'}
+                    </p>
+                  </div>
+
+                  {/* Direct Contact & Action Buttons */}
+                  <div className="pt-2 space-y-2">
+                    <a
+                      href="tel:033-374-6660"
+                      className="w-full h-11 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>매장 직통 전화 문의하기 (033-374-6660)</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCart([]);
+                        setCurrentStep(1);
+                      }}
+                      className="w-full h-11 bg-[#1f1715] hover:bg-[#2b1f1c] border border-[#442c23] text-slate-200 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <span>🍗 다른 치킨 메뉴 둘러보기</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-lg font-black text-white">주문이 성공적으로 접수되었습니다!</h2>
-              
-              <div className="py-1">
-                {currentOrderState?.status === 'cooking' ? (
-                  <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 py-1.5 px-4 rounded-full inline-block">
-                    👍 사장님 접수 완료! 🔥 조리 진행 중 [{currentOrderState.targetPickupTime || '18:10'} 픽업/완료 예정]
-                  </span>
-                ) : currentOrderState?.status === 'done' ? (
-                  <span className="text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/30 py-1.5 px-4 rounded-full inline-block">
-                    🛍️ 조리 완료! [{currentOrderState.targetPickupTime || '18:10'} 방문 가능]
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-[#f39c12] font-semibold bg-[#f39c12]/10 border border-[#f39c12]/25 py-1 px-3 rounded-full inline-block animate-pulse">
-                    ⏳ 사장님 주문 승인 대기 상태
-                  </span>
-                )}
-              </div>
-
-              <p className="text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
-                {currentOrderState?.status === 'cooking' 
-                  ? `사장님이 주문을 확인했습니다! ${currentOrderState.targetPickupTime || '18:10'}분까지 따뜻하게 조리하여 준비해 두겠습니다.`
-                  : '60계치킨 강원영월점 주방으로 고객님의 주문서가 전송되었습니다. 사장님의 접수 승인을 잠시만 기다려 주세요!'}
-              </p>
-            </div>
-
-            {/* Step Timeline */}
-            <div className="bg-[#1c1310] border border-[#3d2c27] p-5 rounded-2xl text-left space-y-4 max-w-sm mx-auto">
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">실시간 접수 현황</h4>
-              
-              <div className="space-y-4 relative pl-4 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#3d2c27]">
-                
-                {/* Step 1 */}
-                <div className="flex items-start gap-3 relative">
-                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
-                    trackStep >= 1 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
-                  }`}>
-                    {trackStep > 1 ? <Check className="w-2.5 h-2.5" /> : "1"}
-                  </div>
-                  <div>
-                    <h5 className={`text-xs font-bold ${trackStep >= 1 ? 'text-white' : 'text-slate-500'}`}>주문 요청 접수</h5>
-                    <p className="text-[9px] text-slate-550">가게로 주문이 접수되었습니다.</p>
+            ) : (
+              <>
+                <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-[#f39c12]/5 border border-[#f39c12]/20 animate-ping" />
+                  <div className="absolute w-24 h-24 rounded-full bg-[#f39c12]/10 flex items-center justify-center border border-[#f39c12]/30">
+                    <ShoppingBag className="w-10 h-10 text-[#f39c12] animate-bounce" />
                   </div>
                 </div>
 
-                {/* Step 2 */}
-                <div className="flex items-start gap-3 relative">
-                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
-                    trackStep >= 2 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
-                  }`}>
-                    {trackStep > 2 ? <Check className="w-2.5 h-2.5" /> : "2"}
+                <div className="space-y-2">
+                  <h2 className="text-lg font-black text-white">주문이 성공적으로 접수되었습니다!</h2>
+                  
+                  <div className="py-1">
+                    {currentOrderState?.status === 'cooking' ? (
+                      <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 py-1.5 px-4 rounded-full inline-block">
+                        👍 사장님 접수 완료! 🔥 조리 진행 중 [{currentOrderState.targetPickupTime || '18:10'} 픽업/완료 예정]
+                      </span>
+                    ) : currentOrderState?.status === 'done' ? (
+                      <span className="text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/30 py-1.5 px-4 rounded-full inline-block">
+                        🛍️ 조리 완료! [{currentOrderState.targetPickupTime || '18:10'} 방문 가능]
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-[#f39c12] font-semibold bg-[#f39c12]/10 border border-[#f39c12]/25 py-1 px-3 rounded-full inline-block animate-pulse">
+                        ⏳ 사장님 주문 승인 대기 상태
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <h5 className={`text-xs font-bold ${trackStep >= 2 ? 'text-white' : 'text-slate-500'}`}>
-                      {trackStep >= 2 ? '👍 주문 승인 완료' : '사장님 주문 검토'}
-                    </h5>
-                    <p className="text-[9px] text-slate-550">매장 접수 완료 및 예정 시간 확정</p>
-                  </div>
+
+                  <p className="text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    {currentOrderState?.status === 'cooking' 
+                      ? `사장님이 주문을 확인했습니다! ${currentOrderState.targetPickupTime || '18:10'}분까지 따뜻하게 조리하여 준비해 두겠습니다.`
+                      : '60계치킨 강원영월점 주방으로 고객님의 주문서가 전송되었습니다. 사장님의 접수 승인을 잠시만 기다려 주세요!'}
+                  </p>
                 </div>
 
-                {/* Step 3 */}
-                <div className="flex items-start gap-3 relative">
-                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
-                    trackStep >= 3 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
-                  }`}>
-                    {trackStep > 3 ? <Check className="w-2.5 h-2.5" /> : "3"}
-                  </div>
-                  <div>
-                    <h5 className={`text-xs font-bold ${trackStep >= 3 ? 'text-[#f39c12]' : 'text-slate-500'}`}>
-                      {trackStep >= 3 ? '🔥 맛있게 치킨 조리 중!' : '주방 조리 대기'}
-                    </h5>
-                    <p className="text-[9px] text-slate-550">60계 깨끗한 새 기름으로 튀기는 중</p>
+                {/* Step Timeline */}
+                <div className="bg-[#1c1310] border border-[#3d2c27] p-5 rounded-2xl text-left space-y-4 max-w-sm mx-auto">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">실시간 접수 현황</h4>
+                  
+                  <div className="space-y-4 relative pl-4 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#3d2c27]">
+                    
+                    {/* Step 1 */}
+                    <div className="flex items-start gap-3 relative">
+                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
+                        trackStep >= 1 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
+                      }`}>
+                        {trackStep > 1 ? <Check className="w-2.5 h-2.5" /> : "1"}
+                      </div>
+                      <div>
+                        <h5 className={`text-xs font-bold ${trackStep >= 1 ? 'text-white' : 'text-slate-500'}`}>주문 요청 접수</h5>
+                        <p className="text-[9px] text-slate-550">가게로 주문이 접수되었습니다.</p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex items-start gap-3 relative">
+                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
+                        trackStep >= 2 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
+                      }`}>
+                        {trackStep > 2 ? <Check className="w-2.5 h-2.5" /> : "2"}
+                      </div>
+                      <div>
+                        <h5 className={`text-xs font-bold ${trackStep >= 2 ? 'text-white' : 'text-slate-500'}`}>
+                          {trackStep >= 2 ? '👍 주문 승인 완료' : '사장님 주문 검토'}
+                        </h5>
+                        <p className="text-[9px] text-slate-550">매장 접수 완료 및 예정 시간 확정</p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex items-start gap-3 relative">
+                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
+                        trackStep >= 3 ? 'bg-[#f39c12] text-[#1a1210]' : 'bg-[#3d2c27] text-slate-500'
+                      }`}>
+                        {trackStep > 3 ? <Check className="w-2.5 h-2.5" /> : "3"}
+                      </div>
+                      <div>
+                        <h5 className={`text-xs font-bold ${trackStep >= 3 ? 'text-[#f39c12]' : 'text-slate-500'}`}>
+                          {trackStep >= 3 ? '🔥 맛있게 치킨 조리 중!' : '주방 조리 대기'}
+                        </h5>
+                        <p className="text-[9px] text-slate-550">60계 깨끗한 새 기름으로 튀기는 중</p>
+                      </div>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="flex items-start gap-3 relative">
+                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
+                        trackStep >= 4 ? 'bg-emerald-500 text-white' : 'bg-[#3d2c27] text-slate-500'
+                      }`}>
+                        {trackStep > 4 ? <Check className="w-2.5 h-2.5" /> : "4"}
+                      </div>
+                      <div>
+                        <h5 className={`text-xs font-bold ${trackStep >= 4 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {orderType === 'takeout' ? '🛍️ 포장 준비 완료!' : '🛵 배달 출발!'}
+                        </h5>
+                        <p className="text-[9px] text-slate-550">따뜻하게 튀겨내어 대기 완료되었습니다.</p>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-
-                {/* Step 4 */}
-                <div className="flex items-start gap-3 relative">
-                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black z-10 -ml-5 ${
-                    trackStep >= 4 ? 'bg-emerald-500 text-white' : 'bg-[#3d2c27] text-slate-500'
-                  }`}>
-                    {trackStep > 4 ? <Check className="w-2.5 h-2.5" /> : "4"}
-                  </div>
-                  <div>
-                    <h5 className={`text-xs font-bold ${trackStep >= 4 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {orderType === 'takeout' ? '🛍️ 포장 준비 완료!' : '🛵 배달 출발!'}
-                    </h5>
-                    <p className="text-[9px] text-slate-550">따뜻하게 튀겨내어 대기 완료되었습니다.</p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+              </>
+            )}
 
             {/* 내가 주문한 상세 내역서 (영수증 카드) */}
             <div className="bg-[#1c1310] border border-[#f39c12]/30 p-5 rounded-2xl text-left space-y-4 max-w-sm mx-auto shadow-xl">
