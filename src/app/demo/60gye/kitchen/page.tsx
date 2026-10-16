@@ -557,6 +557,7 @@ export default function KitchenDashboardPage() {
               </div>
             );
           })()}
+        </div>
 
         {/* Right 1 Col: Printer Hardware Connection Guide */}
         <div className="space-y-6">
