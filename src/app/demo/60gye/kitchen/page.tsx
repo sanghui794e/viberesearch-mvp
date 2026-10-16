@@ -42,8 +42,39 @@ export default function KitchenDashboardPage() {
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
 
-  // Pure Bulletproof Order Loading
-  const loadOrders = () => {
+  const prevOrderCountRef = useRef<number>(0);
+  const isInitialLoadRef = useRef<boolean>(true);
+
+  // 중앙 서버 실시간 주문 Polling 및 동기화
+  const loadOrders = async () => {
+    try {
+      const res = await fetch('/api/orders', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.ok && Array.isArray(json.orders)) {
+          const serverOrders: Order[] = json.orders;
+          
+          // 새 주문 감지 시 띵동 알림음 울리기!
+          if (!isInitialLoadRef.current && serverOrders.length > prevOrderCountRef.current) {
+            if (soundEnabled) {
+              playAlertSound();
+            }
+          }
+          prevOrderCountRef.current = serverOrders.length;
+          isInitialLoadRef.current = false;
+
+          setOrders(serverOrders);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('youngwol_orders', JSON.stringify(serverOrders));
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Central orders fetch error, fallback to local storage:', e);
+    }
+
+    // 서버 조회 실패 시 로컬 스토리지 Fallback
     if (typeof window !== 'undefined') {
       try {
         const data = localStorage.getItem('youngwol_orders');
@@ -54,7 +85,7 @@ export default function KitchenDashboardPage() {
           }
         }
       } catch (e) {
-        console.error('loadOrders error:', e);
+        console.error('loadOrders fallback error:', e);
       }
     }
   };
@@ -67,13 +98,14 @@ export default function KitchenDashboardPage() {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(loadOrders, 1000);
+    // 1.5초마다 중앙 서버에서 최신 주문 내역 실시간 동기화
+    const interval = setInterval(loadOrders, 1500);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [soundEnabled]);
 
   // Audio API alert sound (띵동 느낌의 비프음 조합)
   const playAlertSound = () => {

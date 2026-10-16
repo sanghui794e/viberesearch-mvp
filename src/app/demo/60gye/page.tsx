@@ -513,7 +513,28 @@ export default function G60gyeDemoPage() {
   // 주방 상태와 실시간 100% 동기화 렌더링
   useEffect(() => {
     if (currentStep === 3 && currentOrderId) {
-      const syncStatus = () => {
+      const syncStatus = async () => {
+        try {
+          const res = await fetch('/api/orders', { cache: 'no-store' });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.ok && Array.isArray(json.orders)) {
+              const found = json.orders.find((o: any) => o.id === currentOrderId);
+              if (found) {
+                setCurrentOrderState(found);
+                if (found.status === 'cooking') setTrackStep(3);
+                else if (found.status === 'done') setTrackStep(4);
+                else if (found.status === 'accepted') setTrackStep(2);
+                else setTrackStep(1);
+                return;
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Customer syncStatus API error:', e);
+        }
+
+        // 로컬 스토리지 Fallback
         const data = localStorage.getItem('youngwol_orders');
         if (data) {
           const list = JSON.parse(data);
@@ -530,7 +551,7 @@ export default function G60gyeDemoPage() {
 
       syncStatus();
       window.addEventListener('storage', syncStatus);
-      const interval = setInterval(syncStatus, 1000);
+      const interval = setInterval(syncStatus, 1500);
       return () => {
         window.removeEventListener('storage', syncStatus);
         clearInterval(interval);
