@@ -5,41 +5,46 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingBag, Phone, MapPin, Clock, ShieldCheck, Sparkles, 
-  ChevronRight, ArrowLeft, Plus, Minus, Trash2, Send, Check, AlertCircle, RefreshCw, X, HelpCircle
+  ChevronRight, ArrowLeft, Plus, Minus, Trash2, Send, Check, AlertCircle, RefreshCw, X, HelpCircle,
+  Beer, Flame, Heart, Utensils
 } from 'lucide-react';
 
-interface MenuPrice {
+export interface MenuPrice {
   type: string;
   price: number;
 }
 
-interface Menu {
+export interface Menu {
   id: string;
   name: string;
-  category: string;
+  category: '치킨' | '반반치킨' | '순살세트' | '부분육' | '사이드' | '음료' | '소스' | '주류' | '기타 직접입력';
   description: string;
   image: string;
   tag?: string;
   spicy: number;
   prices: MenuPrice[];
   isCustom?: boolean;
+  isHalfAndHalf?: boolean; // 반반치킨 여부
+  isBonelessSet?: boolean; // 순살세트 여부
+  availableFlavors?: string[]; // 순살세트 맛 변경 옵션
 }
 
-interface CartItem {
+export interface CartItem {
   menu: Menu;
   selectedType: string;
   selectedPrice: number;
   quantity: number;
-  customDetails?: string; // 직접 입력 메뉴의 세부사항
+  customDetails?: string; // 직접 입력 메뉴의 세부사항 또는 반반치킨 맛 조합 / 순살세트 맛
 }
 
-// 60계치킨 강원영월점 실제 홈페이지(youngwol-chicken.co.kr)의 업로드 이미지 파일명을 100% 매핑
+// 60계치킨 강원영월점 실제 공식 메뉴 목록 (대표님 확정 데이터 100% 매핑)
 const menuList: Menu[] = [
+  // 1. 치킨 단품 (뼈, 순살, 윙봉, 콤보)
   {
     id: 'chamji_mara',
     name: '참지마라치킨',
     category: '치킨',
-    description: '알싸하고 화끈한 마라 시즈닝에 고추와 대파를 송송 뿌려 마라 덕후들의 입맛을 사로잡는 마성의 마라 치킨',
+    description: '알싸하고 화끈한 마라 시즈닝에 고추와 대파를 송송 뿌려 마라 덕후들의 입맛을 사로잡는 대세 신메뉴 치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260701120437_6e78ec01.jpg',
     tag: 'NEW 신메뉴',
     spicy: 3,
@@ -54,9 +59,9 @@ const menuList: Menu[] = [
     id: 'ccc',
     name: '크크크치킨',
     category: '치킨',
-    description: '크리스피! 크런치! 크림볼! 웃음이 절로 나는 바삭함 끝판왕 인기 메뉴 (크크크소스 3종 포함)',
+    description: '크리스피! 크런치! 크럼블! 웃음이 절로 나오는 극강의 바삭함 끝판왕 (크크크 소스 3종 포함)',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
-    tag: '인기',
+    tag: '베스트 1위',
     spicy: 0,
     prices: [
       { type: '뼈', price: 23900 },
@@ -71,7 +76,7 @@ const menuList: Menu[] = [
     category: '치킨',
     description: '바삭바삭한 크크크치킨과 고소하고 알싸매콤한 호랑이 시즈닝이 만난 신개념 중독성 치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260611113738_a67b2cfe.png',
-    tag: '인기',
+    tag: '인기 폭발',
     spicy: 1,
     prices: [
       { type: '뼈', price: 23900 },
@@ -81,41 +86,12 @@ const menuList: Menu[] = [
     ]
   },
   {
-    id: 'ccc_crang_half',
-    name: '크크크 + 크랑이 반반',
-    category: '치킨',
-    description: '★공식 반반 조합★ 고소바삭 크크크 반 + 매콤바삭 크랑이 반을 한 번에! (※ 두 메뉴는 서로하고만 반반 주문이 가능합니다)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
-    tag: '공식 반반',
-    spicy: 1,
-    prices: [
-      { type: '뼈', price: 26900 },
-      { type: '순살', price: 27900 },
-      { type: '윙봉', price: 28500 },
-      { type: '콤보', price: 28500 }
-    ]
-  },
-  {
-    id: 'zuran',
-    name: '쯔란콤보',
-    category: '치킨',
-    description: '쯔란 스파이스를 입혀 이국적이고 매콤 짭조름한 풍미가 콤보 전체에 진하게 퍼지는 별미 치킨',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165635_7b6f044b.png',
-    tag: 'NEW',
-    spicy: 1,
-    prices: [
-      { type: '순살', price: 24900 },
-      { type: '윙봉', price: 25500 },
-      { type: '콤보', price: 25500 }
-    ]
-  },
-  {
     id: 'horang',
     name: '호랑이치킨',
     category: '치킨',
-    description: '알싸한 갈릭 파우더와 달콤바삭 콘후레이크가 버무려져 매콤달콤 마성의 단짠을 선사하는 치킨',
+    description: '알싸한 갈릭 파우더와 달콤바삭 콘후레이크가 버무려져 매콤달콤 마성의 단짠을 선사하는 시그니처',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165804_e0c36557.png',
-    tag: '인기',
+    tag: '단짠 명작',
     spicy: 1,
     prices: [
       { type: '뼈', price: 22900 },
@@ -128,9 +104,9 @@ const menuList: Menu[] = [
     id: 'gochu',
     name: '고추치킨',
     category: '치킨',
-    description: '특제 간장소스에 알싸하고 맵지 않은 청양고추가 송송 뿌려져 깔끔하고 매콤한 베스트셀러',
+    description: '특제 간장소스에 맵지 않고 알싸한 청양고추가 송송 뿌려져 깔끔하고 개운한 영월점 베스트셀러',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165451_aec718de.jpg',
-    tag: '인기',
+    tag: '깔끔 매콤',
     spicy: 2,
     prices: [
       { type: '뼈', price: 22900 },
@@ -143,9 +119,9 @@ const menuList: Menu[] = [
     id: 'ganji',
     name: '간지치킨',
     category: '치킨',
-    description: '특제 간장소스와 누룽지의 조화, 고소하고 담백한 풍미가 가득해 아이들도 잘 먹는 60계 별미',
+    description: '특제 간장소스와 누룽지의 환상 조화! 고소하고 담백해 아이들과 어르신 모두 좋아하는 60계 대표 별미',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165421_50e38d25.jpg',
-    tag: '단짠',
+    tag: '남녀노소 1위',
     spicy: 0,
     prices: [
       { type: '뼈', price: 22900 },
@@ -158,9 +134,9 @@ const menuList: Menu[] = [
     id: 'fry',
     name: '후라이드치킨',
     category: '치킨',
-    description: '겉은 크리스피하고 속은 육즙 가득 부드럽고 담백하여 남녀노소 사랑받는 기본 후라이드',
+    description: '매일 새 기름으로 튀겨 겉은 바삭하고 속은 촉촉 육즙 가득한 60계의 가장 순수하고 깨끗한 기본 치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
-    tag: '',
+    tag: '기본에 충실',
     spicy: 0,
     prices: [
       { type: '뼈', price: 19900 },
@@ -170,14 +146,548 @@ const menuList: Menu[] = [
     ]
   },
   {
-    id: 'wedge',
+    id: 'yangnyeom',
+    name: '옛날양념치킨',
+    category: '치킨',
+    description: '매콤달콤 전통 양념 비법으로 감칠맛을 살려 누구나 추억 속 그 맛 그대로 즐길 수 있는 양념 치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165518_e2f47e33.jpg',
+    tag: '달콤 촉촉',
+    spicy: 1,
+    prices: [
+      { type: '뼈', price: 22900 },
+      { type: '순살', price: 23900 },
+      { type: '윙봉', price: 24500 },
+      { type: '콤보', price: 24500 }
+    ]
+  },
+  {
+    id: 'more_gochu',
+    name: '더매운고추치킨',
+    category: '치킨',
+    description: '오리지널 고추치킨보다 한 단계 더 화끈하고 매콤하게! 매운맛 마니아들을 위한 스트레스 타파 치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165451_aec718de.jpg',
+    tag: '화끈 매운맛',
+    spicy: 3,
+    prices: [
+      { type: '뼈', price: 23900 },
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+  {
+    id: 'hahahat',
+    name: '하하핫치킨',
+    category: '치킨',
+    description: '웃음이 터져 나오는 기분 좋은 매콤함! 특제 핫 시즈닝과 부드러운 육즙의 환상적인 밸런스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
+    tag: '매콤 알싸',
+    spicy: 3,
+    prices: [
+      { type: '뼈', price: 23900 },
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+  {
+    id: 'puhahat',
+    name: '푸하핫치킨',
+    category: '치킨',
+    description: '푸하하 웃음이 터질 만큼 중독성 강한 불맛 매운맛! 혀끝을 감도는 화끈한 핫 치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611113738_a67b2cfe.png',
+    tag: '강렬 불맛',
+    spicy: 3,
+    prices: [
+      { type: '뼈', price: 23900 },
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+  {
+    id: 'zuran',
+    name: '쯔란콤보 / 순살',
+    category: '치킨',
+    description: '쯔란 스파이스를 듬뿍 입혀 이국적이고 매콤 짭조름한 풍미가 가득한 별미 치킨 (※ 뼈는 없으며 순살/윙봉/콤보 전용)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165635_7b6f044b.png',
+    tag: '이국적 풍미',
+    spicy: 1,
+    prices: [
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+
+  // 2. 반반치킨 (대표님 공식 룰 100% 반영)
+  {
+    id: 'half_custom',
+    name: '내 맘대로 반반치킨 (맛 선택)',
+    category: '반반치킨',
+    description: '내가 원하는 2가지 맛을 반반씩 조합! (※ 쯔란, 크크크, 크랑이, 참지마라는 조리법상 일반 반반 제외)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    tag: '자유 조합',
+    spicy: 1,
+    isHalfAndHalf: true,
+    prices: [
+      { type: '뼈', price: 23900 },
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+  {
+    id: 'half_fry_yang',
+    name: '후라이드 반 + 양념 반',
+    category: '반반치킨',
+    description: '치킨의 영원한 정석! 겉바속촉 고소한 후라이드 반과 달콤매콤한 옛날양념 반의 완벽한 조화',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165518_e2f47e33.jpg',
+    tag: '영원한 정석',
+    spicy: 1,
+    prices: [
+      { type: '뼈', price: 23900 },
+      { type: '순살', price: 24900 },
+      { type: '윙봉', price: 25500 },
+      { type: '콤보', price: 25500 }
+    ]
+  },
+  {
+    id: 'ccc_crang_half',
+    name: '크크크 반 + 크랑이 반',
+    category: '반반치킨',
+    description: '★단독 공식 반반★ 극강의 바삭함 크크크 반 + 매콤달콤 알싸한 크랑이 반! (두 메뉴 전용 반반)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
+    tag: '공식 반반',
+    spicy: 1,
+    prices: [
+      { type: '뼈', price: 26900 },
+      { type: '순살', price: 27900 },
+      { type: '윙봉', price: 28500 },
+      { type: '콤보', price: 28500 }
+    ]
+  },
+
+  // 3. 순살 세트 (순살 한 마리 + 사이드 결합 & 맛 변경 옵션)
+  {
+    id: 'set_cheeseball',
+    name: '치즈볼엔 순살',
+    category: '순살세트',
+    description: '고소하고 쫀득한 치즈볼과 순살 한 마리의 꿀조합! (후라이드 기본, 맛 변경 옵션 선택 가능)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    tag: '세트 1위',
+    spicy: 0,
+    isBonelessSet: true,
+    prices: [
+      { type: '후라이드 기본', price: 25500 }
+    ]
+  },
+  {
+    id: 'set_menbosha',
+    name: '멘보샤엔 순살',
+    category: '순살세트',
+    description: '바삭한 식빵 사이에 통통한 새우 살이 가득한 멘보샤와 순살 치킨 한 마리 세트',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115545_bf53ce55.png',
+    tag: '가성비 세트',
+    spicy: 0,
+    isBonelessSet: true,
+    prices: [
+      { type: '후라이드 기본', price: 26900 }
+    ]
+  },
+  {
+    id: 'set_tteokbokki',
+    name: '떡볶이엔 순살',
+    category: '순살세트',
+    description: '매콤달콤 쫄깃한 포장마차 떡볶이와 바삭한 순살 치킨의 환상 궁합! 떡볶이 국물에 콕 찍어드세요',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115502_b0c0360a.png',
+    tag: '푸짐 세트',
+    spicy: 1,
+    isBonelessSet: true,
+    prices: [
+      { type: '후라이드 기본', price: 27500 }
+    ]
+  },
+
+  // 4. 부분육 단품 (윙 / 봉 / 다리 1/2컷)
+  {
+    id: 'part_wing15',
+    name: '윙만 15조각',
+    category: '부분육',
+    description: '바삭하고 쫄깃한 날개(윙) 부위만 15조각 모았습니다. (맛 선택에 따라 금액이 변동됩니다)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    tag: '날개 매니아',
+    spicy: 0,
+    prices: [
+      { type: '후라이드', price: 12800 },
+      { type: '양념/호랑이/고추/간지', price: 13800 },
+      { type: '크크크/크랑이/매운맛', price: 14800 }
+    ]
+  },
+  {
+    id: 'part_bong15',
+    name: '봉만 15조각',
+    category: '부분육',
+    description: '한 손으로 쏙쏙 빼먹기 좋은 부드러운 닭봉만 15조각 알차게 모았습니다.',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    tag: '닭봉 매니아',
+    spicy: 0,
+    prices: [
+      { type: '후라이드', price: 12800 },
+      { type: '양념/호랑이/고추/간지', price: 13800 },
+      { type: '크크크/크랑이/매운맛', price: 14800 }
+    ]
+  },
+  {
+    id: 'part_leg12',
+    name: '다리 1/2컷 (12조각)',
+    category: '부분육',
+    description: '육즙 팡팡 통통한 닭다리를 먹기 좋은 1/2 크기로 깔끔하게 손질한 12조각 단품',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    tag: '닭다리 매니아',
+    spicy: 0,
+    prices: [
+      { type: '후라이드', price: 12800 },
+      { type: '양념/호랑이/고추/간지', price: 13800 },
+      { type: '크크크/크랑이/매운맛', price: 14800 }
+    ]
+  },
+
+  // 5. 사이드 메뉴 15종 (대표님 공식 단가 100% 매핑)
+  {
+    id: 'side_mini_cheeseball',
+    name: '미니 쫀득볼',
+    category: '사이드',
+    description: '한입에 쏙 들어가는 귀엽고 쫄깃쫄깃한 미니 쫀득볼',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 2700 }]
+  },
+  {
+    id: 'side_wedge',
     name: '웨지감자',
     category: '사이드',
-    description: '겉은 바삭하고 속은 촉촉한 리얼 포테이토 웨지 감자튀김',
+    description: '겉은 바삭하고 속은 포슬포슬 촉촉한 리얼 포테이토 웨지 감자튀김',
     image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
-    tag: '',
     spicy: 0,
     prices: [{ type: '단품', price: 3000 }]
+  },
+  {
+    id: 'side_horang_wedge',
+    name: '호랑이 웨지감자',
+    category: '사이드',
+    description: '바삭한 웨지감자에 달콤짭조름 갈릭 호랑이 시즈닝을 듬뿍 버무린 감자튀김',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    tag: '단짠 별미',
+    spicy: 1,
+    prices: [{ type: '단품', price: 4000 }]
+  },
+  {
+    id: 'side_cheese_stick',
+    name: '치즈스틱',
+    category: '사이드',
+    description: '고소한 자연산 모짜렐라 치즈가 길게 쭉 늘어나는 바삭한 치즈스틱',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 4000 }]
+  },
+  {
+    id: 'side_dumpling',
+    name: '튀김만두',
+    category: '사이드',
+    description: '바삭하게 튀겨내어 속이 꽉 찬 고소하고 담백한 별미 튀김만두',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 4000 }]
+  },
+  {
+    id: 'side_cheeseball',
+    name: '쫀득 치즈볼',
+    category: '사이드',
+    description: '달콤 짭조름한 치즈가 꽉 차서 입안 가득 행복한 60계의 전설적 사이드',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    tag: '사이드 1위',
+    spicy: 0,
+    prices: [{ type: '단품', price: 5000 }]
+  },
+  {
+    id: 'side_tteokbokki',
+    name: '포장마차 떡볶이',
+    category: '사이드',
+    description: '학창 시절 추억의 포장마차 맛! 매콤달콤 자작한 국물이 치킨과 환상 궁합',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115502_b0c0360a.png',
+    tag: '국물 별미',
+    spicy: 1,
+    prices: [{ type: '단품', price: 5000 }]
+  },
+  {
+    id: 'side_jjondog',
+    name: '쫀도그',
+    category: '사이드',
+    description: '쫄깃한 찹쌀 반죽 속에 탱글탱글 소시지가 쏙 들어간 인기 미니 핫도그',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115525_3ea119b4.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 5000 }]
+  },
+  {
+    id: 'side_horang_jjondog',
+    name: '호랑이 쫀도그',
+    category: '사이드',
+    description: '쫄깃한 쫀도그에 단짠 알싸 호랑이 콘후레이크 시즈닝을 아낌없이 뿌린 핫도그',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115525_3ea119b4.png',
+    spicy: 1,
+    prices: [{ type: '단품', price: 6000 }]
+  },
+  {
+    id: 'side_horang_cheeseball',
+    name: '호랑이 치즈볼',
+    category: '사이드',
+    description: '치즈가 쭉 늘어나는 쫀득 치즈볼에 호랑이 단짠 시즈닝을 입혀 중독성 최강',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 1,
+    prices: [{ type: '단품', price: 6000 }]
+  },
+  {
+    id: 'side_potato_cheesestick',
+    name: '포테이토 치즈스틱',
+    category: '사이드',
+    description: '바삭한 감자 큐브가 콕콕 박혀 더욱 바삭하고 고소한 프리미엄 치즈스틱',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 6000 }]
+  },
+  {
+    id: 'side_menbosha',
+    name: '멘보샤',
+    category: '사이드',
+    description: '겉은 바삭 속은 촉촉 탱글한 통새우 살이 듬뿍 들어간 고급 수제 멘보샤',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115545_bf53ce55.png',
+    spicy: 0,
+    prices: [{ type: '단품', price: 8900 }]
+  },
+  {
+    id: 'side_gizzard',
+    name: '근위튀김 (똥집튀김)',
+    category: '사이드',
+    description: '쫄깃쫄깃 오독오독 씹는 맛이 최고인 깨끗한 새 기름으로 튀긴 닭똥집 튀김',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    tag: '술안주 추천',
+    spicy: 0,
+    prices: [{ type: '단품', price: 10000 }]
+  },
+  {
+    id: 'side_spicy_gizzard',
+    name: '아매워 근위튀김',
+    category: '사이드',
+    description: '매콤하고 알싸한 화끈 특제 소스를 버무려 맥주를 부르는 매운 똥집튀김',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 3,
+    prices: [{ type: '단품', price: 11000 }]
+  },
+  {
+    id: 'side_yang_gizzard',
+    name: '양념 근위튀김',
+    category: '사이드',
+    description: '매콤달콤 감칠맛 나는 60계 특제 양념소스를 듬뿍 버무린 쫄깃한 똥집튀김',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 1,
+    prices: [{ type: '단품', price: 11000 }]
+  },
+
+  // 6. 음료수
+  {
+    id: 'drink_coke_500',
+    name: '코카콜라 500ml',
+    category: '음료',
+    description: '시원하고 톡 쏘는 오리지널 코카콜라 페트 500ml',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '500ml', price: 2000 }]
+  },
+  {
+    id: 'drink_coke_125',
+    name: '코카콜라 1.25L',
+    category: '음료',
+    description: '가족, 친구들과 넉넉하게 마시는 대용량 코카콜라 1.25L',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1.25L', price: 3000 }]
+  },
+  {
+    id: 'drink_sprite_500',
+    name: '스프라이트 500ml',
+    category: '음료',
+    description: '상쾌한 청량감 가득한 사이다 스프라이트 페트 500ml',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '500ml', price: 2000 }]
+  },
+  {
+    id: 'drink_sprite_15',
+    name: '스프라이트 1.5L',
+    category: '음료',
+    description: '시원하게 톡 쏘는 상쾌한 스프라이트 대용량 1.5L',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1.5L', price: 3000 }]
+  },
+
+  // 7. 소스 & 무
+  {
+    id: 'sauce_radish',
+    name: '치킨무 추가',
+    category: '소스',
+    description: '아삭아삭 새콤달콤 시원한 60계 전용 치킨무 1팩',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1팩', price: 500 }]
+  },
+  {
+    id: 'sauce_yang',
+    name: '치킨양념소스',
+    category: '소스',
+    description: '후라이드에 찍어 먹으면 딱 좋은 달콤매콤 비법 양념소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 1,
+    prices: [{ type: '1개', price: 500 }]
+  },
+  {
+    id: 'sauce_deli',
+    name: '델리소스',
+    category: '소스',
+    description: '감칠맛 가득 달콤 짭조름한 60계 특제 델리 간장소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1개', price: 500 }]
+  },
+  {
+    id: 'sauce_mayo',
+    name: '마요네즈',
+    category: '소스',
+    description: '고소하고 부드러운 고품질 마요네즈 소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1개', price: 500 }]
+  },
+  {
+    id: 'sauce_cheongyang',
+    name: '청양마요소스',
+    category: '소스',
+    description: '알싸한 청양고추와 고소한 마요네즈의 깔끔한 만남',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 2,
+    prices: [{ type: '1개', price: 800 }]
+  },
+  {
+    id: 'sauce_hot_ccc',
+    name: 'HOT 크크크소스',
+    category: '소스',
+    description: '바삭한 치킨에 화끈함을 더해주는 매콤 칼칼 HOT 크크크 소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 2,
+    prices: [{ type: '1개', price: 1000 }]
+  },
+  {
+    id: 'sauce_chibob',
+    name: '뿌리고 치밥고',
+    category: '소스',
+    description: '치킨 살을 찢어 밥과 함께 비벼 먹을 때 최고인 특제 치밥 시즈닝',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1개', price: 1000 }]
+  },
+  {
+    id: 'sauce_corn_mayo',
+    name: '콘마요소스',
+    category: '소스',
+    description: '옥수수의 달콤 고소함이 입안 가득 퍼지는 부드러운 콘마요 소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1개', price: 1000 }]
+  },
+  {
+    id: 'sauce_ccc',
+    name: '크크크소스',
+    category: '소스',
+    description: '크크크치킨의 맛을 완성하는 상큼하고 달콤한 오리지널 마늘 크크크 소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 0,
+    prices: [{ type: '1개', price: 1500 }]
+  },
+  {
+    id: 'sauce_spicy',
+    name: '아매워소스',
+    category: '소스',
+    description: '한 방울울 찍어 먹어도 땀이 쏙 나는 극강의 화끈 매운맛 디핑소스',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    spicy: 3,
+    prices: [{ type: '1개', price: 1500 }]
+  },
+
+  // 8. 주류 (성인 인증 안내)
+  {
+    id: 'alcohol_draft_1000',
+    name: '생맥주(포장/배달) 1000cc',
+    category: '주류',
+    description: '치킨엔 역시 시원한 생맥주! 매장에서 바로 전용 용기에 담아 탄산과 시원함을 그대로 배달/포장',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    tag: '치맥 필수',
+    spicy: 0,
+    prices: [{ type: '1000cc', price: 7000 }]
+  },
+  {
+    id: 'alcohol_chamisul',
+    name: '참이슬',
+    category: '주류',
+    description: '깨끗하고 부드러운 이슬 같은 대한민국 대표 소주 (360ml)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
+  },
+  {
+    id: 'alcohol_chumchurum',
+    name: '처음처럼',
+    category: '주류',
+    description: '대관령 암반수로 만든 부드러운 목넘김의 소주 (360ml)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
+  },
+  {
+    id: 'alcohol_jinro',
+    name: '진로이즈백',
+    category: '주류',
+    description: '초깔끔한 맛과 레트로 감성의 하늘색 병 진로 소주 (360ml)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
+  },
+  {
+    id: 'alcohol_saero',
+    name: '새로 (제로슈거)',
+    category: '주류',
+    description: '과당을 쏙 빼서 산뜻하고 부드러운 제로슈거 인기 소주 (360ml)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
+  },
+  {
+    id: 'alcohol_cass',
+    name: '카스 (병맥주/캔)',
+    category: '주류',
+    description: '짜릿하고 톡 쏘는 상쾌함 끝판왕 카스 맥주',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
+  },
+  {
+    id: 'alcohol_terra',
+    name: '테라 (병맥주/캔)',
+    category: '주류',
+    description: '청정 라거 100% 리얼 탄산의 시원한 테라 맥주',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    spicy: 0,
+    prices: [{ type: '1병', price: 4000 }]
   }
 ];
 
@@ -187,10 +697,26 @@ export default function G60gyeDemoPage() {
   const [currentStep, setCurrentStep] = useState<number>(1); // 1: Menu, 2: Checkout, 3: Tracking
   const [showCartSheet, setShowCartSheet] = useState<boolean>(false);
 
-  // Active Type Selection per Menu ID
+  // 카테고리 탭 필터 상태
+  const [activeCategory, setActiveCategory] = useState<string>('전체');
+
+  // 부위 옵션 선택 상태 (메뉴 ID별)
   const [selectedTypes, setSelectedTypes] = useState<Record<string, string>>({});
 
-  // Form Inputs
+  // 순살 세트 맛 변경 선택 상태 (세트 ID별)
+  const [selectedSetFlavors, setSelectedSetFlavors] = useState<Record<string, string>>({
+    set_cheeseball: '후라이드 기본',
+    set_menbosha: '후라이드 기본',
+    set_tteokbokki: '후라이드 기본'
+  });
+
+  // 내 맘대로 반반치킨 모달 상태
+  const [showHalfModal, setShowHalfModal] = useState<boolean>(false);
+  const [halfFlavor1, setHalfFlavor1] = useState<string>('후라이드');
+  const [halfFlavor2, setHalfFlavor2] = useState<string>('양념');
+  const [halfType, setHalfType] = useState<string>('뼈');
+
+  // 주문 폼 상태
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [address, setAddress] = useState<string>('');
@@ -198,22 +724,22 @@ export default function G60gyeDemoPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>('store_payment');
   const [requestText, setRequestText] = useState<string>('');
 
-  // Custom (Other) Menu Order States
+  // 기타 직접 입력 모달 상태
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
   const [customMenuName, setCustomMenuName] = useState<string>('');
-  const [customMenuPrice, setCustomMenuPrice] = useState<string>('5000'); // 기본 예치금 5000원
+  const [customMenuPrice, setCustomMenuPrice] = useState<string>('5000');
   const [customMenuQty, setCustomMenuQty] = useState<number>(1);
   const [customMenuDesc, setCustomMenuDesc] = useState<string>('');
 
-  // AI Assistant States
+  // AI 큐레이터 상태
   const [aiInput, setAiInput] = useState<string>('');
-  const [aiResponse, setAiResponse] = useState<{ text: string; recommendedSpecs: { id: string; type: string }[] } | null>(null);
+  const [aiResponse, setAiResponse] = useState<{ text: string; recommendedSpecs: { id: string; type: string; details?: string }[] } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
 
-  // Tracking Simulator States
+  // 트래킹 상태
   const [trackStep, setTrackStep] = useState<number>(1);
 
-  // Initialize default menu type selections
+  // 메뉴 기본 타입 초기화
   useEffect(() => {
     const defaults: Record<string, string> = {};
     menuList.forEach(menu => {
@@ -222,11 +748,57 @@ export default function G60gyeDemoPage() {
     setSelectedTypes(defaults);
   }, []);
 
+  // 반반치킨 가격 계산 헬퍼 (대표님 공식 룰 100% 매핑)
+  const calculateHalfPrice = (f1: string, f2: string, part: string): number => {
+    const getLevel = (f: string) => {
+      if (f === '후라이드' || f === '양념' || f === '옛날양념') return 0;
+      if (f === '간지' || f === '고추' || f === '호랑이') return 1;
+      if (f === '하하핫' || f === '푸하핫' || f === '더매운고추' || f === '더매운') return 2;
+      return 1;
+    };
+    const l1 = getLevel(f1);
+    const l2 = getLevel(f2);
+    const minL = Math.min(l1, l2);
+    const maxL = Math.max(l1, l2);
+
+    let base = 23900;
+    if (minL === 0 && maxL === 0) base = 23900; // 후라이드 반 + 양념 반
+    else if (minL === 0 && maxL === 1) base = 23900; // 후라이드 반 + 간지/고추/호랑이
+    else if (minL === 0 && maxL === 2) base = 24900; // 후라이드 반 + 하하핫/푸하핫/더매운
+    else if (minL === 1 && maxL === 1) base = 24900; // 간지/고추/호랑이 중 택2
+    else if (minL === 1 && maxL === 2) base = 25900; // 간지/고추/호랑이 + 하하핫/푸하핫/더매운
+    else if (minL === 2 && maxL === 2) base = 26900; // 하하핫/푸하핫/더매운 중 택2
+
+    // 부위별 가산금 (뼈 +0, 순살 +1000, 윙봉 +1600, 콤보 +1600)
+    let extra = 0;
+    if (part === '순살') extra = 1000;
+    else if (part === '윙봉' || part === '콤보') extra = 1600;
+
+    return base + extra;
+  };
+
+  // 순살 세트 가격 계산 헬퍼 (대표님 공식 룰 100% 매핑)
+  const calculateSetPrice = (menuId: string, flavor: string): number => {
+    let base = 25500;
+    if (menuId === 'set_cheeseball') base = 25500;
+    else if (menuId === 'set_menbosha') base = 26900;
+    else if (menuId === 'set_tteokbokki') base = 27500;
+
+    if (flavor === '후라이드 기본' || flavor === '후라이드') return base;
+    if (['호랑이', '고추', '간지', '양념'].includes(flavor)) return base + 1000;
+    if (['크크크', '크랑이', '더매운', '푸하핫', '하하핫'].includes(flavor)) return base + 2000;
+    if (['쯔란', '참지마라'].includes(flavor)) return base + 3000;
+    return base;
+  };
+
+  // 대표님 지정 "무엇을 먹을지 고민되시나요?" 6가지 추천 칩스
   const aiChips = [
-    "화끈하게 매운 참지마라치킨 🌶️",
-    "아이랑 같이 먹을 안 매운 순살 🧒",
-    "맥주랑 먹기 딱 좋은 바삭알싸 콤보 🍺",
-    "크크크치킨 반반 주문 방법은? 🔄"
+    "👴 어르신 입맛 저격! (단짠, 담백고소, 거의 맵지 않은)",
+    "🧒 아이들이 제일 좋아하는 (바삭, 달콤, 단짠)",
+    "🔥 앗! 화끈하게 매운맛 (푸하핫, 더매운)",
+    "🍯 단짠단짠 마성의 조화 (호랑이치킨, 크랑이치킨)",
+    "🔄 내 맘대로 반반치킨 (맛 선택)",
+    "🍱 푸짐한 순살 세트 (치즈볼/멘보샤/떡볶이)"
   ];
 
   const handleAiRecommend = (query: string) => {
@@ -235,57 +807,68 @@ export default function G60gyeDemoPage() {
 
     setTimeout(() => {
       let text = '';
-      let recommendedSpecs: { id: string; type: string }[] = [];
+      let recommendedSpecs: { id: string; type: string; details?: string }[] = [];
 
-      // 60계치킨 반반 주문 룰 체크 (크크크/크랑이는 서로하고만 가능)
-      if (query.includes("반반") || query.includes("반반치킨") || query.includes("크크크 반반")) {
-        if (query.includes("고추") || query.includes("간지") || query.includes("매운") || query.includes("단짠") || query.includes("호랑이") || query.includes("참지마라")) {
-          text = "⚠️ 아쉽게도 60계치킨의 공식 조리 룰에 따라, '크크크치킨'과 '크랑이치킨'은 전용 파우더 특성으로 인해 오직 서로하고만 반반 주문이 가능합니다. 😭 고추치킨, 참지마라치킨 등 다른 메뉴와는 반반 구성이 불가능합니다.\n\n대신 바삭한 고소함과 매콤함이 환상적인 '크크크 + 크랑이 반반' 메뉴를 추천해 드릴게요! 순살로 장바구니에 담아드릴까요?";
-          recommendedSpecs = [{ id: 'ccc_crang_half', type: '순살' }];
-        } else {
-          text = "💡 크크크치킨과 크랑이치킨은 서로하고만 반반이 가능합니다! 고소하고 바삭한 크크크 반, 매콤 달콤한 크랑이 반을 모두 맛볼 수 있는 공식 '크크크 + 크랑이 반반' 메뉴를 추천드립니다. 가장 인기 있는 순살 옵션으로 바로 담으실 수 있습니다.";
-          recommendedSpecs = [{ id: 'ccc_crang_half', type: '순살' }];
-        }
-      } else if (query.includes("매운") || query.includes("마라") || query.includes("참지마라")) {
-        text = "🌶️ 화끈하고 알싸한 매운맛을 찾으신다면, 마라 덕후들을 위해 출시된 대세 신메뉴 '참지마라치킨'을 강력 추천합니다! 60계의 바삭한 식감에 알싸한 마라 양념과 고추, 대파 슬라이스가 가득 올라가 스트레스가 싹 날아갑니다. 뼈(24,900원) 혹은 순살(25,900원) 중 무엇으로 담아드릴까요?";
-        recommendedSpecs = [{ id: 'chamji_mara', type: '뼈' }];
-      } else if (query.includes("아이") || query.includes("안 매운")) {
-        text = "💡 아이들과 먹기 편한 맵지 않고 달콤바삭한 조합입니다! 뼈가 없어 안심하고 먹을 수 있는 순살 '크크크치킨'과 누룽지 가루가 고소한 순살 '호랑이치킨'을 추천합니다.";
+      if (query.includes("어르신") || query.includes("담백고소")) {
+        text = "👴 어르신 입맛을 사로잡는 담백하고 자극 없는 베스트 조합입니다!\n자극적이지 않고 씹는 맛이 살아있는 '뼈 치킨'으로 고소한 간지치킨, 바삭담백 후라이드치킨, 개운한 고추치킨(뼈)을 추천해 드립니다.";
+        recommendedSpecs = [
+          { id: 'ganji', type: '뼈' },
+          { id: 'fry', type: '뼈' },
+          { id: 'gochu', type: '뼈' }
+        ];
+      } else if (query.includes("아이") || query.includes("바삭, 달콤, 단짠")) {
+        text = "🧒 아이들이 가장 좋아하는 맵지 않고 달콤바삭한 순살 3대장!\n뼈가 없어 안심하고 한입에 쏙 먹는 크크크치킨(순살), 달콤한 옛날양념치킨(순살), 고소단짠 간지치킨(순살)을 강력 추천합니다.";
         recommendedSpecs = [
           { id: 'ccc', type: '순살' },
-          { id: 'horang', type: '순살' }
+          { id: 'yangnyeom', type: '순살' },
+          { id: 'ganji', type: '순살' }
         ];
-      } else if (query.includes("맥주") || query.includes("바삭") || query.includes("알싸") || query.includes("콤보")) {
-        text = "💡 치맥 라이프를 위해 맛있는 부위(날개+봉+다리)만 모아 쯔란 향을 진하게 입힌 '쯔란콤보'와, 바삭함의 끝판왕이자 매콤달콤한 '크랑이치킨 콤보' 구성을 강추합니다!";
+      } else if (query.includes("매운") || query.includes("화끈하게")) {
+        text = "🔥 스트레스가 싹 풀리는 화끈한 매운맛의 끝판왕!\n맛있는 날개와 닭다리만 쏙쏙 골라 튀긴 '콤보'로 푸하핫치킨(콤보)과 더매운고추치킨(콤보)을 추천합니다.";
         recommendedSpecs = [
-          { id: 'zuran', type: '콤보' },
-          { id: 'crang', type: '콤보' }
+          { id: 'puhahat', type: '콤보' },
+          { id: 'more_gochu', type: '콤보' }
         ];
-      } else if (query.includes("단짠")) {
-        text = "💡 입에 착 달라붙는 단짠 치킨의 끝판왕! 갈릭과 콘후레이크가 만난 '호랑이치킨'과, 가장 정석적인 고소함을 자랑하는 '후라이드치킨'의 바삭 콤보 세트를 드셔보세요.";
+      } else if (query.includes("단짠") || query.includes("호랑이")) {
+        text = "🍯 단짠단짠 마성의 중독성! 멈출 수 없는 바삭함의 향연!\n갈릭 콘후레이크의 호랑이치킨(뼈)과 바삭함 끝판왕 크랑이치킨(뼈) 조합을 추천합니다.";
         recommendedSpecs = [
           { id: 'horang', type: '뼈' },
-          { id: 'fry', type: '뼈' }
+          { id: 'crang', type: '뼈' }
+        ];
+      } else if (query.includes("반반")) {
+        text = "🔄 두 가지 맛을 한 번에! '내 맘대로 반반치킨' 혹은 '후라이드 반 + 양념 반'을 만나보세요!\n(※ 크크크와 크랑이는 조리법상 서로하고만 반반이 가능하여 단독 메뉴 '크크크 반 + 크랑이 반'으로 준비되어 있습니다)";
+        recommendedSpecs = [
+          { id: 'half_fry_yang', type: '뼈' },
+          { id: 'ccc_crang_half', type: '뼈' }
+        ];
+      } else if (query.includes("세트") || query.includes("순살 세트")) {
+        text = "🍱 치킨과 인기 사이드를 한 번에! 가성비 최고의 '순살 세트'!\n쫀득 치즈볼이 함께하는 '치즈볼엔 순살', 바삭한 '멘보샤엔 순살', 매콤달콤 '떡볶이엔 순살' 세트를 만나보세요.";
+        recommendedSpecs = [
+          { id: 'set_cheeseball', type: '후라이드 기본' },
+          { id: 'set_tteokbokki', type: '후라이드 기본' }
         ];
       } else {
-        text = "💡 60계치킨 강원영월점의 시그니처 1위인 '크크크치킨(순살)'과 매콤달콤 중독성 최강인 신메뉴 '크랑이치킨(뼈)'을 추천합니다! 매장에서 매일 60마리씩 새 기름으로 튀겨 극강의 고소함을 보여줍니다.";
+        text = "💡 영월점 대표 추천 조합! 바삭함 1위 '크크크치킨(순살)'과 매콤달콤 '호랑이치킨(뼈)'을 추천합니다!";
         recommendedSpecs = [
           { id: 'ccc', type: '순살' },
-          { id: 'crang', type: '뼈' }
+          { id: 'horang', type: '뼈' }
         ];
       }
 
       setAiResponse({ text, recommendedSpecs });
       setIsAiLoading(false);
-    }, 1500);
+    }, 1200);
   };
 
-  const addRecommendedToCart = (specs: { id: string; type: string }[]) => {
+  const addRecommendedToCart = (specs: { id: string; type: string; details?: string }[]) => {
     const updatedCart = [...cart];
     specs.forEach(spec => {
       const menu = menuList.find(m => m.id === spec.id);
       if (menu) {
-        const priceOpt = menu.prices.find(p => p.type === spec.type) || menu.prices[0];
+        let price = menu.prices[0]?.price || 23900;
+        const priceOpt = menu.prices.find(p => p.type === spec.type);
+        if (priceOpt) price = priceOpt.price;
+
         const existingIdx = updatedCart.findIndex(item => 
           item.menu.id === spec.id && item.selectedType === spec.type
         );
@@ -296,8 +879,9 @@ export default function G60gyeDemoPage() {
           updatedCart.push({ 
             menu, 
             selectedType: spec.type, 
-            selectedPrice: priceOpt.price, 
-            quantity: 1 
+            selectedPrice: price, 
+            quantity: 1,
+            customDetails: spec.details
           });
         }
       }
@@ -308,7 +892,41 @@ export default function G60gyeDemoPage() {
     setShowCartSheet(true);
   };
 
+  // 일반 치킨 장바구니 추가
   const addMenuToCart = (menu: Menu) => {
+    // 반반치킨 커스텀 메뉴 클릭 시 모달 열기
+    if (menu.isHalfAndHalf) {
+      setShowHalfModal(true);
+      return;
+    }
+
+    // 순살세트인 경우 현재 선택된 맛 변경 옵션 적용
+    if (menu.isBonelessSet) {
+      const selectedFlavor = selectedSetFlavors[menu.id] || '후라이드 기본';
+      const price = calculateSetPrice(menu.id, selectedFlavor);
+      const detailStr = selectedFlavor === '후라이드 기본' ? '기본 후라이드 순살' : `맛 변경: ${selectedFlavor} 순살`;
+
+      const updatedCart = [...cart];
+      const existingIdx = updatedCart.findIndex(item => 
+        item.menu.id === menu.id && item.customDetails === detailStr
+      );
+
+      if (existingIdx > -1) {
+        updatedCart[existingIdx].quantity += 1;
+      } else {
+        updatedCart.push({
+          menu,
+          selectedType: selectedFlavor,
+          selectedPrice: price,
+          quantity: 1,
+          customDetails: detailStr
+        });
+      }
+      setCart(updatedCart);
+      setShowCartSheet(true);
+      return;
+    }
+
     const activeType = selectedTypes[menu.id] || menu.prices[0].type;
     const priceOpt = menu.prices.find(p => p.type === activeType) || menu.prices[0];
     
@@ -331,7 +949,35 @@ export default function G60gyeDemoPage() {
     setShowCartSheet(true);
   };
 
-  // 직접 다른 메뉴를 입력해서 장바구니에 담는 기능
+  // 내 맘대로 반반치킨 모달에서 장바구니 담기
+  const handleAddHalfToCart = () => {
+    const halfMenu = menuList.find(m => m.id === 'half_custom')!;
+    const price = calculateHalfPrice(halfFlavor1, halfFlavor2, halfType);
+    const detailStr = `[반반] ${halfFlavor1} 반 + ${halfFlavor2} 반 (${halfType})`;
+
+    const updatedCart = [...cart];
+    const existingIdx = updatedCart.findIndex(item => 
+      item.menu.id === 'half_custom' && item.selectedType === halfType && item.customDetails === detailStr
+    );
+
+    if (existingIdx > -1) {
+      updatedCart[existingIdx].quantity += 1;
+    } else {
+      updatedCart.push({
+        menu: halfMenu,
+        selectedType: halfType,
+        selectedPrice: price,
+        quantity: 1,
+        customDetails: detailStr
+      });
+    }
+
+    setCart(updatedCart);
+    setShowHalfModal(false);
+    setShowCartSheet(true);
+  };
+
+  // 기타 직접 입력 메뉴 장바구니 담기
   const handleAddCustomMenu = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customMenuName) return;
@@ -342,7 +988,7 @@ export default function G60gyeDemoPage() {
       name: customMenuName,
       category: '기타 직접입력',
       description: customMenuDesc || '고객이 직접 작성한 개별 요청 메뉴',
-      image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png', // 기본 사이드 이미지 사용
+      image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
       spicy: 0,
       prices: [{ type: '기본', price }],
       isCustom: true
@@ -359,7 +1005,6 @@ export default function G60gyeDemoPage() {
       }
     ]);
 
-    // Reset Form & Close Modal
     setCustomMenuName('');
     setCustomMenuDesc('');
     setCustomMenuQty(1);
@@ -368,9 +1013,10 @@ export default function G60gyeDemoPage() {
     setShowCartSheet(true);
   };
 
-  const updateCartQty = (menuId: string, type: string, delta: number) => {
+  const updateCartQty = (menuId: string, type: string, delta: number, customDetails?: string) => {
     const updated = cart.map(item => {
-      if (item.menu.id === menuId && item.selectedType === type) {
+      const isMatch = item.menu.id === menuId && item.selectedType === type && item.customDetails === customDetails;
+      if (isMatch) {
         const nextQty = item.quantity + delta;
         return nextQty > 0 ? { ...item, quantity: nextQty } : null;
       }
@@ -379,8 +1025,8 @@ export default function G60gyeDemoPage() {
     setCart(updated);
   };
 
-  const removeFromCart = (menuId: string, type: string) => {
-    setCart(cart.filter(item => !(item.menu.id === menuId && item.selectedType === type)));
+  const removeFromCart = (menuId: string, type: string, customDetails?: string) => {
+    setCart(cart.filter(item => !(item.menu.id === menuId && item.selectedType === type && item.customDetails === customDetails)));
   };
 
   const getSubtotal = () => cart.reduce((sum, item) => sum + (item.selectedPrice * item.quantity), 0);
@@ -388,7 +1034,6 @@ export default function G60gyeDemoPage() {
   const getDeliveryFee = () => (orderType === 'delivery' && getSubtotal() > 0) ? 3000 : 0;
   const getTotalPrice = () => getSubtotal() - getDiscount() + getDeliveryFee();
 
-  // 픽업/배달 완료 목표 시각 계산 헬퍼
   // 픽업/완료 목표 시각까지 남은 분(Minutes) 계산 헬퍼
   const getRemainingMinutes = () => {
     try {
@@ -415,9 +1060,9 @@ export default function G60gyeDemoPage() {
 
   const getTargetPickupTime = (type: 'takeout' | 'delivery', selectedPickupStr: string) => {
     const now = new Date();
-    let minutesToAdd = 30; // 기본 30분
+    let minutesToAdd = 30;
     if (type === 'delivery') {
-      minutesToAdd = 40; // 배달 기본 40분
+      minutesToAdd = 40;
     } else {
       if (selectedPickupStr.includes('20분')) minutesToAdd = 20;
       else if (selectedPickupStr.includes('30분')) minutesToAdd = 30;
@@ -436,7 +1081,6 @@ export default function G60gyeDemoPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [currentOrderState, setCurrentOrderState] = useState<any | null>(null);
   const [recentOrder, setRecentOrder] = useState<any | null>(null);
-  // 동일 고객의 모든 주문 내역 목록 (복수/다중 주문 지원)
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const [storeSettings, setStoreSettings] = useState<{ isPaused: boolean; pauseReason: string }>({ isPaused: false, pauseReason: '' });
 
@@ -456,7 +1100,6 @@ export default function G60gyeDemoPage() {
   const [customerCancelReason, setCustomerCancelReason] = useState<string>('메뉴 변경 또는 결제/픽업 시간 재설정');
   const [customerCancelCustom, setCustomerCancelCustom] = useState<string>('');
 
-  // 고객 직접 주문 취소 실행 함수
   const handleCustomerCancelOrder = async () => {
     const orderIdToCancel = currentOrderId || recentOrder?.id || (typeof window !== 'undefined' ? localStorage.getItem('youngwol_latest_order_id') : '');
     if (!orderIdToCancel) return;
@@ -476,7 +1119,6 @@ export default function G60gyeDemoPage() {
         })
       });
 
-      // 로컬 스토리지 갱신
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('youngwol_orders');
         if (stored) {
@@ -495,7 +1137,6 @@ export default function G60gyeDemoPage() {
     }
   };
 
-  // 로컬스토리지에서 나의 모든 주문 목록 및 활성 주문을 실시간 불러오는 함수
   const loadRecentOrder = () => {
     if (typeof window !== 'undefined') {
       try {
@@ -504,9 +1145,7 @@ export default function G60gyeDemoPage() {
           const list = JSON.parse(ordersData);
           if (Array.isArray(list) && list.length > 0) {
             setMyOrders(list);
-
             const latestId = localStorage.getItem('youngwol_latest_order_id');
-            // 현재 선택된 ID가 목록에 있으면 그것을, 없으면 최신 ID를, 그것도 없으면 첫 번째 주문을 선택
             const targetId = currentOrderId || latestId || list[0].id;
             const found = list.find((o: any) => o.id === targetId) || list[0];
 
@@ -528,7 +1167,6 @@ export default function G60gyeDemoPage() {
     }
   };
 
-  // 주문 영수증 및 활성 주문 완전 초기화 (취소 후 새 주문 시작 시)
   const resetAndClearOrder = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('youngwol_latest_order_id');
@@ -548,7 +1186,6 @@ export default function G60gyeDemoPage() {
     return () => window.removeEventListener('storage', loadRecentOrder);
   }, []);
 
-  // 고객 주문 접수 완료 시 경쾌한 효과음 (딩동!)
   const playOrderSuccessSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -559,7 +1196,6 @@ export default function G60gyeDemoPage() {
       }
       const now = audioCtx.currentTime;
       
-      // 첫 번째 톤 (솔 G5: 783.99Hz)
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'sine';
@@ -571,7 +1207,6 @@ export default function G60gyeDemoPage() {
       osc1.start(now);
       osc1.stop(now + 0.35);
 
-      // 두 번째 톤 (높은 도 C6: 1046.5Hz)
       setTimeout(() => {
         try {
           const now2 = audioCtx.currentTime;
@@ -608,7 +1243,6 @@ export default function G60gyeDemoPage() {
     const orderId = `ord-${Date.now()}`;
     setCurrentOrderId(orderId);
 
-    // 주방 대시보드 실시간 주문 연동용 데이터 구성
     const orderData = {
       id: orderId,
       name,
@@ -643,7 +1277,6 @@ export default function G60gyeDemoPage() {
     setMyOrders(updatedOrderList);
     setRecentOrder(orderData);
     
-    // 중앙 서버 주문 동기화 API 호출 (다중 기기 동기화용)
     try {
       await fetch('/api/orders', {
         method: 'POST',
@@ -654,14 +1287,12 @@ export default function G60gyeDemoPage() {
       console.log('Central Server Order API error:', err);
     }
 
-    // 텔레그램 실시간 알림 API 호출
     fetch('/api/telegram-notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
     }).catch(err => console.log('Telegram API error:', err));
 
-    // 타 브라우저 탭에 실시간 storage 업데이트 노티 전송
     window.dispatchEvent(new Event('storage'));
 
     setCurrentOrderState(orderData);
@@ -670,7 +1301,6 @@ export default function G60gyeDemoPage() {
     playOrderSuccessSound();
   };
 
-  // 주방 상태와 실시간 100% 동기화 렌더링
   useEffect(() => {
     if (currentStep === 3) {
       const syncStatus = async () => {
@@ -682,7 +1312,6 @@ export default function G60gyeDemoPage() {
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {
-              // 나의 모든 주문 목록 상태를 서버 최신 상태와 동기화
               setMyOrders(prevList => {
                 return prevList.map(localOrd => {
                   const serverMatch = json.orders.find((so: any) => so.id === localOrd.id);
@@ -713,7 +1342,6 @@ export default function G60gyeDemoPage() {
           console.log('Customer syncStatus API error:', e);
         }
 
-        // 로컬 스토리지 Fallback
         if (typeof window !== 'undefined') {
           const data = localStorage.getItem('youngwol_orders');
           if (data) {
@@ -748,13 +1376,27 @@ export default function G60gyeDemoPage() {
     }
   }, [currentStep, currentOrderId, recentOrder]);
 
+  // 카테고리별 필터링
+  const categories = ['전체', '🍗 치킨', '🔄 반반치킨', '🍱 순살세트', '🍗 부분육', '🍟 사이드', '🥤 음료/소스', '🍺 주류'];
+  
+  const filteredMenuList = menuList.filter(m => {
+    if (activeCategory === '전체') return true;
+    if (activeCategory === '🍗 치킨') return m.category === '치킨';
+    if (activeCategory === '🔄 반반치킨') return m.category === '반반치킨';
+    if (activeCategory === '🍱 순살세트') return m.category === '순살세트';
+    if (activeCategory === '🍗 부분육') return m.category === '부분육';
+    if (activeCategory === '🍟 사이드') return m.category === '사이드';
+    if (activeCategory === '🥤 음료/소스') return m.category === '음료' || m.category === '소스';
+    if (activeCategory === '🍺 주류') return m.category === '주류';
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans selection:bg-[#f39c12]/30 selection:text-white pb-20">
+    <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans selection:bg-[#f39c12]/30 selection:text-white pb-24">
       
       {/* Mobile Top Header */}
       <header className="border-b border-[#32231e] bg-[#1a1210]/95 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-          {/* [리웨이브 연결 완전 분리] 매장 독립 네비게이션: 2/3단계에서는 1단계(메뉴판)로 복귀, 1단계에서는 매장 홈 엠블럼 표시 */}
           {currentStep > 1 ? (
             <button
               type="button"
@@ -812,10 +1454,10 @@ export default function G60gyeDemoPage() {
       )}
 
       {/* Constraints container */}
-      <div className="w-full max-w-md mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+      <div className="w-full max-w-md mx-auto px-4 py-4 flex-1 flex flex-col gap-5">
         
-        {/* Step Header (클릭 가능한 네비게이션) */}
-        <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-extrabold text-slate-500 border-b border-[#2a1d19] pb-4">
+        {/* Step Header */}
+        <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-extrabold text-slate-500 border-b border-[#2a1d19] pb-3">
           <button 
             type="button"
             onClick={() => setCurrentStep(1)}
@@ -862,9 +1504,9 @@ export default function G60gyeDemoPage() {
 
         {/* STEP 1: MENU SELECTION */}
         {currentStep === 1 && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-5 animate-fade-in">
             
-            {/* 최근 주문이 활성(조리/완료/대기) 상태일 때 노출되는 직통 영수증 배너 */}
+            {/* 최근 주문 영수증 배너 */}
             {recentOrder && recentOrder.status !== 'cancelled' ? (
               <div 
                 onClick={() => {
@@ -872,7 +1514,7 @@ export default function G60gyeDemoPage() {
                   setCurrentOrderState(recentOrder);
                   setCurrentStep(3);
                 }}
-                className="cursor-pointer bg-gradient-to-r from-[#2c1d18] via-[#3a2219] to-[#201410] border-2 border-[#f39c12] rounded-2xl p-4 shadow-xl shadow-[#f39c12]/15 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 animate-fade-in"
+                className="cursor-pointer bg-gradient-to-r from-[#2c1d18] via-[#3a2219] to-[#201410] border-2 border-[#f39c12] rounded-2xl p-3.5 shadow-xl shadow-[#f39c12]/15 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 animate-fade-in"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#f39c12] text-[#1a1210] flex items-center justify-center text-lg shadow-md shrink-0 font-black">
@@ -936,66 +1578,62 @@ export default function G60gyeDemoPage() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <div 
-                onClick={() => {
-                  alert('아직 접수된 주문 내역이 없습니다. 아래 메뉴판에서 원하시는 치킨을 장바구니에 담아 주문해 보세요! 🍗');
-                }}
-                className="cursor-pointer bg-[#1c1310] border border-[#3d2c27] hover:border-[#f39c12]/50 rounded-xl p-3 flex items-center justify-between transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">🧾</span>
-                  <span className="text-xs font-bold text-slate-300">내가 주문한 내역이 궁금하신가요?</span>
-                </div>
-                <span className="text-[10px] text-[#f39c12] font-extrabold bg-[#f39c12]/10 px-2 py-1 rounded-lg border border-[#f39c12]/20">
-                  주문 내역 조회 &gt;
-                </span>
-              </div>
-            )}
+            ) : null}
 
             {/* Live Store status */}
-            <div className="bg-[#1c1310] border border-[#3d2c27] rounded-xl p-3.5 flex items-center justify-between">
+            <div className="bg-[#1c1310] border border-[#3d2c27] rounded-xl p-3 flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-black text-emerald-450 tracking-wider block">LIVE KITCHEN STATUS</span>
-                <h4 className="text-xs font-bold text-white mt-0.5">현재 주문 대기 상태: <span className="text-[#f39c12]">보통</span></h4>
-                <p className="text-[10px] text-slate-400 mt-1">포장 조리 완료까지 약 25분 소요 예정</p>
+                <h4 className="text-xs font-bold text-white mt-0.5">현재 주문 대기: <span className="text-[#f39c12]">보통</span></h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">포장 조리 완료까지 약 25분 소요 예정</p>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-bold border border-emerald-500/25">전화 연결 원활</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[9px] font-bold border border-amber-500/25">포장 2,000원 할인</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[9px] font-bold border border-amber-500/25">🎁 포장 2,000원 할인</span>
               </div>
             </div>
 
-            {/* AI Assistant */}
-            <div className="bg-gradient-to-r from-[#201511] to-[#3a1f14] border border-[#f39c12]/20 rounded-2xl p-4 space-y-3 shadow-lg shadow-[#f39c12]/5">
+            {/* AI Assistant & 무엇을 먹을지 고민되시나요? */}
+            <div className="bg-gradient-to-r from-[#201511] via-[#2d1b14] to-[#3a1f14] border border-[#f39c12]/30 rounded-2xl p-4 space-y-3.5 shadow-lg shadow-[#f39c12]/5">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#f39c12]/15 flex items-center justify-center text-[#f39c12]">
+                <div className="w-8 h-8 rounded-xl bg-[#f39c12]/20 border border-[#f39c12]/40 flex items-center justify-center text-[#f39c12]">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-extrabold text-white">무엇을 먹을지 고민되시나요?</h3>
-                  <p className="text-[10px] text-slate-400">AI 치킨 큐레이터에게 물어보세요!</p>
+                  <h3 className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span>무엇을 먹을지 고민되시나요?</span>
+                    <span className="text-[9px] text-[#f39c12] bg-[#f39c12]/15 px-1.5 py-0.5 rounded font-extrabold">AI 큐레이터</span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400">대표 추천 메뉴를 눌러보시면 맞춤 조합을 안내해 드려요!</p>
                 </div>
               </div>
 
-              {/* Chat chips */}
-              <div className="flex flex-wrap gap-1.5">
+              {/* Chat chips (대표님 확정 6대 칩스) */}
+              <div className="grid grid-cols-1 gap-1.5">
                 {aiChips.map((chip, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleAiRecommend(chip)}
-                    className="text-[9px] font-semibold bg-[#2a1b16] hover:bg-[#3d2720] border border-[#442c23] text-slate-300 px-2.5 py-1.5 rounded-lg transition-colors text-left"
+                    onClick={() => {
+                      if (chip.includes("반반")) {
+                        setShowHalfModal(true);
+                      } else if (chip.includes("순살 세트")) {
+                        setActiveCategory('🍱 순살세트');
+                      }
+                      handleAiRecommend(chip);
+                    }}
+                    className="text-[11px] font-bold bg-[#261713] hover:bg-[#3d2720] border border-[#442c23] hover:border-[#f39c12]/50 text-slate-200 hover:text-white px-3 py-2 rounded-xl transition-all text-left flex items-center justify-between"
                   >
-                    {chip}
+                    <span>{chip}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#f39c12] shrink-0" />
                   </button>
                 ))}
               </div>
 
               {/* Form Input */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <input
                   type="text"
-                  placeholder="예: 매운 치킨 추천해줘 🌶️"
+                  placeholder="예: 어르신이랑 먹을 안 매운 치킨 추천해줘 🍗"
                   value={aiInput}
                   onChange={(e) => setAiInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1006,7 +1644,7 @@ export default function G60gyeDemoPage() {
                 <button
                   onClick={() => handleAiRecommend(aiInput)}
                   disabled={!aiInput || isAiLoading}
-                  className="w-9 h-9 bg-[#f39c12] hover:bg-[#f39c12]/95 disabled:bg-[#f39c12]/50 text-[#1a1210] rounded-xl flex items-center justify-center transition-colors shrink-0"
+                  className="w-9 h-9 bg-[#f39c12] hover:bg-[#f39c12]/95 disabled:bg-[#f39c12]/50 text-[#1a1210] rounded-xl flex items-center justify-center transition-colors shrink-0 font-bold"
                 >
                   {isAiLoading ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1023,17 +1661,17 @@ export default function G60gyeDemoPage() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="bg-[#0e0908] border border-[#f39c12]/20 rounded-xl p-3.5 space-y-3 overflow-hidden"
+                    className="bg-[#0e0908] border border-[#f39c12]/40 rounded-xl p-3.5 space-y-3 overflow-hidden shadow-inner"
                   >
-                    <p className="text-[11px] text-slate-300 leading-relaxed font-medium whitespace-pre-line">
+                    <p className="text-[11px] text-slate-200 leading-relaxed font-medium whitespace-pre-line">
                       {aiResponse.text}
                     </p>
-                    <div className="flex items-center justify-between border-t border-[#261915] pt-3">
+                    <div className="flex items-center justify-between border-t border-[#261915] pt-2.5">
                       <div className="flex flex-wrap gap-1.5">
                         {aiResponse.recommendedSpecs.map(spec => {
                           const item = menuList.find(m => m.id === spec.id);
                           return (
-                            <span key={spec.id} className="text-[8px] font-extrabold bg-[#261915] text-[#f39c12] px-2 py-0.5 rounded border border-[#f39c12]/20">
+                            <span key={spec.id} className="text-[9px] font-black bg-[#261915] text-[#f39c12] px-2 py-0.5 rounded border border-[#f39c12]/20">
                               {item?.name} ({spec.type})
                             </span>
                           );
@@ -1041,9 +1679,9 @@ export default function G60gyeDemoPage() {
                       </div>
                       <button
                         onClick={() => addRecommendedToCart(aiResponse.recommendedSpecs)}
-                        className="text-[9px] font-black bg-[#f39c12] text-[#1a1210] px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#f39c12]/90 transition-colors shrink-0"
+                        className="text-[10px] font-black bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors shrink-0 shadow"
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-3.5 h-3.5" />
                         <span>추천 조합 담기</span>
                       </button>
                     </div>
@@ -1052,18 +1690,54 @@ export default function G60gyeDemoPage() {
               </AnimatePresence>
             </div>
 
+            {/* Category Navigation Tabs */}
+            <div className="sticky top-14 z-30 bg-[#0e0a09]/95 backdrop-blur-md pt-1 pb-2 border-b border-[#2a1d19]">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-none py-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-black transition-all whitespace-nowrap shrink-0 border ${
+                      activeCategory === cat
+                        ? 'bg-[#f39c12] text-[#1a1210] border-[#f39c12] shadow-md shadow-[#f39c12]/20'
+                        : 'bg-[#1c1310] text-slate-300 border-[#3d2c27] hover:border-[#f39c12]/50 hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 주류 카테고리 선택 시 19세 성인 인증 배너 */}
+            {activeCategory === '🍺 주류' && (
+              <div className="bg-amber-950/40 border border-amber-500/50 rounded-xl p-3 text-xs text-amber-200 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>※ 19세 미만 청소년에게는 주류를 판매하지 않습니다. 픽업/배달 수령 시 신분증 확인이 진행됩니다.</span>
+              </div>
+            )}
+
             {/* Menu List Header */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">강원영월점 공식 메뉴판</h3>
-                <span className="text-[9px] font-semibold text-slate-500">* 홈페이지의 실제 사진과 100% 동일</span>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                  {activeCategory === '전체' ? '영월점 전체 공식 메뉴' : activeCategory} ({filteredMenuList.length}개)
+                </h3>
+                <span className="text-[9px] font-semibold text-slate-500">* 매장 실제 가격 100% 반영</span>
               </div>
 
               {/* Menu Cards */}
               <div className="space-y-4">
-                {menuList.map((menu) => {
+                {filteredMenuList.map((menu) => {
                   const activeType = selectedTypes[menu.id] || menu.prices[0].type;
-                  const activePrice = menu.prices.find(p => p.type === activeType)?.price || menu.prices[0].price;
+                  let activePrice = menu.prices.find(p => p.type === activeType)?.price || menu.prices[0].price;
+
+                  // 순살 세트인 경우 선택된 맛에 따른 가격 계산
+                  if (menu.isBonelessSet) {
+                    const chosenFlavor = selectedSetFlavors[menu.id] || '후라이드 기본';
+                    activePrice = calculateSetPrice(menu.id, chosenFlavor);
+                  }
+
                   const cartItem = cart.find(item => item.menu.id === menu.id && item.selectedType === activeType);
 
                   return (
@@ -1090,9 +1764,9 @@ export default function G60gyeDemoPage() {
                         {/* Content Block */}
                         <div className="flex-1 p-3.5 flex flex-col justify-between">
                           <div>
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-extrabold text-white">{menu.name}</h4>
-                              <span className="text-xs font-black text-[#f39c12]">{activePrice.toLocaleString()}원</span>
+                            <div className="flex items-center justify-between gap-1">
+                              <h4 className="text-sm font-extrabold text-white leading-tight">{menu.name}</h4>
+                              <span className="text-xs font-black text-[#f39c12] shrink-0">{activePrice.toLocaleString()}원</span>
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1 leading-snug line-clamp-2">
                               {menu.description}
@@ -1101,17 +1775,24 @@ export default function G60gyeDemoPage() {
 
                           {/* Cart Add/Remove Buttons */}
                           <div className="flex justify-end items-center mt-2">
-                            {cartItem ? (
+                            {menu.isHalfAndHalf ? (
+                              <button
+                                onClick={() => setShowHalfModal(true)}
+                                className="h-8 px-3.5 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl flex items-center gap-1 transition-all text-[11px] shadow"
+                              >
+                                <span>맛 선택 & 담기 🔄</span>
+                              </button>
+                            ) : cartItem ? (
                               <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-xl h-8 px-1">
                                 <button 
-                                  onClick={() => updateCartQty(menu.id, activeType, -1)}
+                                  onClick={() => updateCartQty(menu.id, activeType, -1, cartItem.customDetails)}
                                   className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
                                 >
                                   <Minus className="w-3.5 h-3.5" />
                                 </button>
                                 <span className="w-7 text-center text-xs font-bold text-white">{cartItem.quantity}</span>
                                 <button 
-                                  onClick={() => updateCartQty(menu.id, activeType, 1)}
+                                  onClick={() => updateCartQty(menu.id, activeType, 1, cartItem.customDetails)}
                                   className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
@@ -1130,24 +1811,65 @@ export default function G60gyeDemoPage() {
                         </div>
                       </div>
 
-                      {/* Bottom Options Selector Row */}
-                      {menu.prices.length > 1 && (
-                        <div className="px-3.5 pb-3 pt-2 bg-[#170f0d] border-t border-[#291b17] flex items-center gap-2 overflow-x-auto scrollbar-none">
-                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider shrink-0 mr-1">옵션 선택:</span>
-                          <div className="flex gap-1">
-                            {menu.prices.map((opt) => (
-                              <button
-                                key={opt.type}
-                                onClick={() => setSelectedTypes(prev => ({ ...prev, [menu.id]: opt.type }))}
-                                className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold transition-all border shrink-0 ${
-                                  activeType === opt.type
-                                    ? 'bg-[#f39c12]/10 border-[#f39c12] text-[#f39c12]'
-                                    : 'bg-[#0d0908] border-[#2c1d1a] text-slate-450 hover:text-slate-200'
-                                }`}
-                              >
-                                {opt.type} (+{(opt.price - menu.prices[0].price).toLocaleString()}원)
-                              </button>
-                            ))}
+                      {/* [대표님 업로드 이미지 100% 동일] 타원형 알약 옵션 선택 버튼 UI (뼈, 순살, 윙봉, 콤보) */}
+                      {menu.prices.length > 1 && !menu.isHalfAndHalf && !menu.isBonelessSet && (
+                        <div className="px-3.5 pb-2.5 pt-2 bg-[#170f0d] border-t border-[#291b17] flex items-center gap-2 overflow-x-auto scrollbar-none">
+                          <span className="text-[11px] font-extrabold text-sky-400 uppercase tracking-wider shrink-0 mr-1">
+                            옵션 선택:
+                          </span>
+                          <div className="flex gap-1.5">
+                            {menu.prices.map((opt) => {
+                              const isSelected = activeType === opt.type;
+                              const diff = opt.price - menu.prices[0].price;
+                              return (
+                                <button
+                                  key={opt.type}
+                                  type="button"
+                                  onClick={() => setSelectedTypes(prev => ({ ...prev, [menu.id]: opt.type }))}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-black transition-all border shrink-0 ${
+                                    isSelected
+                                      ? 'border-[#f39c12] text-[#f39c12] bg-[#f39c12]/15 shadow-sm'
+                                      : 'border-[#3d2c27] bg-[#161211] text-slate-200 hover:border-slate-600'
+                                  }`}
+                                >
+                                  {opt.type} (+{diff.toLocaleString()}원)
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 순살 세트 전용 맛 변경 옵션 선택기 */}
+                      {menu.isBonelessSet && (
+                        <div className="px-3.5 pb-2.5 pt-2 bg-[#170f0d] border-t border-[#291b17] flex items-center gap-2 overflow-x-auto scrollbar-none">
+                          <span className="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider shrink-0 mr-1">
+                            맛 변경 옵션:
+                          </span>
+                          <div className="flex gap-1.5">
+                            {[
+                              { label: '후라이드 기본 (+0원)', val: '후라이드 기본' },
+                              { label: '호랑이/고추/간지/양념 (+1,000원)', val: '호랑이' },
+                              { label: '크크크/크랑이/더매운 (+2,000원)', val: '크크크' },
+                              { label: '쯔란/참지마라 (+3,000원)', val: '쯔란' }
+                            ].map((flavorOpt) => {
+                              const currentVal = selectedSetFlavors[menu.id] || '후라이드 기본';
+                              const isSelected = currentVal === flavorOpt.val;
+                              return (
+                                <button
+                                  key={flavorOpt.val}
+                                  type="button"
+                                  onClick={() => setSelectedSetFlavors(prev => ({ ...prev, [menu.id]: flavorOpt.val }))}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-black transition-all border shrink-0 ${
+                                    isSelected
+                                      ? 'border-[#f39c12] text-[#f39c12] bg-[#f39c12]/15 shadow-sm'
+                                      : 'border-[#3d2c27] bg-[#161211] text-slate-200 hover:border-slate-600'
+                                  }`}
+                                >
+                                  {flavorOpt.label}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -1162,7 +1884,7 @@ export default function G60gyeDemoPage() {
             <div className="bg-[#1c1310] border border-[#3d2c27] rounded-2xl p-4 space-y-3">
               <h4 className="text-xs font-black text-[#f39c12] tracking-wider uppercase">이외에 다른 메뉴 주문하기 ➕</h4>
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                메뉴판에 없는 사이드 메뉴(예: 쫀득 치즈볼, 미니쫀득볼 등)나 세트 구성을 직접 작성해 장바구니에 담을 수 있습니다.
+                메뉴판에 없는 추가 구성이나 특별한 요청 메뉴를 직접 작성해 장바구니에 담을 수 있습니다.
               </p>
               <button
                 type="button"
@@ -1181,7 +1903,7 @@ export default function G60gyeDemoPage() {
                 className="inline-flex h-9 bg-slate-900 border border-[#3d2c27] hover:border-[#f39c12]/50 text-white font-bold rounded-xl text-xs items-center justify-center px-5 gap-2 transition-all"
               >
                 <Phone className="w-3.5 h-3.5 text-[#f39c12]" />
-                <span>영월점 전화로 바로 주문하기</span>
+                <span>영월점 전화로 바로 주문하기 (033-374-6660)</span>
               </a>
             </div>
 
@@ -1277,7 +1999,7 @@ export default function G60gyeDemoPage() {
               </div>
             </div>
 
-            {/* 주문 품목 및 결제 금액 확인 (주문 고객 정보와 결제 및 요청사항 사이) */}
+            {/* 주문 품목 및 결제 금액 확인 */}
             <div className="space-y-4 bg-[#1c1310] border border-[#f39c12]/30 p-4 rounded-2xl shadow-lg">
               <div className="flex items-center justify-between border-b border-[#3d2c27] pb-3">
                 <div className="flex items-center gap-2">
@@ -1325,11 +2047,10 @@ export default function G60gyeDemoPage() {
                         </p>
                       </div>
 
-                      {/* 수량 변경 (+ / -) 버튼 */}
                       <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-xl h-8 px-1 shrink-0">
                         <button
                           type="button"
-                          onClick={() => updateCartQty(item.menu.id, item.selectedType, -1)}
+                          onClick={() => updateCartQty(item.menu.id, item.selectedType, -1, item.customDetails)}
                           className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -1337,7 +2058,7 @@ export default function G60gyeDemoPage() {
                         <span className="w-7 text-center text-xs font-bold text-white">{item.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateCartQty(item.menu.id, item.selectedType, 1)}
+                          onClick={() => updateCartQty(item.menu.id, item.selectedType, 1, item.customDetails)}
                           className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -1539,7 +2260,7 @@ export default function G60gyeDemoPage() {
 
         {/* STEP 3: ORDER TRACKING SIMULATOR */}
         {currentStep === 3 && (
-          <div className="space-y-6 animate-fade-in text-center py-6">
+          <div className="space-y-6 animate-fade-in text-center py-4">
 
             {/* 복수 주문 전환 탭 바 (동일 고객 다중 주문 완벽 지원) */}
             {myOrders.length > 1 && (
@@ -1854,7 +2575,7 @@ export default function G60gyeDemoPage() {
                 {(currentOrderState?.items || cart).map((item: any, idx: number) => (
                   <div key={idx} className="flex items-start justify-between text-xs">
                     <div>
-                      <div className="font-bold text-white flex items-center gap-1.5">
+                      <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
                         <span>{item.name}</span>
                         <span className="text-[9px] font-semibold text-[#f39c12] bg-[#2a1b16] px-1.5 py-0.5 rounded border border-[#442c23]">
                           {item.type || '기본'}
@@ -1923,7 +2644,7 @@ export default function G60gyeDemoPage() {
               </a>
             </div>
 
-            {/* [방어선 1] 사장님이 이미 조리 시작(cooking) 또는 완료(done)한 경우 (로스 방어) */}
+            {/* [방어선 1] 사장님이 이미 조리 시작(cooking) 또는 완료(done)한 경우 */}
             {(currentOrderState?.status === 'cooking' || currentOrderState?.status === 'done') && (
               <div className="pt-1 max-w-sm mx-auto space-y-1.5 animate-fade-in">
                 <div className="bg-orange-950/40 border border-orange-500/50 rounded-2xl p-3.5 text-left space-y-1 shadow-lg">
@@ -1938,7 +2659,7 @@ export default function G60gyeDemoPage() {
               </div>
             )}
 
-            {/* [방어선 2] 조리 시작 전(pending)이지만, 남은 시간이 20분 이내로 진입한 경우 (대표님 20분 전 마감 룰) */}
+            {/* [방어선 2] 조리 시작 전(pending)이지만, 남은 시간이 20분 이내로 진입한 경우 */}
             {currentOrderState?.status === 'pending' && getRemainingMinutes() <= 20 && (
               <div className="pt-1 max-w-sm mx-auto space-y-1.5 animate-fade-in">
                 <div className="bg-amber-950/40 border border-amber-500/60 rounded-2xl p-3.5 text-left space-y-1.5 shadow-lg">
@@ -2024,35 +2745,35 @@ export default function G60gyeDemoPage() {
                   className="overflow-hidden border-t border-[#261915] mt-3 pt-3 space-y-4 max-h-60 overflow-y-auto"
                 >
                   <div className="space-y-3">
-                    {cart.map((item) => (
-                      <div key={`${item.menu.id}-${item.selectedType}`} className="flex justify-between items-center animate-fade-in">
-                        <div>
-                          <h5 className="text-xs font-extrabold text-white">
+                    {cart.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center animate-fade-in">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h5 className="text-xs font-extrabold text-white truncate">
                             {item.menu.name} <span className="text-[#f39c12] text-[9px] bg-[#f39c12]/10 px-1 rounded ml-1">{item.selectedType}</span>
                           </h5>
-                          {item.menu.isCustom && (
-                            <p className="text-[9px] text-slate-500 mt-0.5 leading-snug">{item.customDetails}</p>
+                          {item.customDetails && (
+                            <p className="text-[9px] text-slate-400 mt-0.5 leading-snug truncate">{item.customDetails}</p>
                           )}
-                          <span className="text-[10px] text-slate-500">{item.selectedPrice.toLocaleString()}원</span>
+                          <span className="text-[10px] text-slate-500 font-semibold">{item.selectedPrice.toLocaleString()}원</span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 shrink-0">
                           <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-lg h-7 px-1">
                             <button 
-                              onClick={() => updateCartQty(item.menu.id, item.selectedType, -1)}
+                              onClick={() => updateCartQty(item.menu.id, item.selectedType, -1, item.customDetails)}
                               className="w-5 h-5 flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 rounded-md"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="w-6 text-center text-xs font-bold text-white">{item.quantity}</span>
                             <button 
-                              onClick={() => updateCartQty(item.menu.id, item.selectedType, 1)}
+                              onClick={() => updateCartQty(item.menu.id, item.selectedType, 1, item.customDetails)}
                               className="w-5 h-5 flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 rounded-md"
                             >
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
                           <button 
-                            onClick={() => removeFromCart(item.menu.id, item.selectedType)}
+                            onClick={() => removeFromCart(item.menu.id, item.selectedType, item.customDetails)}
                             className="text-slate-550 hover:text-red-450 p-1"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -2092,6 +2813,150 @@ export default function G60gyeDemoPage() {
           </div>
         </div>
       )}
+
+      {/* 내 맘대로 반반치킨 선택 모달 (대표님 공식 룰 100% 반영) */}
+      <AnimatePresence>
+        {showHalfModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1310] border-2 border-[#f39c12]/60 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                type="button"
+                onClick={() => setShowHalfModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold w-7 h-7 rounded-full bg-[#261713] flex items-center justify-center"
+              >
+                ×
+              </button>
+              
+              <div className="space-y-1">
+                <span className="text-[9px] font-extrabold text-[#f39c12] bg-[#f39c12]/15 px-2 py-0.5 rounded-full border border-[#f39c12]/30 inline-block">
+                  60계치킨 공식 반반 조합기
+                </span>
+                <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                  <span>🔄 내 맘대로 반반치킨 만들기</span>
+                </h3>
+                <p className="text-[10px] text-slate-400 leading-snug">
+                  ※ 쯔란, 크크크, 크랑이, 참지마라는 조리법상 일반 반반에 포함되지 않습니다.<br />
+                  (크크크와 크랑이는 전용 메뉴인 <strong>'크크크 반 + 크랑이 반'</strong>을 이용해 주세요)
+                </p>
+              </div>
+
+              {/* 1. 첫 번째 맛 선택 */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-amber-400 block">
+                  1. 첫 번째 맛 선택 (반 마리)
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {['후라이드', '양념', '간지', '고추', '호랑이', '하하핫', '푸하핫', '더매운고추'].map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setHalfFlavor1(f)}
+                      className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all border text-center ${
+                        halfFlavor1 === f
+                          ? 'bg-[#f39c12] text-[#1a1210] border-[#f39c12] shadow'
+                          : 'bg-[#140b09] text-slate-300 border-[#3d2c27] hover:border-slate-500'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. 두 번째 맛 선택 */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-amber-400 block">
+                  2. 두 번째 맛 선택 (반 마리)
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {['후라이드', '양념', '간지', '고추', '호랑이', '하하핫', '푸하핫', '더매운고추'].map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setHalfFlavor2(f)}
+                      className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all border text-center ${
+                        halfFlavor2 === f
+                          ? 'bg-[#f39c12] text-[#1a1210] border-[#f39c12] shadow'
+                          : 'bg-[#140b09] text-slate-300 border-[#3d2c27] hover:border-slate-500'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. 부위 선택 (타원형 알약 형태) */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-sky-400 block">
+                  3. 부위 선택
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { type: '뼈', diff: '+0원' },
+                    { type: '순살', diff: '+1,000원' },
+                    { type: '윙봉', diff: '+1,600원' },
+                    { type: '콤보', diff: '+1,600원' }
+                  ].map(p => (
+                    <button
+                      key={p.type}
+                      type="button"
+                      onClick={() => setHalfType(p.type)}
+                      className={`py-1.5 px-1 rounded-full text-[10px] font-black transition-all border text-center ${
+                        halfType === p.type
+                          ? 'bg-[#f39c12]/20 border-[#f39c12] text-[#f39c12] shadow'
+                          : 'bg-[#140b09] text-slate-300 border-[#3d2c27] hover:border-slate-600'
+                      }`}
+                    >
+                      {p.type} ({p.diff})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 실시간 가격 안내 박스 */}
+              <div className="bg-[#120806] border border-[#f39c12]/30 rounded-2xl p-3 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 block">선택한 반반 조합</span>
+                  <strong className="text-xs text-white font-extrabold">
+                    {halfFlavor1} 반 + {halfFlavor2} 반 ({halfType})
+                  </strong>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] text-slate-400 block">정상 판매가</span>
+                  <strong className="text-base font-black text-[#f39c12]">
+                    {calculateHalfPrice(halfFlavor1, halfFlavor2, halfType).toLocaleString()}원
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowHalfModal(false)}
+                  className="flex-1 h-11 bg-slate-900 border border-[#3d2c27] text-slate-300 font-bold rounded-xl text-xs hover:bg-slate-800 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddHalfToCart}
+                  className="flex-[2] h-11 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl text-xs flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-95"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>{calculateHalfPrice(halfFlavor1, halfFlavor2, halfType).toLocaleString()}원에 담기</span>
+                </button>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* CUSTOM MENU INPUT DIALOG MODAL */}
       <AnimatePresence>
