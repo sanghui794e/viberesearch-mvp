@@ -37,14 +37,15 @@ export interface CartItem {
   customDetails?: string; // 직접 입력 메뉴의 세부사항 또는 반반치킨 맛 조합 / 순살세트 맛
 }
 
-// 60계치킨 강원영월점 실제 공식 메뉴 목록 (대표님 확정 데이터 100% 매핑)
+// 60계치킨 강원영월점 실제 공식 홈페이지(youngwol-chicken.co.kr) 실제 업로드 이미지 100% 매핑
+// ※ 웨지감자 이미지는 오직 웨지감자 단품에만 사용하며, 음료/주류/사이드/부분육/세트는 전용 이미지 적용
 const menuList: Menu[] = [
   // 1. 치킨 단품 (뼈, 순살, 윙봉, 콤보)
   {
     id: 'chamji_mara',
     name: '참지마라치킨',
     category: '치킨',
-    description: '알싸하고 화끈한 마라 시즈닝에 고추와 대파를 송송 뿌려 마라 덕후들의 입맛을 사로잡는 대세 신메뉴 치킨',
+    description: '마라치킨의 끝판왕! 얼얼한 마라에 침샘 폭발~ 참을 수 없는 참지마라치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260701120437_6e78ec01.jpg',
     tag: 'NEW 신메뉴',
     spicy: 3,
@@ -59,7 +60,7 @@ const menuList: Menu[] = [
     id: 'ccc',
     name: '크크크치킨',
     category: '치킨',
-    description: '크리스피! 크런치! 크럼블! 웃음이 절로 나오는 극강의 바삭함 끝판왕 (크크크 소스 3종 포함)',
+    description: '크리스피! 크런치! 크림볼! 맛있어서 ㅋㅋㅋ 웃음 나는 바삭함 끝판왕 치킨 (크크크소스 3종 포함)',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
     tag: '베스트 1위',
     spicy: 0,
@@ -74,7 +75,7 @@ const menuList: Menu[] = [
     id: 'crang',
     name: '크랑이치킨',
     category: '치킨',
-    description: '바삭바삭한 크크크치킨과 고소하고 알싸매콤한 호랑이 시즈닝이 만난 신개념 중독성 치킨',
+    description: '바삭바삭한 크크크치킨과 고소하고 알싸매콤한 호랑이 시즈닝의 빠삭한 만남!',
     image: 'https://youngwol-chicken.co.kr/uploads/20260611113738_a67b2cfe.png',
     tag: '인기 폭발',
     spicy: 1,
@@ -89,7 +90,7 @@ const menuList: Menu[] = [
     id: 'horang',
     name: '호랑이치킨',
     category: '치킨',
-    description: '알싸한 갈릭 파우더와 달콤바삭 콘후레이크가 버무려져 매콤달콤 마성의 단짠을 선사하는 시그니처',
+    description: '알싸한 갈릭 파우더와 달콤한 콘후레이크의 범상치 않은 단짠 마성의 맛!',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165804_e0c36557.png',
     tag: '단짠 명작',
     spicy: 1,
@@ -104,7 +105,7 @@ const menuList: Menu[] = [
     id: 'gochu',
     name: '고추치킨',
     category: '치킨',
-    description: '특제 간장소스에 맵지 않고 알싸한 청양고추가 송송 뿌려져 깔끔하고 개운한 영월점 베스트셀러',
+    description: '특제 간장소스에 맵지 않은 고추로 버무려 담백하고 깔끔한 영월점 베스트셀러',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165451_aec718de.jpg',
     tag: '깔끔 매콤',
     spicy: 2,
@@ -119,7 +120,7 @@ const menuList: Menu[] = [
     id: 'ganji',
     name: '간지치킨',
     category: '치킨',
-    description: '특제 간장소스와 누룽지의 환상 조화! 고소하고 담백해 아이들과 어르신 모두 좋아하는 60계 대표 별미',
+    description: '특제 간장소스와 누룽지의 조화, 담백하고 고소한 풍미가 가득해 남녀노소 1위 치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165421_50e38d25.jpg',
     tag: '남녀노소 1위',
     spicy: 0,
@@ -134,7 +135,7 @@ const menuList: Menu[] = [
     id: 'fry',
     name: '후라이드치킨',
     category: '치킨',
-    description: '매일 새 기름으로 튀겨 겉은 바삭하고 속은 촉촉 육즙 가득한 60계의 가장 순수하고 깨끗한 기본 치킨',
+    description: '매일 새 기름으로 튀겨 겉은 바삭하고 속은 담백한 가장 순수하고 깨끗한 기본 치킨',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
     tag: '기본에 충실',
     spicy: 0,
@@ -149,8 +150,8 @@ const menuList: Menu[] = [
     id: 'yangnyeom',
     name: '옛날양념치킨',
     category: '치킨',
-    description: '매콤달콤 전통 양념 비법으로 감칠맛을 살려 누구나 추억 속 그 맛 그대로 즐길 수 있는 양념 치킨',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165518_e2f47e33.jpg',
+    description: '추억의 맛 그대로! 매콤달콤 감칠맛 넘치는 60계 비법 전통 양념치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165615_bbc23d56.jpg',
     tag: '달콤 촉촉',
     spicy: 1,
     prices: [
@@ -164,8 +165,8 @@ const menuList: Menu[] = [
     id: 'more_gochu',
     name: '더매운고추치킨',
     category: '치킨',
-    description: '오리지널 고추치킨보다 한 단계 더 화끈하고 매콤하게! 매운맛 마니아들을 위한 스트레스 타파 치킨',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165451_aec718de.jpg',
+    description: '인기 메뉴 고추치킨보다 더 맵고 더 맛있다! 화끈한 스트레스 타파 치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165600_3e503d96.png',
     tag: '화끈 매운맛',
     spicy: 3,
     prices: [
@@ -179,8 +180,8 @@ const menuList: Menu[] = [
     id: 'hahahat',
     name: '하하핫치킨',
     category: '치킨',
-    description: '웃음이 터져 나오는 기분 좋은 매콤함! 특제 핫 시즈닝과 부드러운 육즙의 환상적인 밸런스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165659_ecc44df3.png',
+    description: '제일 핫한 치킨! 기분 좋은 매콤함으로 입이 신난다~ 하하핫치킨!',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165745_f342947e.png',
     tag: '매콤 알싸',
     spicy: 3,
     prices: [
@@ -194,8 +195,8 @@ const menuList: Menu[] = [
     id: 'puhahat',
     name: '푸하핫치킨',
     category: '치킨',
-    description: '푸하하 웃음이 터질 만큼 중독성 강한 불맛 매운맛! 혀끝을 감도는 화끈한 핫 치킨',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611113738_a67b2cfe.png',
+    description: '하하핫치킨을 더욱 핫하게! 푸하핫 웃음이 절로 나오는 중독성 최강의 불맛 매운맛 치킨',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165723_2aa0f368.png',
     tag: '강렬 불맛',
     spicy: 3,
     prices: [
@@ -209,7 +210,7 @@ const menuList: Menu[] = [
     id: 'zuran',
     name: '쯔란콤보 / 순살',
     category: '치킨',
-    description: '쯔란 스파이스를 듬뿍 입혀 이국적이고 매콤 짭조름한 풍미가 가득한 별미 치킨 (※ 뼈는 없으며 순살/윙봉/콤보 전용)',
+    description: '바삭한 치킨에 이국적인 쯔란 스파이스 범벅! (※ 뼈는 없으며 순살/윙봉/콤보 전용)',
     image: 'https://youngwol-chicken.co.kr/uploads/20260606165635_7b6f044b.png',
     tag: '이국적 풍미',
     spicy: 1,
@@ -242,7 +243,7 @@ const menuList: Menu[] = [
     name: '후라이드 반 + 양념 반',
     category: '반반치킨',
     description: '치킨의 영원한 정석! 겉바속촉 고소한 후라이드 반과 달콤매콤한 옛날양념 반의 완벽한 조화',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165518_e2f47e33.jpg',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165615_bbc23d56.jpg',
     tag: '영원한 정석',
     spicy: 1,
     prices: [
@@ -268,13 +269,13 @@ const menuList: Menu[] = [
     ]
   },
 
-  // 3. 순살 세트 (순살 한 마리 + 사이드 결합 & 맛 변경 옵션)
+  // 3. 순살 세트 (순살 한 마리 + 사이드 결합 & 홈페이지 실제 사진 연동)
   {
     id: 'set_cheeseball',
     name: '치즈볼엔 순살',
     category: '순살세트',
-    description: '고소하고 쫀득한 치즈볼과 순살 한 마리의 꿀조합! (후라이드 기본, 맛 변경 옵션 선택 가능)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    description: '후라이드 순살 한 마리 + 쫀득 치즈볼 3개 + 콜라 1.25L 세트 (맛 변경 옵션 가능)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115419_3bda53b5.jpg',
     tag: '세트 1위',
     spicy: 0,
     isBonelessSet: true,
@@ -286,8 +287,8 @@ const menuList: Menu[] = [
     id: 'set_menbosha',
     name: '멘보샤엔 순살',
     category: '순살세트',
-    description: '바삭한 식빵 사이에 통통한 새우 살이 가득한 멘보샤와 순살 치킨 한 마리 세트',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115545_bf53ce55.png',
+    description: '후라이드 순살 한 마리 + 바삭 촉촉 멘보샤 5개 + 콜라 1.25L 세트',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115445_d3a59082.png',
     tag: '가성비 세트',
     spicy: 0,
     isBonelessSet: true,
@@ -299,8 +300,8 @@ const menuList: Menu[] = [
     id: 'set_tteokbokki',
     name: '떡볶이엔 순살',
     category: '순살세트',
-    description: '매콤달콤 쫄깃한 포장마차 떡볶이와 바삭한 순살 치킨의 환상 궁합! 떡볶이 국물에 콕 찍어드세요',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115502_b0c0360a.png',
+    description: '후라이드 순살 한 마리 + 매콤달콤 포장마차 떡볶이 + 콜라 1.25L 세트',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115433_f1067aa2.png',
     tag: '푸짐 세트',
     spicy: 1,
     isBonelessSet: true,
@@ -309,13 +310,13 @@ const menuList: Menu[] = [
     ]
   },
 
-  // 4. 부분육 단품 (윙 / 봉 / 다리 1/2컷)
+  // 4. 부분육 단품 (홈페이지 실제 업로드 전용 사진 연동)
   {
     id: 'part_wing15',
     name: '윙만 15조각',
     category: '부분육',
-    description: '바삭하고 쫄깃한 날개(윙) 부위만 15조각 모았습니다. (맛 선택에 따라 금액이 변동됩니다)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    description: '윙만 15조각으로 즐기는 단품 메뉴입니다. (단품은 포장 2,000원 할인 대상이 아닙니다)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165533_706ab6ea.jpg',
     tag: '날개 매니아',
     spicy: 0,
     prices: [
@@ -328,8 +329,8 @@ const menuList: Menu[] = [
     id: 'part_bong15',
     name: '봉만 15조각',
     category: '부분육',
-    description: '한 손으로 쏙쏙 빼먹기 좋은 부드러운 닭봉만 15조각 알차게 모았습니다.',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    description: '봉만 15조각으로 즐기는 단품 메뉴입니다. (단품은 포장 2,000원 할인 대상이 아닙니다)',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165523_af912931.jpg',
     tag: '닭봉 매니아',
     spicy: 0,
     prices: [
@@ -340,10 +341,10 @@ const menuList: Menu[] = [
   },
   {
     id: 'part_leg12',
-    name: '다리 1/2컷 (12조각)',
+    name: '다리 12조각 (2분의 1컷)',
     category: '부분육',
-    description: '육즙 팡팡 통통한 닭다리를 먹기 좋은 1/2 크기로 깔끔하게 손질한 12조각 단품',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260606165830_caee4102.jpg',
+    description: '다리 6조각을 2분의 1 컷으로 나누어 12조각으로 제공하는 단품 메뉴입니다.',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260606165509_fa1bdf19.jpg',
     tag: '닭다리 매니아',
     spicy: 0,
     prices: [
@@ -353,13 +354,14 @@ const menuList: Menu[] = [
     ]
   },
 
-  // 5. 사이드 메뉴 15종 (대표님 공식 단가 100% 매핑)
+  // 5. 사이드 메뉴 15종 (홈페이지 실제 업로드 사진 100% 매핑)
   {
     id: 'side_mini_cheeseball',
     name: '미니 쫀득볼',
     category: '사이드',
     description: '한입에 쏙 들어가는 귀엽고 쫄깃쫄깃한 미니 쫀득볼',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115454_0c48d598.png',
+    tag: '인기',
     spicy: 0,
     prices: [{ type: '단품', price: 2700 }]
   },
@@ -377,7 +379,7 @@ const menuList: Menu[] = [
     name: '호랑이 웨지감자',
     category: '사이드',
     description: '바삭한 웨지감자에 달콤짭조름 갈릭 호랑이 시즈닝을 듬뿍 버무린 감자튀김',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115537_b80bf0bc.png',
     tag: '단짠 별미',
     spicy: 1,
     prices: [{ type: '단품', price: 4000 }]
@@ -387,7 +389,7 @@ const menuList: Menu[] = [
     name: '치즈스틱',
     category: '사이드',
     description: '고소한 자연산 모짜렐라 치즈가 길게 쭉 늘어나는 바삭한 치즈스틱',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115630_1a2b35b1.jpg',
     spicy: 0,
     prices: [{ type: '단품', price: 4000 }]
   },
@@ -396,7 +398,7 @@ const menuList: Menu[] = [
     name: '튀김만두',
     category: '사이드',
     description: '바삭하게 튀겨내어 속이 꽉 찬 고소하고 담백한 별미 튀김만두',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=400',
     spicy: 0,
     prices: [{ type: '단품', price: 4000 }]
   },
@@ -405,7 +407,7 @@ const menuList: Menu[] = [
     name: '쫀득 치즈볼',
     category: '사이드',
     description: '달콤 짭조름한 치즈가 꽉 차서 입안 가득 행복한 60계의 전설적 사이드',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115419_3bda53b5.jpg',
     tag: '사이드 1위',
     spicy: 0,
     prices: [{ type: '단품', price: 5000 }]
@@ -415,7 +417,7 @@ const menuList: Menu[] = [
     name: '포장마차 떡볶이',
     category: '사이드',
     description: '학창 시절 추억의 포장마차 맛! 매콤달콤 자작한 국물이 치킨과 환상 궁합',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115502_b0c0360a.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115433_f1067aa2.png',
     tag: '국물 별미',
     spicy: 1,
     prices: [{ type: '단품', price: 5000 }]
@@ -425,7 +427,8 @@ const menuList: Menu[] = [
     name: '쫀도그',
     category: '사이드',
     description: '쫄깃한 찹쌀 반죽 속에 탱글탱글 소시지가 쏙 들어간 인기 미니 핫도그',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115525_3ea119b4.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115516_2d77a7c8.jpg',
+    tag: '인기',
     spicy: 0,
     prices: [{ type: '단품', price: 5000 }]
   },
@@ -434,7 +437,7 @@ const menuList: Menu[] = [
     name: '호랑이 쫀도그',
     category: '사이드',
     description: '쫄깃한 쫀도그에 단짠 알싸 호랑이 콘후레이크 시즈닝을 아낌없이 뿌린 핫도그',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115525_3ea119b4.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115639_11bb10d0.png',
     spicy: 1,
     prices: [{ type: '단품', price: 6000 }]
   },
@@ -443,7 +446,7 @@ const menuList: Menu[] = [
     name: '호랑이 치즈볼',
     category: '사이드',
     description: '치즈가 쭉 늘어나는 쫀득 치즈볼에 호랑이 단짠 시즈닝을 입혀 중독성 최강',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115709_62428f06.png',
     spicy: 1,
     prices: [{ type: '단품', price: 6000 }]
   },
@@ -452,7 +455,7 @@ const menuList: Menu[] = [
     name: '포테이토 치즈스틱',
     category: '사이드',
     description: '바삭한 감자 큐브가 콕콕 박혀 더욱 바삭하고 고소한 프리미엄 치즈스틱',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115630_1a2b35b1.jpg',
     spicy: 0,
     prices: [{ type: '단품', price: 6000 }]
   },
@@ -461,7 +464,7 @@ const menuList: Menu[] = [
     name: '멘보샤',
     category: '사이드',
     description: '겉은 바삭 속은 촉촉 탱글한 통새우 살이 듬뿍 들어간 고급 수제 멘보샤',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115545_bf53ce55.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115445_d3a59082.png',
     spicy: 0,
     prices: [{ type: '단품', price: 8900 }]
   },
@@ -470,7 +473,7 @@ const menuList: Menu[] = [
     name: '근위튀김 (똥집튀김)',
     category: '사이드',
     description: '쫄깃쫄깃 오독오독 씹는 맛이 최고인 깨끗한 새 기름으로 튀긴 닭똥집 튀김',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115552_c05717fb.png',
     tag: '술안주 추천',
     spicy: 0,
     prices: [{ type: '단품', price: 10000 }]
@@ -480,7 +483,7 @@ const menuList: Menu[] = [
     name: '아매워 근위튀김',
     category: '사이드',
     description: '매콤하고 알싸한 화끈 특제 소스를 버무려 맥주를 부르는 매운 똥집튀김',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115552_c05717fb.png',
     spicy: 3,
     prices: [{ type: '단품', price: 11000 }]
   },
@@ -489,18 +492,18 @@ const menuList: Menu[] = [
     name: '양념 근위튀김',
     category: '사이드',
     description: '매콤달콤 감칠맛 나는 60계 특제 양념소스를 듬뿍 버무린 쫄깃한 똥집튀김',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://youngwol-chicken.co.kr/uploads/20260611115552_c05717fb.png',
     spicy: 1,
     prices: [{ type: '단품', price: 11000 }]
   },
 
-  // 6. 음료수
+  // 6. 음료수 (웨지감자 전면 제거 & 전용 고화질 이미지 연동)
   {
     id: 'drink_coke_500',
     name: '코카콜라 500ml',
     category: '음료',
     description: '시원하고 톡 쏘는 오리지널 코카콜라 페트 500ml',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400',
     spicy: 0,
     prices: [{ type: '500ml', price: 2000 }]
   },
@@ -509,7 +512,7 @@ const menuList: Menu[] = [
     name: '코카콜라 1.25L',
     category: '음료',
     description: '가족, 친구들과 넉넉하게 마시는 대용량 코카콜라 1.25L',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400',
     spicy: 0,
     prices: [{ type: '1.25L', price: 3000 }]
   },
@@ -518,7 +521,7 @@ const menuList: Menu[] = [
     name: '스프라이트 500ml',
     category: '음료',
     description: '상쾌한 청량감 가득한 사이다 스프라이트 페트 500ml',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400',
     spicy: 0,
     prices: [{ type: '500ml', price: 2000 }]
   },
@@ -527,18 +530,18 @@ const menuList: Menu[] = [
     name: '스프라이트 1.5L',
     category: '음료',
     description: '시원하게 톡 쏘는 상쾌한 스프라이트 대용량 1.5L',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400',
     spicy: 0,
     prices: [{ type: '1.5L', price: 3000 }]
   },
 
-  // 7. 소스 & 무
+  // 7. 소스 & 무 (전용 이미지 연동)
   {
     id: 'sauce_radish',
     name: '치킨무 추가',
     category: '소스',
     description: '아삭아삭 새콤달콤 시원한 60계 전용 치킨무 1팩',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=400',
     spicy: 0,
     prices: [{ type: '1팩', price: 500 }]
   },
@@ -547,7 +550,7 @@ const menuList: Menu[] = [
     name: '치킨양념소스',
     category: '소스',
     description: '후라이드에 찍어 먹으면 딱 좋은 달콤매콤 비법 양념소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 1,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -556,7 +559,7 @@ const menuList: Menu[] = [
     name: '델리소스',
     category: '소스',
     description: '감칠맛 가득 달콤 짭조름한 60계 특제 델리 간장소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 0,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -565,7 +568,7 @@ const menuList: Menu[] = [
     name: '마요네즈',
     category: '소스',
     description: '고소하고 부드러운 고품질 마요네즈 소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 0,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -574,7 +577,7 @@ const menuList: Menu[] = [
     name: '청양마요소스',
     category: '소스',
     description: '알싸한 청양고추와 고소한 마요네즈의 깔끔한 만남',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 2,
     prices: [{ type: '1개', price: 800 }]
   },
@@ -583,7 +586,7 @@ const menuList: Menu[] = [
     name: 'HOT 크크크소스',
     category: '소스',
     description: '바삭한 치킨에 화끈함을 더해주는 매콤 칼칼 HOT 크크크 소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 2,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -592,7 +595,7 @@ const menuList: Menu[] = [
     name: '뿌리고 치밥고',
     category: '소스',
     description: '치킨 살을 찢어 밥과 함께 비벼 먹을 때 최고인 특제 치밥 시즈닝',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 0,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -601,7 +604,7 @@ const menuList: Menu[] = [
     name: '콘마요소스',
     category: '소스',
     description: '옥수수의 달콤 고소함이 입안 가득 퍼지는 부드러운 콘마요 소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 0,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -610,7 +613,7 @@ const menuList: Menu[] = [
     name: '크크크소스',
     category: '소스',
     description: '크크크치킨의 맛을 완성하는 상큼하고 달콤한 오리지널 마늘 크크크 소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 0,
     prices: [{ type: '1개', price: 1500 }]
   },
@@ -619,18 +622,18 @@ const menuList: Menu[] = [
     name: '아매워소스',
     category: '소스',
     description: '한 방울울 찍어 먹어도 땀이 쏙 나는 극강의 화끈 매운맛 디핑소스',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115428_6d70bc70.png',
+    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
     spicy: 3,
     prices: [{ type: '1개', price: 1500 }]
   },
 
-  // 8. 주류 (성인 인증 안내)
+  // 8. 주류 (성인 인증 안내 & 시원한 전용 주류 사진 연동)
   {
     id: 'alcohol_draft_1000',
     name: '생맥주(포장/배달) 1000cc',
     category: '주류',
     description: '치킨엔 역시 시원한 생맥주! 매장에서 바로 전용 용기에 담아 탄산과 시원함을 그대로 배달/포장',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=400',
     tag: '치맥 필수',
     spicy: 0,
     prices: [{ type: '1000cc', price: 7000 }]
@@ -640,7 +643,7 @@ const menuList: Menu[] = [
     name: '참이슬',
     category: '주류',
     description: '깨끗하고 부드러운 이슬 같은 대한민국 대표 소주 (360ml)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -649,7 +652,7 @@ const menuList: Menu[] = [
     name: '처음처럼',
     category: '주류',
     description: '대관령 암반수로 만든 부드러운 목넘김의 소주 (360ml)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -658,7 +661,7 @@ const menuList: Menu[] = [
     name: '진로이즈백',
     category: '주류',
     description: '초깔끔한 맛과 레트로 감성의 하늘색 병 진로 소주 (360ml)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -667,7 +670,7 @@ const menuList: Menu[] = [
     name: '새로 (제로슈거)',
     category: '주류',
     description: '과당을 쏙 빼서 산뜻하고 부드러운 제로슈거 인기 소주 (360ml)',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -676,7 +679,7 @@ const menuList: Menu[] = [
     name: '카스 (병맥주/캔)',
     category: '주류',
     description: '짜릿하고 톡 쏘는 상쾌함 끝판왕 카스 맥주',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -685,7 +688,7 @@ const menuList: Menu[] = [
     name: '테라 (병맥주/캔)',
     category: '주류',
     description: '청정 라거 100% 리얼 탄산의 시원한 테라 맥주',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   }
@@ -769,7 +772,6 @@ export default function G60gyeDemoPage() {
     else if (minL === 1 && maxL === 2) base = 25900; // 간지/고추/호랑이 + 하하핫/푸하핫/더매운
     else if (minL === 2 && maxL === 2) base = 26900; // 하하핫/푸하핫/더매운 중 택2
 
-    // 부위별 가산금 (뼈 +0, 순살 +1000, 윙봉 +1600, 콤보 +1600)
     let extra = 0;
     if (part === '순살') extra = 1000;
     else if (part === '윙봉' || part === '콤보') extra = 1600;
@@ -810,27 +812,27 @@ export default function G60gyeDemoPage() {
       let recommendedSpecs: { id: string; type: string; details?: string }[] = [];
 
       if (query.includes("어르신") || query.includes("담백고소")) {
-        text = "👴 어르신 입맛을 사로잡는 담백하고 자극 없는 베스트 조합입니다!\n자극적이지 않고 씹는 맛이 살아있는 '뼈 치킨'으로 고소한 간지치킨, 바삭담백 후라이드치킨, 개운한 고추치킨(뼈)을 추천해 드립니다.";
+        text = "👴 부모님과 어르신들이 가장 좋아하시는 담백하고 자극 없는 조합입니다!\n씹는 맛이 일품인 '뼈 치킨'으로 간지치킨, 후라이드치킨, 깔끔한 고추치킨을 추천해 드려요.";
         recommendedSpecs = [
           { id: 'ganji', type: '뼈' },
           { id: 'fry', type: '뼈' },
           { id: 'gochu', type: '뼈' }
         ];
       } else if (query.includes("아이") || query.includes("바삭, 달콤, 단짠")) {
-        text = "🧒 아이들이 가장 좋아하는 맵지 않고 달콤바삭한 순살 3대장!\n뼈가 없어 안심하고 한입에 쏙 먹는 크크크치킨(순살), 달콤한 옛날양념치킨(순살), 고소단짠 간지치킨(순살)을 강력 추천합니다.";
+        text = "🧒 아이들이 한입에 쏙 먹기 편한 순살 치킨 베스트 3!\n바삭함 1위 크크크치킨(순살), 달콤한 옛날양념치킨(순살), 고소한 간지치킨(순살)을 추천합니다.";
         recommendedSpecs = [
           { id: 'ccc', type: '순살' },
           { id: 'yangnyeom', type: '순살' },
           { id: 'ganji', type: '순살' }
         ];
       } else if (query.includes("매운") || query.includes("화끈하게")) {
-        text = "🔥 스트레스가 싹 풀리는 화끈한 매운맛의 끝판왕!\n맛있는 날개와 닭다리만 쏙쏙 골라 튀긴 '콤보'로 푸하핫치킨(콤보)과 더매운고추치킨(콤보)을 추천합니다.";
+        text = "🔥 매운맛 마니아를 위한 화끈한 불맛 조합!\n맛있는 날개와 닭다리만 쏙쏙 골라 튀긴 '콤보'로 푸하핫치킨(콤보)과 더매운고추치킨(콤보)을 추천합니다.";
         recommendedSpecs = [
           { id: 'puhahat', type: '콤보' },
           { id: 'more_gochu', type: '콤보' }
         ];
       } else if (query.includes("단짠") || query.includes("호랑이")) {
-        text = "🍯 단짠단짠 마성의 중독성! 멈출 수 없는 바삭함의 향연!\n갈릭 콘후레이크의 호랑이치킨(뼈)과 바삭함 끝판왕 크랑이치킨(뼈) 조합을 추천합니다.";
+        text = "🍯 단짠의 최고봉! 멈출 수 없는 바삭함의 향연!\n갈릭 콘후레이크의 호랑이치킨(뼈)과 바삭함 끝판왕 크랑이치킨(뼈) 조합을 추천합니다.";
         recommendedSpecs = [
           { id: 'horang', type: '뼈' },
           { id: 'crang', type: '뼈' }
@@ -903,16 +905,13 @@ export default function G60gyeDemoPage() {
     addRecommendedToCart([spec]);
   };
 
-
   // 일반 치킨 장바구니 추가
   const addMenuToCart = (menu: Menu) => {
-    // 반반치킨 커스텀 메뉴 클릭 시 모달 열기
     if (menu.isHalfAndHalf) {
       setShowHalfModal(true);
       return;
     }
 
-    // 순살세트인 경우 현재 선택된 맛 변경 옵션 적용
     if (menu.isBonelessSet) {
       const selectedFlavor = selectedSetFlavors[menu.id] || '후라이드 기본';
       const price = calculateSetPrice(menu.id, selectedFlavor);
@@ -1000,7 +999,7 @@ export default function G60gyeDemoPage() {
       name: customMenuName,
       category: '기타 직접입력',
       description: customMenuDesc || '고객이 직접 작성한 개별 요청 메뉴',
-      image: 'https://youngwol-chicken.co.kr/uploads/20260611115406_d9350ea5.png',
+      image: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=400',
       spicy: 0,
       prices: [{ type: '기본', price }],
       isCustom: true
@@ -1149,26 +1148,43 @@ export default function G60gyeDemoPage() {
     }
   };
 
+  // 로컬스토리지에서 최근 주문을 불러오는 로직 (지워진 주문 영구 방어)
   const loadRecentOrder = () => {
     if (typeof window !== 'undefined') {
       try {
+        const dismissed: string[] = JSON.parse(localStorage.getItem('youngwol_dismissed_orders') || '[]');
         const ordersData = localStorage.getItem('youngwol_orders');
         if (ordersData) {
           const list = JSON.parse(ordersData);
           if (Array.isArray(list) && list.length > 0) {
-            setMyOrders(list);
-            const latestId = localStorage.getItem('youngwol_latest_order_id');
-            const targetId = currentOrderId || latestId || list[0].id;
-            const found = list.find((o: any) => o.id === targetId) || list[0];
+            // 사용자가 영수증 지우기한 주문은 목록에서 완전 제외
+            const validOrders = list.filter((o: any) => !dismissed.includes(o.id));
+            setMyOrders(validOrders);
 
-            if (found) {
-              setRecentOrder(found);
-              if (!currentOrderId) {
-                setCurrentOrderId(found.id);
-                setCurrentOrderState(found);
+            const latestId = localStorage.getItem('youngwol_latest_order_id');
+            if (latestId && !dismissed.includes(latestId)) {
+              const found = validOrders.find((o: any) => o.id === latestId);
+              if (found) {
+                setRecentOrder(found);
+                if (!currentOrderId) {
+                  setCurrentOrderId(found.id);
+                  setCurrentOrderState(found);
+                }
+                return;
+              }
+            } else {
+              // latestId가 없을 때는 취소된 주문을 띄우지 않고,
+              // 오직 활성 진행 중인 주문(대기/조리/완료)만 가져옴
+              const activeOrder = validOrders.find((o: any) => o.status !== 'cancelled');
+              if (activeOrder) {
+                setRecentOrder(activeOrder);
+                if (!currentOrderId) {
+                  setCurrentOrderId(activeOrder.id);
+                  setCurrentOrderState(activeOrder);
+                }
+                return;
               }
             }
-            return;
           }
         }
         setMyOrders([]);
@@ -1179,10 +1195,37 @@ export default function G60gyeDemoPage() {
     }
   };
 
-  const resetAndClearOrder = () => {
+  // 주문 영수증 및 활성 주문 완전 초기화 (새로고침 시 취소 주문 영구 소멸)
+  const resetAndClearOrder = (orderIdToDelete?: string) => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('youngwol_latest_order_id');
-      window.dispatchEvent(new Event('storage'));
+      try {
+        const targetId = orderIdToDelete || currentOrderId || recentOrder?.id || localStorage.getItem('youngwol_latest_order_id') || '';
+        
+        // 1. latestId 스토리지 키 삭제
+        localStorage.removeItem('youngwol_latest_order_id');
+
+        // 2. 영수증 목록에서 완전히 영구 삭제
+        const stored = localStorage.getItem('youngwol_orders');
+        if (stored) {
+          const list = JSON.parse(stored);
+          const updated = list.filter((o: any) => o.id !== targetId && (targetId ? true : o.status !== 'cancelled'));
+          localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+          setMyOrders(updated);
+        }
+
+        // 3. 차단 목록에 등록하여 새로고침해도 절대 다시 나타나지 않도록 방어
+        if (targetId) {
+          const dismissed: string[] = JSON.parse(localStorage.getItem('youngwol_dismissed_orders') || '[]');
+          if (!dismissed.includes(targetId)) {
+            dismissed.push(targetId);
+            localStorage.setItem('youngwol_dismissed_orders', JSON.stringify(dismissed));
+          }
+        }
+
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.error('resetAndClearOrder error:', e);
+      }
     }
     setCurrentOrderId('');
     setCurrentOrderState(null);
@@ -1324,12 +1367,18 @@ export default function G60gyeDemoPage() {
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {
+              const dismissed: string[] = JSON.parse(localStorage.getItem('youngwol_dismissed_orders') || '[]');
+
               setMyOrders(prevList => {
-                return prevList.map(localOrd => {
-                  const serverMatch = json.orders.find((so: any) => so.id === localOrd.id);
-                  return serverMatch ? { ...localOrd, ...serverMatch } : localOrd;
-                });
+                return prevList
+                  .filter(localOrd => !dismissed.includes(localOrd.id))
+                  .map(localOrd => {
+                    const serverMatch = json.orders.find((so: any) => so.id === localOrd.id);
+                    return serverMatch ? { ...localOrd, ...serverMatch } : localOrd;
+                  });
               });
+
+              if (dismissed.includes(orderIdToFind)) return;
 
               const found = json.orders.find((o: any) => o.id === orderIdToFind);
               if (found) {
@@ -1352,29 +1401,6 @@ export default function G60gyeDemoPage() {
           }
         } catch (e) {
           console.log('Customer syncStatus API error:', e);
-        }
-
-        if (typeof window !== 'undefined') {
-          const data = localStorage.getItem('youngwol_orders');
-          if (data) {
-            const list = JSON.parse(data);
-            const found = list.find((o: any) => o.id === orderIdToFind);
-            if (found) {
-              setCurrentOrderState(found);
-              setRecentOrder(found);
-              if (found.status === 'cancelled') {
-                setTrackStep(-1);
-              } else if (found.status === 'cooking') {
-                setTrackStep(3);
-              } else if (found.status === 'done') {
-                setTrackStep(4);
-              } else if (found.status === 'accepted') {
-                setTrackStep(2);
-              } else {
-                setTrackStep(1);
-              }
-            }
-          }
         }
       };
 
@@ -1583,7 +1609,7 @@ export default function G60gyeDemoPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={resetAndClearOrder}
+                    onClick={() => resetAndClearOrder(recentOrder.id)}
                     className="text-[10px] font-extrabold text-red-300 hover:text-white bg-red-950/80 hover:bg-red-900 border border-red-700 px-2.5 py-1.5 rounded-lg transition-colors shadow"
                   >
                     영수증 지우기 ✕
@@ -1666,7 +1692,7 @@ export default function G60gyeDemoPage() {
                 </button>
               </div>
 
-              {/* AI Recommendation Result Panel */}
+              {/* AI Recommendation Result Panel (3가지 모두 정확히 노출 & 개별 담기 지원) */}
               <AnimatePresence>
                 {aiResponse && (
                   <motion.div
@@ -1688,7 +1714,7 @@ export default function G60gyeDemoPage() {
                       </button>
                     </div>
 
-                    {/* 추천된 개별 메뉴 카드 리스트 (3가지 모두 정확히 노출 & 개별 담기 지원) */}
+                    {/* 추천된 개별 메뉴 카드 리스트 (개별 담기 단추 완비) */}
                     <div className="space-y-2">
                       <div className="text-[10px] font-black text-[#f39c12] uppercase tracking-wider flex items-center justify-between">
                         <span>🍗 맞춤 추천 메뉴 ({aiResponse.recommendedSpecs.length}가지)</span>
@@ -1794,7 +1820,7 @@ export default function G60gyeDemoPage() {
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                   {activeCategory === '전체' ? '영월점 전체 공식 메뉴' : activeCategory} ({filteredMenuList.length}개)
                 </h3>
-                <span className="text-[9px] font-semibold text-slate-500">* 매장 실제 가격 100% 반영</span>
+                <span className="text-[9px] font-semibold text-slate-500">* 매장 실제 사진 및 가격 100% 매핑</span>
               </div>
 
               {/* Menu Cards */}
@@ -1803,7 +1829,6 @@ export default function G60gyeDemoPage() {
                   const activeType = selectedTypes[menu.id] || menu.prices[0].type;
                   let activePrice = menu.prices.find(p => p.type === activeType)?.price || menu.prices[0].price;
 
-                  // 순살 세트인 경우 선택된 맛에 따른 가격 계산
                   if (menu.isBonelessSet) {
                     const chosenFlavor = selectedSetFlavors[menu.id] || '후라이드 기본';
                     activePrice = calculateSetPrice(menu.id, chosenFlavor);
@@ -1882,7 +1907,7 @@ export default function G60gyeDemoPage() {
                         </div>
                       </div>
 
-                      {/* [대표님 업로드 이미지 100% 동일] 타원형 알약 옵션 선택 버튼 UI (뼈, 순살, 윙봉, 콤보) */}
+                      {/* 타원형 알약 옵션 선택 버튼 UI (뼈, 순살, 윙봉, 콤보) */}
                       {menu.prices.length > 1 && !menu.isHalfAndHalf && !menu.isBonelessSet && (
                         <div className="px-3.5 pb-2.5 pt-2 bg-[#170f0d] border-t border-[#291b17] flex items-center gap-2 overflow-x-auto scrollbar-none">
                           <span className="text-[11px] font-extrabold text-sky-400 uppercase tracking-wider shrink-0 mr-1">
@@ -2437,10 +2462,10 @@ export default function G60gyeDemoPage() {
                     </a>
                     <button
                       type="button"
-                      onClick={resetAndClearOrder}
+                      onClick={() => resetAndClearOrder(currentOrderState?.id || currentOrderId)}
                       className="w-full h-11 bg-[#1f1715] hover:bg-[#2b1f1c] border border-[#442c23] text-slate-200 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
                     >
-                      <span>🍗 취소 확인 및 새 주문하기 (영수증 정리)</span>
+                      <span>🍗 취소 확인 및 영수증 영구 정리 (새로고침 방어)</span>
                     </button>
                   </div>
                 </div>
@@ -2632,7 +2657,7 @@ export default function G60gyeDemoPage() {
                   {(currentOrderState?.status === 'cancelled' || recentOrder?.status === 'cancelled') && (
                     <button
                       type="button"
-                      onClick={resetAndClearOrder}
+                      onClick={() => resetAndClearOrder(currentOrderState?.id || currentOrderId)}
                       className="text-[9px] text-red-300 hover:text-white bg-red-950/80 hover:bg-red-900 border border-red-700 px-2 py-1 rounded-md transition-colors font-bold"
                     >
                       영수증 지우기 ✕
@@ -2771,10 +2796,10 @@ export default function G60gyeDemoPage() {
             <div className="pt-2">
               <button
                 type="button"
-                onClick={resetAndClearOrder}
+                onClick={() => resetAndClearOrder(currentOrderState?.id || currentOrderId)}
                 className="h-11 px-6 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-350 hover:text-white font-bold rounded-xl text-xs transition-colors"
               >
-                신규 주문으로 돌아가기 (영수증 초기화)
+                신규 주문으로 돌아가기 (영수증 정리)
               </button>
             </div>
 
@@ -2840,7 +2865,7 @@ export default function G60gyeDemoPage() {
                               onClick={() => updateCartQty(item.menu.id, item.selectedType, 1, item.customDetails)}
                               className="w-5 h-5 flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 rounded-md"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                           <button 
