@@ -429,7 +429,7 @@ export default function KitchenDashboardPage() {
     switch (method) {
       case 'store_payment': return '카드/매장결제';
       case 'pay_on_delivery': return '만나서 현금결제';
-      case 'bank_transfer': return '계좌이체';
+      case 'bank_transfer': return '신한은행 계좌이체 (예금주: 박종숙)';
       default: return '기타문의';
     }
   };

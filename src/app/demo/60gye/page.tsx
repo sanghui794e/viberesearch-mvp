@@ -1350,7 +1350,7 @@ export default function G60gyeDemoPage() {
                     {[
                       { val: 'store_payment', label: '💳 카드/매장결제' },
                       { val: 'pay_on_delivery', label: '💵 만나서 현금결제' },
-                      { val: 'bank_transfer', label: '🏦 가상 계좌이체' },
+                      { val: 'bank_transfer', label: '🏦 신한은행 계좌이체' },
                       { val: 'ask', label: '📞 기타 문의' }
                     ].map(pay => (
                       <label 
@@ -1374,6 +1374,83 @@ export default function G60gyeDemoPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* 신한은행 계좌이체 정보 안내 카드 */}
+                {paymentMethod === 'bank_transfer' && (
+                  <div className="bg-[#140c0a] border-2 border-[#f39c12]/60 rounded-2xl p-3.5 space-y-3 animate-fade-in shadow-lg">
+                    <div className="flex items-center justify-between border-b border-[#2d1d19] pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-black">
+                          🏦
+                        </span>
+                        <span className="text-xs font-black text-white">신한은행 계좌이체 안내</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-extrabold">
+                        원터치 복사 지원
+                      </span>
+                    </div>
+
+                    <div className="bg-[#0e0705] border border-[#3d2720] rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-semibold">입금 은행</span>
+                        <span className="text-white font-black flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                          신한은행
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-semibold">계좌번호</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-[#f39c12] text-sm tracking-wider">
+                            110-189-261588
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText('110189261588');
+                                alert('📋 신한은행 계좌번호(110-189-261588)가 복사되었습니다!\n은행 앱에 붙여넣기 하여 바로 송금해 주시면 됩니다. 😊');
+                              } else {
+                                alert('계좌번호: 신한은행 110-189-261588 (예금주: 박종숙)');
+                              }
+                            }}
+                            className="text-[10px] font-extrabold bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] px-2 py-1 rounded-lg transition-all shadow active:scale-95 flex items-center gap-1"
+                          >
+                            <span>복사 📋</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-semibold">예금주</span>
+                        <strong className="text-white font-black">박종숙 (60계치킨 영월점)</strong>
+                      </div>
+                      <div className="flex items-center justify-between text-xs border-t border-[#261510] pt-2">
+                        <span className="text-slate-400 font-semibold">입금하실 금액</span>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-emerald-400 font-black text-sm">
+                            {getTotalPrice().toLocaleString()}원
+                          </strong>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText(String(getTotalPrice()));
+                                alert(`📋 입금 금액(${getTotalPrice().toLocaleString()}원)이 복사되었습니다!`);
+                              }
+                            }}
+                            className="text-[9px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition-all"
+                          >
+                            금액 복사
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      💡 <strong>입금자명</strong>이 주문자명과 다를 경우 아래 요청사항에 기재해 주시면 신속하게 조리가 시작됩니다.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 block">가게 사장님께 요청사항</label>
@@ -1578,6 +1655,68 @@ export default function G60gyeDemoPage() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* 계좌이체 주문인 경우 영수증 상단 입금 계좌 바로가기 카드 */}
+            {(currentOrderState?.paymentMethod === 'bank_transfer' || paymentMethod === 'bank_transfer') && (
+              <div className="bg-gradient-to-r from-[#1f1511] via-[#2c1d18] to-[#1a110e] border-2 border-[#f39c12] rounded-2xl p-4 text-left space-y-2.5 max-w-sm mx-auto shadow-xl">
+                <div className="flex items-center justify-between border-b border-[#3d2720] pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">🏦</span>
+                    <h4 className="text-xs font-black text-[#f39c12]">신한은행 계좌이체 입금 안내</h4>
+                  </div>
+                  <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">
+                    입금 대기 중
+                  </span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-semibold">입금 계좌:</span>
+                    <div className="flex items-center gap-1.5 font-bold text-white">
+                      <span className="font-mono text-[#f39c12]">신한 110-189-261588</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText('110189261588');
+                            alert('📋 신한은행 110-189-261588 계좌번호가 복사되었습니다!');
+                          }
+                        }}
+                        className="text-[9px] bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black px-1.5 py-0.5 rounded shadow active:scale-95"
+                      >
+                        복사 📋
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-semibold">예금주:</span>
+                    <strong className="text-white">박종숙 (60계치킨 영월점)</strong>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-[#261510] pt-1">
+                    <span className="text-slate-400 font-semibold">입금하실 금액:</span>
+                    <div className="flex items-center gap-1.5">
+                      <strong className="text-emerald-400 font-black text-sm">
+                        {(currentOrderState?.total || getTotalPrice()).toLocaleString()}원
+                      </strong>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(String(currentOrderState?.total || getTotalPrice()));
+                            alert(`📋 입금 금액(${(currentOrderState?.total || getTotalPrice()).toLocaleString()}원)이 복사되었습니다!`);
+                          }
+                        }}
+                        className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1 py-0.5 rounded"
+                      >
+                        복사
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 border-t border-[#2d1f1b] pt-1.5">
+                  👉 입금이 확인되면 사장님이 바로 치킨 조리를 시작합니다.
+                </p>
+              </div>
             )}
 
             {/* 내가 주문한 상세 내역서 (영수증 카드) */}
