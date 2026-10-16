@@ -507,13 +507,16 @@ export default function UserDashboard() {
                   <span>기존 홈페이지 보기</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </a>
-                <Link 
-                  href="/demo/60gye"
-                  className="flex-1 h-9 bg-primary hover:bg-primary/95 text-white font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-all shadow-md shadow-primary/10"
+                {/* [대표님 지침] 60계치킨 자사몰과 리웨이브온 임시 연결 분리 (대표님 연결 지시 시 복구) */}
+                <button 
+                  type="button" 
+                  onClick={() => alert("현재 60계치킨 자사몰은 독립 매장 전용 모드로 운영 중입니다. (연결 보류)")} 
+                  className="flex-1 h-9 bg-slate-800/80 text-slate-500 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-all cursor-not-allowed border border-slate-700/40" 
+                  title="현재 연결이 분리된 상태입니다."
                 >
-                  <span>간편 주문 리디자인 시안</span>
-                  <Sparkles className="w-3.5 h-3.5" />
-                </Link>
+                  <span>자사몰 연결 준비 중</span>
+                  <span className="text-[9px] bg-slate-700 text-slate-400 px-1 rounded">독립모드</span>
+                </button>
               </div>
             </div>
 

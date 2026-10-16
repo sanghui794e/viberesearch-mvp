@@ -717,9 +717,24 @@ export default function G60gyeDemoPage() {
       {/* Mobile Top Header */}
       <header className="border-b border-[#32231e] bg-[#1a1210]/95 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          {/* [리웨이브 연결 완전 분리] 매장 독립 네비게이션: 2/3단계에서는 1단계(메뉴판)로 복귀, 1단계에서는 매장 홈 엠블럼 표시 */}
+          {currentStep > 1 ? (
+            <button
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              className="p-1.5 rounded-xl bg-[#1f1715] hover:bg-[#2b1f1c] text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+              title="메뉴 선택 화면으로 돌아가기"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          ) : (
+            <div 
+              className="w-8 h-8 rounded-full bg-[#1c1310] border border-[#3d2c27] flex items-center justify-center text-sm shadow-inner"
+              title="60계치킨 강원영월점"
+            >
+              🍗
+            </div>
+          )}
           <div className="text-center">
             <h1 className="text-sm font-black text-[#f39c12] tracking-wide flex items-center justify-center gap-1">
               <span>60계치킨</span>
