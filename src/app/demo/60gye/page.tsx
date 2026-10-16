@@ -300,7 +300,7 @@ const menuList: Menu[] = [
     id: 'set_tteokbokki',
     name: '떡볶이엔 순살',
     category: '순살세트',
-    description: '후라이드 순살 한 마리 + 매콤달콤 포장마차 떡볶이 + 콜라 1.25L 세트',
+    description: '후라이드 순살 한 마리 + 매콤달콤 떡볶이 + 콜라 1.25L 세트',
     image: 'https://youngwol-chicken.co.kr/uploads/20260611115433_f1067aa2.png',
     tag: '푸짐 세트',
     spicy: 1,
@@ -389,7 +389,7 @@ const menuList: Menu[] = [
     name: '치즈스틱',
     category: '사이드',
     description: '고소한 자연산 모짜렐라 치즈가 길게 쭉 늘어나는 바삭한 치즈스틱',
-    image: 'https://youngwol-chicken.co.kr/uploads/20260611115630_1a2b35b1.jpg',
+    image: '',
     spicy: 0,
     prices: [{ type: '단품', price: 4000 }]
   },
@@ -398,7 +398,7 @@ const menuList: Menu[] = [
     name: '튀김만두',
     category: '사이드',
     description: '바삭하게 튀겨내어 속이 꽉 찬 고소하고 담백한 별미 튀김만두',
-    image: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '단품', price: 4000 }]
   },
@@ -414,9 +414,9 @@ const menuList: Menu[] = [
   },
   {
     id: 'side_tteokbokki',
-    name: '포장마차 떡볶이',
+    name: '떡볶이',
     category: '사이드',
-    description: '학창 시절 추억의 포장마차 맛! 매콤달콤 자작한 국물이 치킨과 환상 궁합',
+    description: '학창 시절 추억의 맛! 매콤달콤 자작한 국물이 치킨과 환상 궁합',
     image: 'https://youngwol-chicken.co.kr/uploads/20260611115433_f1067aa2.png',
     tag: '국물 별미',
     spicy: 1,
@@ -535,13 +535,13 @@ const menuList: Menu[] = [
     prices: [{ type: '1.5L', price: 3000 }]
   },
 
-  // 7. 소스 & 무 (전용 이미지 연동)
+  // 7. 소스 & 무
   {
     id: 'sauce_radish',
     name: '치킨무 추가',
     category: '소스',
     description: '아삭아삭 새콤달콤 시원한 60계 전용 치킨무 1팩',
-    image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1팩', price: 500 }]
   },
@@ -550,7 +550,7 @@ const menuList: Menu[] = [
     name: '치킨양념소스',
     category: '소스',
     description: '후라이드에 찍어 먹으면 딱 좋은 달콤매콤 비법 양념소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 1,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -559,7 +559,7 @@ const menuList: Menu[] = [
     name: '델리소스',
     category: '소스',
     description: '감칠맛 가득 달콤 짭조름한 60계 특제 델리 간장소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -568,7 +568,7 @@ const menuList: Menu[] = [
     name: '마요네즈',
     category: '소스',
     description: '고소하고 부드러운 고품질 마요네즈 소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1개', price: 500 }]
   },
@@ -577,7 +577,7 @@ const menuList: Menu[] = [
     name: '청양마요소스',
     category: '소스',
     description: '알싸한 청양고추와 고소한 마요네즈의 깔끔한 만남',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 2,
     prices: [{ type: '1개', price: 800 }]
   },
@@ -586,7 +586,7 @@ const menuList: Menu[] = [
     name: 'HOT 크크크소스',
     category: '소스',
     description: '바삭한 치킨에 화끈함을 더해주는 매콤 칼칼 HOT 크크크 소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 2,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -595,7 +595,7 @@ const menuList: Menu[] = [
     name: '뿌리고 치밥고',
     category: '소스',
     description: '치킨 살을 찢어 밥과 함께 비벼 먹을 때 최고인 특제 치밥 시즈닝',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -604,7 +604,7 @@ const menuList: Menu[] = [
     name: '콘마요소스',
     category: '소스',
     description: '옥수수의 달콤 고소함이 입안 가득 퍼지는 부드러운 콘마요 소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1개', price: 1000 }]
   },
@@ -613,7 +613,7 @@ const menuList: Menu[] = [
     name: '크크크소스',
     category: '소스',
     description: '크크크치킨의 맛을 완성하는 상큼하고 달콤한 오리지널 마늘 크크크 소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1개', price: 1500 }]
   },
@@ -622,12 +622,12 @@ const menuList: Menu[] = [
     name: '아매워소스',
     category: '소스',
     description: '한 방울울 찍어 먹어도 땀이 쏙 나는 극강의 화끈 매운맛 디핑소스',
-    image: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400',
+    image: '',
     spicy: 3,
     prices: [{ type: '1개', price: 1500 }]
   },
 
-  // 8. 주류 (성인 인증 안내 & 시원한 전용 주류 사진 연동)
+  // 8. 주류
   {
     id: 'alcohol_draft_1000',
     name: '생맥주(포장/배달) 1000cc',
@@ -643,7 +643,7 @@ const menuList: Menu[] = [
     name: '참이슬',
     category: '주류',
     description: '깨끗하고 부드러운 이슬 같은 대한민국 대표 소주 (360ml)',
-    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -652,7 +652,7 @@ const menuList: Menu[] = [
     name: '처음처럼',
     category: '주류',
     description: '대관령 암반수로 만든 부드러운 목넘김의 소주 (360ml)',
-    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
@@ -661,34 +661,34 @@ const menuList: Menu[] = [
     name: '진로이즈백',
     category: '주류',
     description: '초깔끔한 맛과 레트로 감성의 하늘색 병 진로 소주 (360ml)',
-    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
   {
     id: 'alcohol_saero',
-    name: '새로 (제로슈거)',
+    name: '새로',
     category: '주류',
-    description: '과당을 쏙 빼서 산뜻하고 부드러운 제로슈거 인기 소주 (360ml)',
-    image: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400',
+    description: '과당을 쏙 빼서 산뜻하고 부드러운 인기 소주 (360ml)',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
   {
     id: 'alcohol_cass',
-    name: '카스 (병맥주/캔)',
+    name: '카스 (병맥주)',
     category: '주류',
     description: '짜릿하고 톡 쏘는 상쾌함 끝판왕 카스 맥주',
-    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   },
   {
     id: 'alcohol_terra',
-    name: '테라 (병맥주/캔)',
+    name: '테라 (병맥주)',
     category: '주류',
     description: '청정 라거 100% 리얼 탄산의 시원한 테라 맥주',
-    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400',
+    image: '',
     spicy: 0,
     prices: [{ type: '1병', price: 4000 }]
   }
@@ -1844,18 +1844,20 @@ export default function G60gyeDemoPage() {
                       {/* Top Horizontal Row */}
                       <div className="flex">
                         {/* Image Block */}
-                        <div className="w-28 h-28 shrink-0 relative bg-slate-900">
-                          <img 
-                            src={menu.image} 
-                            alt={menu.name}
-                            className="w-full h-full object-cover"
-                          />
-                          {menu.tag && (
-                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-[#f39c12] text-[#1a1210] text-[8px] font-black uppercase tracking-wider">
-                              {menu.tag}
-                            </span>
-                          )}
-                        </div>
+                        {menu.image ? (
+                          <div className="w-28 h-28 shrink-0 relative bg-slate-900">
+                            <img 
+                              src={menu.image} 
+                              alt={menu.name}
+                              className="w-full h-full object-cover"
+                            />
+                            {menu.tag && (
+                              <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-[#f39c12] text-[#1a1210] text-[8px] font-black uppercase tracking-wider">
+                                {menu.tag}
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
 
                         {/* Content Block */}
                         <div className="flex-1 p-3.5 flex flex-col justify-between">
