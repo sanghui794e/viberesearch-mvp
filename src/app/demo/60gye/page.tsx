@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingBag, Phone, MapPin, Clock, ShieldCheck, Sparkles, 
-  ChevronRight, ArrowLeft, Plus, Minus, Trash2, Send, Check, AlertCircle, RefreshCw
+  ChevronRight, ArrowLeft, Plus, Minus, Trash2, Send, Check, AlertCircle, RefreshCw, X, HelpCircle
 } from 'lucide-react';
 
 interface MenuPrice {
@@ -424,6 +424,50 @@ export default function G60gyeDemoPage() {
       })
       .catch(() => {});
   }, []);
+
+  // 고객 직접 주문 취소 모달 상태
+  const [showCustomerCancelModal, setShowCustomerCancelModal] = useState<boolean>(false);
+  const [customerCancelReason, setCustomerCancelReason] = useState<string>('메뉴 변경 또는 결제/픽업 시간 재설정');
+  const [customerCancelCustom, setCustomerCancelCustom] = useState<string>('');
+
+  // 고객 직접 주문 취소 실행 함수
+  const handleCustomerCancelOrder = async () => {
+    const orderIdToCancel = currentOrderId || recentOrder?.id || (typeof window !== 'undefined' ? localStorage.getItem('youngwol_latest_order_id') : '');
+    if (!orderIdToCancel) return;
+
+    const finalReason = customerCancelReason === 'custom' 
+      ? `[고객 직접 취소] ${customerCancelCustom.trim() || '고객 요청에 의한 취소'}`
+      : `[고객 직접 취소] ${customerCancelReason}`;
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderIdToCancel,
+          status: 'cancelled',
+          cancelReason: finalReason
+        })
+      });
+
+      // 로컬 스토리지 갱신
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('youngwol_orders');
+        if (stored) {
+          const list = JSON.parse(stored);
+          const updated = list.map((o: any) => o.id === orderIdToCancel ? { ...o, status: 'cancelled', cancelReason: finalReason } : o);
+          localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+          window.dispatchEvent(new Event('storage'));
+        }
+      }
+
+      setCurrentOrderState((prev: any) => ({ ...prev, status: 'cancelled', cancelReason: finalReason }));
+      setTrackStep(-1);
+      setShowCustomerCancelModal(false);
+    } catch (e) {
+      alert("주문 취소 처리 중 오류가 발생했습니다. 매장(033-374-6660)으로 문의해 주세요.");
+    }
+  };
 
   // 로컬스토리지에서 최근 주문을 실시간 감지하여 불러오는 함수
   const loadRecentOrder = () => {
@@ -1504,6 +1548,39 @@ export default function G60gyeDemoPage() {
               </a>
             </div>
 
+            {/* 조리 전(대기 상태) 고객 직접 취소 버튼 */}
+            {currentOrderState?.status === 'pending' && (
+              <div className="pt-1 max-w-sm mx-auto space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerCancelModal(true)}
+                  className="w-full h-11 bg-red-950/30 hover:bg-red-900/50 border border-red-800/60 text-red-400 hover:text-white font-extrabold rounded-2xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                >
+                  <X className="w-4 h-4" />
+                  <span>주문 취소하기 (조리 전 즉시 취소)</span>
+                </button>
+                <p className="text-[10px] text-slate-500">
+                  *아직 주방에서 치킨을 튀기기 전이므로 즉시 취소하실 수 있습니다.
+                </p>
+              </div>
+            )}
+
+            {/* 조리 진행 중 / 완료 상태일 때 취소 안내 버튼 */}
+            {(currentOrderState?.status === 'cooking' || currentOrderState?.status === 'done') && (
+              <div className="pt-1 max-w-sm mx-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert("⚠️ 이미 주방에서 깨끗한 새 기름으로 치킨을 맛있게 튀기는 중입니다!\n\n식재료 조리가 시작된 이후에는 앱에서 임의 취소가 불가하오니, 변경이나 취소가 급하신 경우 매장(033-374-6660)으로 직접 전화 주시면 빠르게 도와드리겠습니다. 😊");
+                  }}
+                  className="w-full h-9 bg-slate-900 border border-[#3d2c27] text-slate-400 hover:text-white font-medium rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+                  <span>치킨 조리 시작 후 취소/변경 안내</span>
+                </button>
+              </div>
+            )}
+
             <div className="pt-2">
               <button
                 type="button"
@@ -1718,6 +1795,93 @@ export default function G60gyeDemoPage() {
                   <span>장바구니 담기</span>
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CUSTOMER SELF CANCEL MODAL */}
+      <AnimatePresence>
+        {showCustomerCancelModal && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1310] border-2 border-red-500/60 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl relative text-left"
+            >
+              <button
+                type="button"
+                onClick={() => setShowCustomerCancelModal(false)}
+                className="absolute top-4 right-4 text-slate-500 hover:text-white text-lg font-bold"
+              >
+                ×
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-red-400 bg-red-950/60 px-2.5 py-0.5 rounded-full border border-red-800 inline-block">
+                  주문 취소 신청
+                </span>
+                <h3 className="text-base font-black text-white">
+                  주문을 정말로 취소하시겠습니까?
+                </h3>
+                <p className="text-xs text-slate-400">
+                  아직 주방에서 치킨을 튀기기 전이므로 즉시 취소 처리됩니다.
+                </p>
+              </div>
+
+              {/* Quick Reason Selection */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-350 block">취소 사유 선택</label>
+                {[
+                  '메뉴 변경 또는 결제/픽업 시간 재설정',
+                  '대기 시간 초과 / 급한 일정 발생',
+                  '단순 변심 / 실수로 잘못 주문함',
+                  'custom'
+                ].map((reasonKey) => (
+                  <button
+                    key={reasonKey}
+                    type="button"
+                    onClick={() => setCustomerCancelReason(reasonKey)}
+                    className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition-all border ${
+                      customerCancelReason === reasonKey
+                        ? 'bg-red-950/60 border-red-500 text-white shadow-md'
+                        : 'bg-[#140b09] border-[#3d2c27] text-slate-300 hover:border-red-900'
+                    }`}
+                  >
+                    {reasonKey === 'custom' ? '✍️ 직접 사유 입력하기' : `• ${reasonKey}`}
+                  </button>
+                ))}
+
+                {customerCancelReason === 'custom' && (
+                  <input
+                    type="text"
+                    value={customerCancelCustom}
+                    onChange={(e) => setCustomerCancelCustom(e.target.value)}
+                    placeholder="취소 사유를 입력해 주세요."
+                    className="w-full h-10 bg-[#140b09] border border-[#3d2c27] focus:border-red-500 rounded-xl px-3 text-xs text-white placeholder-slate-600 focus:outline-none"
+                  />
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerCancelModal(false)}
+                  className="flex-1 h-11 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition-colors"
+                >
+                  주문 유지하기
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCustomerCancelOrder}
+                  className="flex-1 h-11 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg transition-transform active:scale-95"
+                >
+                  <X className="w-4 h-4" />
+                  <span>주문 취소 확정</span>
+                </button>
+              </div>
+
             </motion.div>
           </div>
         )}
