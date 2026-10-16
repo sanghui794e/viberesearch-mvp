@@ -411,6 +411,38 @@ export default function G60gyeDemoPage() {
 
   const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [currentOrderState, setCurrentOrderState] = useState<any | null>(null);
+  const [recentOrder, setRecentOrder] = useState<any | null>(null);
+
+  // 로컬스토리지에서 최근 주문을 실시간 감지하여 불러오는 함수
+  const loadRecentOrder = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const latestId = localStorage.getItem('youngwol_latest_order_id');
+        const ordersData = localStorage.getItem('youngwol_orders');
+        if (ordersData) {
+          const list = JSON.parse(ordersData);
+          if (Array.isArray(list) && list.length > 0) {
+            const found = latestId ? list.find((o: any) => o.id === latestId) : list[0];
+            if (found) {
+              setRecentOrder(found);
+              if (!currentOrderId && found.id) {
+                setCurrentOrderId(found.id);
+                setCurrentOrderState(found);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('loadRecentOrder error:', e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadRecentOrder();
+    window.addEventListener('storage', loadRecentOrder);
+    return () => window.removeEventListener('storage', loadRecentOrder);
+  }, []);
 
   const handleOrderSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -453,6 +485,8 @@ export default function G60gyeDemoPage() {
 
     const existingOrders = JSON.parse(localStorage.getItem('youngwol_orders') || '[]');
     localStorage.setItem('youngwol_orders', JSON.stringify([orderData, ...existingOrders]));
+    localStorage.setItem('youngwol_latest_order_id', orderId);
+    setRecentOrder(orderData);
     
     // 중앙 서버 주문 동기화 API 호출 (다중 기기 동기화용)
     fetch('/api/orders', {
@@ -520,26 +554,110 @@ export default function G60gyeDemoPage() {
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</p>
           </div>
-          <a href="tel:033-374-6660" className="w-8 h-8 rounded-full bg-[#f39c12]/15 hover:bg-[#f39c12]/20 text-[#f39c12] flex items-center justify-center transition-colors">
-            <Phone className="w-4 h-4" />
-          </a>
+          <div className="flex items-center gap-1.5">
+            {recentOrder && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentOrderId(recentOrder.id);
+                  setCurrentOrderState(recentOrder);
+                  setCurrentStep(3);
+                }}
+                className="h-8 px-2.5 rounded-full bg-[#f39c12]/20 hover:bg-[#f39c12]/30 border border-[#f39c12]/50 text-[#f39c12] text-[10px] font-black flex items-center gap-1 transition-colors animate-pulse"
+              >
+                <span>내 주문 🧾</span>
+              </button>
+            )}
+            <a href="tel:033-374-6660" className="w-8 h-8 rounded-full bg-[#f39c12]/15 hover:bg-[#f39c12]/20 text-[#f39c12] flex items-center justify-center transition-colors">
+              <Phone className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </header>
 
       {/* Constraints container */}
       <div className="w-full max-w-md mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
         
-        {/* Step Header */}
+        {/* Step Header (클릭 가능한 네비게이션) */}
         <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-extrabold text-slate-500 border-b border-[#2a1d19] pb-4">
-          <div className={`pb-1 ${currentStep >= 1 ? 'text-[#f39c12] border-b-2 border-[#f39c12]' : ''}`}>1. 메뉴 선택</div>
-          <div className={`pb-1 ${currentStep >= 2 ? 'text-[#f39c12] border-b-2 border-[#f39c12]' : ''}`}>2. 주문서 작성</div>
-          <div className={`pb-1 ${currentStep >= 3 ? 'text-[#f39c12] border-b-2 border-[#f39c12]' : ''}`}>3. 실시간 대기</div>
+          <button 
+            type="button"
+            onClick={() => setCurrentStep(1)}
+            className={`pb-1 transition-all ${currentStep === 1 ? 'text-[#f39c12] border-b-2 border-[#f39c12] font-black' : 'hover:text-slate-300'}`}
+          >
+            1. 메뉴 선택
+          </button>
+          <button 
+            type="button"
+            onClick={() => {
+              if (cart.length > 0) {
+                setCurrentStep(2);
+              } else {
+                alert('장바구니에 담긴 메뉴가 없습니다. 먼저 메뉴를 담아주세요!');
+              }
+            }}
+            className={`pb-1 transition-all ${currentStep === 2 ? 'text-[#f39c12] border-b-2 border-[#f39c12] font-black' : 'hover:text-slate-300'}`}
+          >
+            2. 주문서 작성 {cart.length > 0 && `(${cart.reduce((a, b) => a + b.quantity, 0)})`}
+          </button>
+          <button 
+            type="button"
+            onClick={() => {
+              const target = currentOrderState || recentOrder;
+              if (target) {
+                setCurrentOrderId(target.id);
+                setCurrentOrderState(target);
+                setCurrentStep(3);
+              } else {
+                alert('아직 접수된 주문 내역이 없습니다. 먼저 메뉴를 주문해 주세요!');
+              }
+            }}
+            className={`pb-1 transition-all flex items-center justify-center gap-1 ${currentStep === 3 ? 'text-[#f39c12] border-b-2 border-[#f39c12] font-black' : (recentOrder ? 'text-amber-400 font-bold hover:text-white' : 'hover:text-slate-300')}`}
+          >
+            <span>3. 실시간 대기</span>
+            {recentOrder && <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>}
+          </button>
         </div>
 
         {/* STEP 1: MENU SELECTION */}
         {currentStep === 1 && (
           <div className="space-y-6 animate-fade-in">
             
+            {/* 최근 주문이 있을 경우 최상단에 노출되는 직통 영수증 배너 */}
+            {recentOrder && (
+              <div 
+                onClick={() => {
+                  setCurrentOrderId(recentOrder.id);
+                  setCurrentOrderState(recentOrder);
+                  setCurrentStep(3);
+                }}
+                className="cursor-pointer bg-gradient-to-r from-[#2c1d18] via-[#3a2219] to-[#201410] border-2 border-[#f39c12] rounded-2xl p-4 shadow-xl shadow-[#f39c12]/15 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 animate-fade-in"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f39c12] text-[#1a1210] flex items-center justify-center text-lg shadow-md shrink-0 font-black">
+                    🧾
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-[#f39c12]">방금 주문하신 내역이 있습니다!</span>
+                      <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-extrabold">
+                        {recentOrder.status === 'cooking' ? '🔥 맛있게 조리 중' : recentOrder.status === 'done' ? '🛍️ 준비 완료' : '접수 완료'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white font-bold mt-0.5 line-clamp-1">
+                      {recentOrder.items?.[0]?.name} {recentOrder.items?.length > 1 ? `외 ${recentOrder.items.length - 1}건` : ''} • {recentOrder.total?.toLocaleString()}원
+                    </p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">
+                      👉 터치하시면 <strong>상세 영수증 & 조리 진행</strong>을 바로 확인하실 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-black text-[#1a1210] bg-[#f39c12] hover:bg-[#e67e22] px-3 py-2 rounded-xl shrink-0 transition-colors shadow">
+                  영수증 보기
+                </span>
+              </div>
+            )}
+
             {/* Live Store status */}
             <div className="bg-[#1c1310] border border-[#3d2c27] rounded-xl p-3.5 flex items-center justify-between">
               <div>
