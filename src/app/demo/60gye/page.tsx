@@ -1000,6 +1000,107 @@ export default function G60gyeDemoPage() {
               </div>
             </div>
 
+            {/* 주문 품목 및 결제 금액 확인 (주문 고객 정보와 결제 및 요청사항 사이) */}
+            <div className="space-y-4 bg-[#1c1310] border border-[#f39c12]/30 p-4 rounded-2xl shadow-lg">
+              <div className="flex items-center justify-between border-b border-[#3d2c27] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-[#f39c12] tracking-wider uppercase">
+                    🧾 주문 품목 및 금액 확인
+                  </span>
+                  <span className="text-[9px] bg-[#f39c12]/20 text-[#f39c12] border border-[#f39c12]/40 px-2 py-0.5 rounded font-extrabold">
+                    {orderType === 'takeout' ? '방문 포장' : '안전 배달'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="text-[10px] text-slate-400 hover:text-[#f39c12] transition-colors flex items-center gap-0.5 font-bold"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>메뉴 추가/변경</span>
+                </button>
+              </div>
+
+              {/* 담긴 메뉴 리스트 */}
+              <div className="space-y-2.5">
+                {cart.length === 0 ? (
+                  <div className="py-6 text-center text-slate-500 text-xs">
+                    장바구니에 담긴 메뉴가 없습니다.
+                  </div>
+                ) : (
+                  cart.map((item, idx) => (
+                    <div key={idx} className="bg-[#140d0b] border border-[#2e201c] rounded-xl p-3 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h5 className="text-xs font-extrabold text-white truncate">{item.menu.name}</h5>
+                          <span className="text-[9px] font-bold text-[#f39c12] bg-[#2a1b16] px-1.5 py-0.5 rounded border border-[#442c23]">
+                            {item.selectedType}
+                          </span>
+                        </div>
+                        {item.customDetails && (
+                          <p className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">{item.customDetails}</p>
+                        )}
+                        <p className="text-[11px] font-black text-slate-300 mt-1">
+                          {(item.selectedPrice * item.quantity).toLocaleString()}원
+                          <span className="text-[9px] text-slate-500 font-normal ml-1">
+                            ({item.selectedPrice.toLocaleString()}원 × {item.quantity})
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* 수량 변경 (+ / -) 버튼 */}
+                      <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-xl h-8 px-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => updateCartQty(item.menu.id, item.selectedType, -1)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-7 text-center text-xs font-bold text-white">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateCartQty(item.menu.id, item.selectedType, 1)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* 금액 정산 요약표 */}
+              <div className="border-t border-[#2d1f1b] pt-3 space-y-1.5 text-xs">
+                <div className="flex justify-between text-slate-400">
+                  <span>주문 금액 합계</span>
+                  <span className="text-slate-200 font-bold">{getSubtotal().toLocaleString()}원</span>
+                </div>
+
+                {orderType === 'takeout' && (
+                  <div className="flex justify-between text-emerald-450 font-bold">
+                    <span>🎁 포장 방문 할인</span>
+                    <span>-2,000원</span>
+                  </div>
+                )}
+
+                {orderType === 'delivery' && (
+                  <div className="flex justify-between text-blue-400 font-bold">
+                    <span>🛵 배달 요금</span>
+                    <span>+3,000원</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center border-t border-[#3d2c27] pt-2.5 text-sm font-black">
+                  <span className="text-white">최종 결제 예정 금액</span>
+                  <span className="text-[#f39c12] text-base">
+                    {getTotalPrice().toLocaleString()}원
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Payment & Options */}
             <div className="space-y-4 bg-[#1c1310] border border-[#3d2c27] p-4 rounded-2xl">
               <h4 className="text-xs font-black text-[#f39c12] tracking-wider uppercase">결제 및 요청사항</h4>
