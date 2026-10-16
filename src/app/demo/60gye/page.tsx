@@ -841,10 +841,11 @@ export default function G60gyeDemoPage() {
           { id: 'half_fry_yang', type: '뼈' },
           { id: 'ccc_crang_half', type: '뼈' }
         ];
-      } else if (query.includes("세트") || query.includes("순살 세트")) {
-        text = "🍱 치킨과 인기 사이드를 한 번에! 가성비 최고의 '순살 세트'!\n쫀득 치즈볼이 함께하는 '치즈볼엔 순살', 바삭한 '멘보샤엔 순살', 매콤달콤 '떡볶이엔 순살' 세트를 만나보세요.";
+      } else if (query.includes("세트") || query.includes("순살 세트") || query.includes("순살세트")) {
+        text = "🍱 치킨과 인기 사이드를 한 번에! 가성비 최고의 '순살 세트 3종'!\n쫀득 치즈볼이 함께하는 '치즈볼엔 순살', 바삭한 '멘보샤엔 순살', 매콤달콤 '떡볶이엔 순살' 세트 중 원하시는 구성을 선택해 보세요.";
         recommendedSpecs = [
           { id: 'set_cheeseball', type: '후라이드 기본' },
+          { id: 'set_menbosha', type: '후라이드 기본' },
           { id: 'set_tteokbokki', type: '후라이드 기본' }
         ];
       } else {
@@ -866,11 +867,19 @@ export default function G60gyeDemoPage() {
       const menu = menuList.find(m => m.id === spec.id);
       if (menu) {
         let price = menu.prices[0]?.price || 23900;
-        const priceOpt = menu.prices.find(p => p.type === spec.type);
-        if (priceOpt) price = priceOpt.price;
+        if (menu.isBonelessSet) {
+          price = calculateSetPrice(menu.id, spec.type);
+        } else {
+          const priceOpt = menu.prices.find(p => p.type === spec.type);
+          if (priceOpt) price = priceOpt.price;
+        }
+
+        const detailStr = menu.isBonelessSet 
+          ? (spec.type === '후라이드 기본' ? '기본 후라이드 순살' : `맛 변경: ${spec.type} 순살`)
+          : spec.details;
 
         const existingIdx = updatedCart.findIndex(item => 
-          item.menu.id === spec.id && item.selectedType === spec.type
+          item.menu.id === spec.id && item.selectedType === spec.type && item.customDetails === detailStr
         );
         
         if (existingIdx > -1) {
@@ -881,16 +890,19 @@ export default function G60gyeDemoPage() {
             selectedType: spec.type, 
             selectedPrice: price, 
             quantity: 1,
-            customDetails: spec.details
+            customDetails: detailStr
           });
         }
       }
     });
     setCart(updatedCart);
-    setAiResponse(null);
-    setAiInput('');
     setShowCartSheet(true);
   };
+
+  const addSingleRecommendedToCart = (spec: { id: string; type: string; details?: string }) => {
+    addRecommendedToCart([spec]);
+  };
+
 
   // 일반 치킨 장바구니 추가
   const addMenuToCart = (menu: Menu) => {
@@ -1661,30 +1673,89 @@ export default function G60gyeDemoPage() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="bg-[#0e0908] border border-[#f39c12]/40 rounded-xl p-3.5 space-y-3 overflow-hidden shadow-inner"
+                    className="bg-[#0e0908] border-2 border-[#f39c12]/50 rounded-2xl p-4 space-y-3.5 overflow-hidden shadow-2xl"
                   >
-                    <p className="text-[11px] text-slate-200 leading-relaxed font-medium whitespace-pre-line">
-                      {aiResponse.text}
-                    </p>
-                    <div className="flex items-center justify-between border-t border-[#261915] pt-2.5">
-                      <div className="flex flex-wrap gap-1.5">
+                    <div className="flex items-start justify-between gap-2 border-b border-[#261915] pb-2.5">
+                      <p className="text-xs text-slate-200 leading-relaxed font-medium whitespace-pre-line flex-1">
+                        {aiResponse.text}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setAiResponse(null)}
+                        className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded-lg bg-[#1c1310] border border-[#3d2720] shrink-0"
+                      >
+                        닫기 ✕
+                      </button>
+                    </div>
+
+                    {/* 추천된 개별 메뉴 카드 리스트 (3가지 모두 정확히 노출 & 개별 담기 지원) */}
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-black text-[#f39c12] uppercase tracking-wider flex items-center justify-between">
+                        <span>🍗 맞춤 추천 메뉴 ({aiResponse.recommendedSpecs.length}가지)</span>
+                        <span className="text-slate-400 font-bold text-[9px]">원하는 메뉴를 쏙 담아보세요!</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
                         {aiResponse.recommendedSpecs.map(spec => {
                           const item = menuList.find(m => m.id === spec.id);
+                          if (!item) return null;
+                          const priceOpt = item.prices.find(p => p.type === spec.type) || item.prices[0];
+                          const price = item.isBonelessSet ? calculateSetPrice(item.id, spec.type) : priceOpt.price;
+
                           return (
-                            <span key={spec.id} className="text-[9px] font-black bg-[#261915] text-[#f39c12] px-2 py-0.5 rounded border border-[#f39c12]/20">
-                              {item?.name} ({spec.type})
-                            </span>
+                            <div 
+                              key={`${spec.id}-${spec.type}`}
+                              className="bg-[#170e0b] border border-[#3d2720] rounded-xl p-2.5 flex items-center justify-between gap-2.5 hover:border-[#f39c12]/50 transition-colors shadow-sm"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name} 
+                                  className="w-11 h-11 rounded-lg object-cover bg-slate-900 shrink-0 border border-[#2a1b16]" 
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h5 className="text-xs font-black text-white truncate">{item.name}</h5>
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-[#2a1712] text-[#f39c12] border border-[#f39c12]/30 shrink-0">
+                                      {spec.type}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-black text-amber-400 mt-0.5">
+                                    {price.toLocaleString()}원
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => addSingleRecommendedToCart(spec)}
+                                className="h-8 px-3 rounded-lg bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black text-xs flex items-center gap-1 transition-all shrink-0 active:scale-95 shadow"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>담기</span>
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
-                      <button
-                        onClick={() => addRecommendedToCart(aiResponse.recommendedSpecs)}
-                        className="text-[10px] font-black bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors shrink-0 shadow"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>추천 조합 담기</span>
-                      </button>
                     </div>
+
+                    {/* 추천 조합 전체 한 번에 담기 버튼 */}
+                    {aiResponse.recommendedSpecs.length > 1 && (
+                      <div className="border-t border-[#261915] pt-2.5 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          추천 {aiResponse.recommendedSpecs.length}가지 모두 주문하시겠어요?
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => addRecommendedToCart(aiResponse.recommendedSpecs)}
+                          className="text-xs font-black bg-[#2a1712] hover:bg-[#3d2720] border border-[#f39c12]/50 text-[#f39c12] hover:text-white px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shrink-0 shadow active:scale-95"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>전체 함께 담기</span>
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
