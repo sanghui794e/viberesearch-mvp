@@ -42,6 +42,10 @@ export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'cooking' | 'done' | 'cancelled'>('all');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundType, setSoundType] = useState<'baemin' | 'bell' | 'siren' | 'fanfare' | 'voice'>('baemin');
+  const [volume, setVolume] = useState<number>(0.8);
+  const [repeatPendingAlert, setRepeatPendingAlert] = useState<boolean>(true);
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(false);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
 
@@ -126,38 +130,207 @@ export default function KitchenDashboardPage() {
     };
   }, [soundEnabled]);
 
-  // Audio API alert sound (띵동 느낌의 비프음 조합)
-  const playAlertSound = () => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // First Tone
-      const osc1 = audioCtx.createOscillator();
-      const gain1 = audioCtx.createGain();
-      osc1.connect(gain1);
-      gain1.connect(audioCtx.destination);
-      osc1.frequency.value = 523.25; // C5 note (도)
-      gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-      osc1.start(audioCtx.currentTime);
-      osc1.stop(audioCtx.currentTime + 0.4);
+    // 로컬 저장소에서 사운드 설정 불러오기
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedType = localStorage.getItem('youngwol_kitchen_sound_type');
+        if (savedType && ['baemin', 'bell', 'siren', 'fanfare', 'voice'].includes(savedType)) {
+          setSoundType(savedType as any);
+        }
+        const savedVol = localStorage.getItem('youngwol_kitchen_sound_volume');
+        if (savedVol) {
+          const v = parseFloat(savedVol);
+          if (!isNaN(v) && v >= 0 && v <= 1) setVolume(v);
+        }
+        const savedRepeat = localStorage.getItem('youngwol_kitchen_repeat_alert');
+        if (savedRepeat !== null) {
+          setRepeatPendingAlert(savedRepeat === 'true');
+        }
+      } catch (e) {}
+    }
+  }, []);
 
-      // Second Tone (slightly delayed)
-      setTimeout(() => {
+  // 브라우저 오디오 잠금 해제 헬퍼 (첫 클릭 시 자동 활성화)
+  const unlockAudioContext = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const tempCtx = new AudioCtx();
+        if (tempCtx.state === 'suspended') {
+          tempCtx.resume().then(() => {
+            setIsAudioUnlocked(true);
+          });
+        } else {
+          setIsAudioUnlocked(true);
+        }
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    const handleFirstUserInteraction = () => {
+      unlockAudioContext();
+      window.removeEventListener('click', handleFirstUserInteraction);
+      window.removeEventListener('touchstart', handleFirstUserInteraction);
+    };
+    window.addEventListener('click', handleFirstUserInteraction);
+    window.addEventListener('touchstart', handleFirstUserInteraction);
+    return () => {
+      window.removeEventListener('click', handleFirstUserInteraction);
+      window.removeEventListener('touchstart', handleFirstUserInteraction);
+    };
+  }, []);
+
+  // 음원 생성 및 알림음 재생 엔진
+  const playAlertSound = (customType?: 'baemin' | 'bell' | 'siren' | 'fanfare' | 'voice', customVol?: number) => {
+    if (!soundEnabled) return;
+    const typeToPlay = customType || soundType;
+    const vol = typeof customVol === 'number' ? customVol : volume;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      setIsAudioUnlocked(true);
+
+      const now = audioCtx.currentTime;
+
+      // 1. 배민 스타일 띵동 (2단 카랑카랑한 차임벨)
+      if (typeToPlay === 'baemin') {
+        // 첫 번째 톤 (도 C5: 523Hz)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, now);
+        gain1.gain.setValueAtTime(vol * 0.4, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.45);
+
+        // 두 번째 톤 (솔 G5: 783.99Hz)
+        setTimeout(() => {
+          try {
+            const now2 = audioCtx.currentTime;
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(783.99, now2);
+            gain2.gain.setValueAtTime(vol * 0.5, now2);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.7);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now2);
+            osc2.stop(now2 + 0.7);
+          } catch (e) {}
+        }, 160);
+      } 
+      // 2. 매장 카운터 벨 (땡~~ 맑고 높은 종소리)
+      else if (typeToPlay === 'bell') {
+        const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.frequency.value = 659.25; // E5 note (미)
-        gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        osc2.start(audioCtx.currentTime);
-        osc2.stop(audioCtx.currentTime + 0.5);
-      }, 150);
+        const gain = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(1046.5, now); // C6
+        osc2.frequency.setValueAtTime(2093.0, now); // C7 (배음)
+        gain.gain.setValueAtTime(vol * 0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 1.2);
+        osc2.stop(now + 1.2);
+      }
+      // 3. 주방 비상 경보 (삐-삐-삐 3연타)
+      else if (typeToPlay === 'siren') {
+        [0, 180, 360].forEach((delay) => {
+          setTimeout(() => {
+            try {
+              const nowS = audioCtx.currentTime;
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.type = 'square';
+              osc.frequency.setValueAtTime(880, nowS); // A5
+              gain.gain.setValueAtTime(vol * 0.25, nowS);
+              gain.gain.exponentialRampToValueAtTime(0.001, nowS + 0.14);
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.start(nowS);
+              osc.stop(nowS + 0.14);
+            } catch (e) {}
+          }, delay);
+        });
+      }
+      // 4. 경쾌한 팡파레 멜로디 (도-미-솔-도)
+      else if (typeToPlay === 'fanfare') {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            try {
+              const nowF = audioCtx.currentTime;
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freq, nowF);
+              gain.gain.setValueAtTime(vol * 0.35, nowF);
+              gain.gain.exponentialRampToValueAtTime(0.001, nowF + (idx === 3 ? 0.6 : 0.2));
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.start(nowF);
+              osc.stop(nowF + (idx === 3 ? 0.6 : 0.2));
+            } catch (e) {}
+          }, idx * 130);
+        });
+      }
+      // 5. 한국어 음성 안내 (TTS)
+      else if (typeToPlay === 'voice') {
+        // 먼저 경쾌한 띵동 효과음
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(659.25, now);
+        gain.gain.setValueAtTime(vol * 0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
+          utter.lang = 'ko-KR';
+          utter.volume = Math.min(1, vol * 1.2);
+          utter.rate = 1.05;
+          window.speechSynthesis.speak(utter);
+        }
+      }
     } catch (e) {
-      console.warn('Audio Context is blocked by browser autoplay policy.');
+      console.warn('Audio Context error or blocked:', e);
     }
   };
+
+  // 미승인(대기 중) 주문이 있을 때 15초마다 재알림 반복 타이머
+  useEffect(() => {
+    if (!soundEnabled || !repeatPendingAlert) return;
+
+    const interval = setInterval(() => {
+      const hasPending = orders.some(o => o.status === 'pending');
+      if (hasPending) {
+        playAlertSound();
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [orders, soundEnabled, repeatPendingAlert, soundType, volume]);
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status'], cancelReason?: string) => {
     const updated = orders.map(ord => {
@@ -370,17 +543,101 @@ export default function KitchenDashboardPage() {
             <span>{isStorePaused ? '⚠️ [영업 일시정지 중] 해제' : '⏸️ 주문 일시정지 (품절)'}</span>
           </button>
 
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`h-9 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-              soundEnabled 
-                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' 
-                : 'bg-slate-900 border-[#3d2c27] text-slate-500'
-            }`}
-          >
-            <Volume2 className="w-4 h-4" />
-            <span>알림음: {soundEnabled ? 'ON' : 'OFF'}</span>
-          </button>
+          {/* 사운드 & 볼륨 종합 컨트롤 패널 */}
+          <div className="flex items-center gap-2 bg-[#1c1310] border border-[#3d2c27] rounded-xl px-2.5 py-1">
+            
+            {/* 사운드 ON/OFF 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                if (next) unlockAudioContext();
+              }}
+              className={`h-8 px-2.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                soundEnabled 
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50' 
+                  : 'bg-slate-900 text-slate-500 border border-slate-700'
+              }`}
+              title="주방 알림음 켜기/끄기"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>{soundEnabled ? '소리 ON' : '소리 OFF'}</span>
+            </button>
+
+            {/* 알림음 종류 선택 드롭다운 */}
+            <select
+              value={soundType}
+              disabled={!soundEnabled}
+              onChange={(e) => {
+                const newType = e.target.value as any;
+                setSoundType(newType);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('youngwol_kitchen_sound_type', newType);
+                }
+                playAlertSound(newType, volume);
+              }}
+              className="h-8 bg-[#0d0908] border border-[#3d2c27] text-slate-200 text-xs font-bold rounded-lg px-2 focus:outline-none focus:border-[#f39c12] disabled:opacity-40"
+              title="알림음 종류 선택"
+            >
+              <option value="baemin">🔔 배민 스타일 띵동</option>
+              <option value="bell">🛎️ 매장 카운터 벨 (땡~~)</option>
+              <option value="siren">🚨 주방 비상 경보 (삐-삐-삐)</option>
+              <option value="fanfare">🎺 신나는 팡파레 멜로디</option>
+              <option value="voice">🗣️ 한국어 음성 안내 (TTS)</option>
+            </select>
+
+            {/* 볼륨 슬라이더 (0~100%) */}
+            <div className="flex items-center gap-1.5 px-1" title={`음량 조절: ${Math.round(volume * 100)}%`}>
+              <span className="text-[10px] text-slate-400 font-mono font-bold">{Math.round(volume * 100)}%</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                disabled={!soundEnabled}
+                value={volume}
+                onChange={(e) => {
+                  const newVol = parseFloat(e.target.value);
+                  setVolume(newVol);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('youngwol_kitchen_sound_volume', String(newVol));
+                  }
+                }}
+                className="w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#f39c12] disabled:opacity-40"
+              />
+            </div>
+
+            {/* 소리 테스트 및 브라우저 잠금 해제 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                unlockAudioContext();
+                playAlertSound(soundType, volume);
+              }}
+              className="h-8 px-2.5 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black text-xs rounded-lg transition-all shadow active:scale-95 flex items-center gap-1 shrink-0"
+              title="선택한 알림음과 볼륨으로 소리 테스트하기"
+            >
+              <span>🎵 테스트</span>
+            </button>
+
+            {/* 15초 미승인 반복 알림 스위치 */}
+            <label className="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer pl-1 shrink-0" title="주문을 승인할 때까지 15초마다 알림음을 반복합니다.">
+              <input
+                type="checkbox"
+                checked={repeatPendingAlert}
+                onChange={(e) => {
+                  setRepeatPendingAlert(e.target.checked);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('youngwol_kitchen_repeat_alert', String(e.target.checked));
+                  }
+                }}
+                className="rounded border-[#3d2c27] text-[#f39c12] focus:ring-0 accent-[#f39c12]"
+              />
+              <span className="hidden xl:inline text-[10px] font-semibold">15초 재알림</span>
+            </label>
+
+          </div>
 
           <button
             onClick={clearAllOrders}

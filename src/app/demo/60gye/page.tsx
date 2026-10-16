@@ -521,6 +521,50 @@ export default function G60gyeDemoPage() {
     return () => window.removeEventListener('storage', loadRecentOrder);
   }, []);
 
+  // 고객 주문 접수 완료 시 경쾌한 효과음 (딩동!)
+  const playOrderSuccessSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const now = audioCtx.currentTime;
+      
+      // 첫 번째 톤 (솔 G5: 783.99Hz)
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(783.99, now);
+      gain1.gain.setValueAtTime(0.35, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // 두 번째 톤 (높은 도 C6: 1046.5Hz)
+      setTimeout(() => {
+        try {
+          const now2 = audioCtx.currentTime;
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1046.5, now2);
+          gain2.gain.setValueAtTime(0.4, now2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.6);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now2);
+          osc2.stop(now2 + 0.6);
+        } catch (e) {}
+      }, 140);
+    } catch (e) {
+      console.log('Order success sound error:', e);
+    }
+  };
+
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (storeSettings.isPaused) {
@@ -594,6 +638,7 @@ export default function G60gyeDemoPage() {
     setCurrentOrderState(orderData);
     setCurrentStep(3);
     setTrackStep(1);
+    playOrderSuccessSound();
   };
 
   // 주방 상태와 실시간 100% 동기화 렌더링
