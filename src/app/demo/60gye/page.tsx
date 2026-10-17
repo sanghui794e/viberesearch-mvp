@@ -6,8 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingBag, Phone, MapPin, Clock, ShieldCheck, Sparkles, 
   ChevronRight, ArrowLeft, Plus, Minus, Trash2, Send, Check, AlertCircle, RefreshCw, X, HelpCircle,
-  Beer, Flame, Heart, Utensils
+  Beer, Flame, Heart, Utensils, Wine
 } from 'lucide-react';
+
+export const isAlcoholItem = (name: string): boolean => {
+  const n = (name || '').toLowerCase();
+  return ['생맥주', '소주', '참이슬', '처음처럼', '진로', '새로', '카스', '테라', '맥주', '주류'].some(k => n.includes(k));
+};
 
 export interface MenuPrice {
   type: string;
@@ -1123,17 +1128,49 @@ export default function G60gyeDemoPage() {
   const [currentOrderState, setCurrentOrderState] = useState<any | null>(null);
   const [recentOrder, setRecentOrder] = useState<any | null>(null);
   const [myOrders, setMyOrders] = useState<any[]>([]);
-  const [storeSettings, setStoreSettings] = useState<{ isPaused: boolean; pauseReason: string }>({ isPaused: false, pauseReason: '' });
+  interface MallStoreSettings {
+    isPaused: boolean;
+    pauseReason: string;
+    busyLevel?: 'normal' | 'busy' | 'peak';
+    customTimes?: {
+      normal: { takeoutMin: number; deliveryMin: number };
+      busy: { takeoutMin: number; deliveryMin: number };
+      peak: { takeoutMin: number; deliveryMin: number };
+    };
+    customNotice?: string;
+    soldOutMenuIds?: string[];
+  }
+
+  const [storeSettings, setStoreSettings] = useState<MallStoreSettings>({
+    isPaused: false,
+    pauseReason: '',
+    busyLevel: 'normal',
+    customTimes: {
+      normal: { takeoutMin: 20, deliveryMin: 40 },
+      busy: { takeoutMin: 35, deliveryMin: 50 },
+      peak: { takeoutMin: 50, deliveryMin: 65 },
+    },
+    customNotice: '',
+    soldOutMenuIds: [],
+  });
+  const [alcoholAgeConfirmed, setAlcoholAgeConfirmed] = useState<boolean>(false);
+  const [myPointsModalOpen, setMyPointsModalOpen] = useState<boolean>(false);
+  const [pointsQueryPhone, setPointsQueryPhone] = useState<string>('');
 
   useEffect(() => {
-    fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
-        if (d && d.storeSettings) {
-          setStoreSettings(d.storeSettings);
-        }
-      })
-      .catch(() => {});
+    const fetchSettings = () => {
+      fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => {
+          if (d && d.storeSettings) {
+            setStoreSettings(d.storeSettings);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchSettings();
+    const interval = setInterval(fetchSettings, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // 고객 직접 주문 취소 모달 상태
@@ -1321,6 +1358,13 @@ export default function G60gyeDemoPage() {
 
     if (!name || !phone || (orderType === 'delivery' && !address)) {
       alert("필수 주문 정보를 모두 입력해 주세요.");
+      return;
+    }
+
+    // 주류(생맥주/소주 등) 포함 시 만 19세 성인 인증 동의 필수 검증
+    const hasAlcohol = cart.some(item => isAlcoholItem(item.menu.name));
+    if (hasAlcohol && !alcoholAgeConfirmed) {
+      alert("🚨 [만 19세 미만 주류 판매 불가]\n\n주류(생맥주/소주 등)가 포함된 주문은 청소년보호법 제28조에 따라 상품 수령 시 성인 실물 신분증 대면 제시 필수 동의 체크박스에 체크해 주셔야 주문 접수가 가능합니다.");
       return;
     }
 
@@ -1513,7 +1557,19 @@ export default function G60gyeDemoPage() {
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* 🪙 내 포인트 조회 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                if (phone) setPointsQueryPhone(phone);
+                setMyPointsModalOpen(true);
+              }}
+              className="h-8 px-2.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[11px] font-black flex items-center gap-1 transition-all shadow-sm shrink-0"
+              title="내 적립 포인트 및 적립 이력 확인"
+            >
+              <span>🪙 포인트</span>
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -1542,6 +1598,41 @@ export default function G60gyeDemoPage() {
         <div className="bg-red-950/90 border-b border-red-500/60 px-4 py-2.5 text-center text-xs font-bold text-red-200 flex items-center justify-center gap-2 sticky top-14 z-30 shadow-lg">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
           <span>⚠️ {storeSettings.pauseReason || '현재 매장 주문 폭주로 인해 모바일 주문이 잠시 일시 정지되었습니다.'} (문의: 033-374-6660)</span>
+        </div>
+      )}
+
+      {/* Real-time Busy / Notice Banner */}
+      {!storeSettings.isPaused && (storeSettings.busyLevel === 'busy' || storeSettings.busyLevel === 'peak' || storeSettings.customNotice) && (
+        <div className={`px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2 sticky top-14 z-30 shadow-md ${
+          storeSettings.busyLevel === 'peak'
+            ? 'bg-rose-950/90 border-b border-rose-500/60 text-rose-200 animate-pulse'
+            : 'bg-amber-950/90 border-b border-amber-500/60 text-amber-200'
+        }`}>
+          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="text-center leading-snug">
+            {storeSettings.busyLevel === 'peak' && (
+              <span className="font-black text-rose-400 mr-1.5">🔴 [주문 폭주 피크타임]</span>
+            )}
+            {storeSettings.busyLevel === 'busy' && (
+              <span className="font-black text-amber-400 mr-1.5">🟡 [주문 혼잡 안내]</span>
+            )}
+            <span>
+              현재 조리 대기 발생 중 (포장 약 {
+                storeSettings.busyLevel === 'peak' 
+                  ? (storeSettings.customTimes?.peak.takeoutMin || 50)
+                  : (storeSettings.customTimes?.busy.takeoutMin || 35)
+              }분 / 배달 약 {
+                storeSettings.busyLevel === 'peak'
+                  ? (storeSettings.customTimes?.peak.deliveryMin || 65)
+                  : (storeSettings.customTimes?.busy.deliveryMin || 50)
+              }분 소요)
+            </span>
+            {storeSettings.customNotice && (
+              <div className="text-[11px] text-white font-extrabold mt-0.5">
+                📢 {storeSettings.customNotice}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1880,6 +1971,7 @@ export default function G60gyeDemoPage() {
               {/* Menu Cards */}
               <div className="space-y-4">
                 {filteredMenuList.map((menu) => {
+                  const isSoldOut = storeSettings.soldOutMenuIds?.includes(menu.id);
                   const activeType = selectedTypes[menu.id] || menu.prices[0].type;
                   let activePrice = menu.prices.find(p => p.type === activeType)?.price || menu.prices[0].price;
 
@@ -1893,7 +1985,9 @@ export default function G60gyeDemoPage() {
                   return (
                     <div 
                       key={menu.id}
-                      className="bg-[#1c1310] border border-[#3d2c27] rounded-2xl overflow-hidden flex flex-col transition-all hover:border-[#f39c12]/50 shadow-md animate-fade-in"
+                      className={`bg-[#1c1310] border rounded-2xl overflow-hidden flex flex-col transition-all shadow-md animate-fade-in relative ${
+                        isSoldOut ? 'border-rose-900/60 opacity-60 grayscale' : 'border-[#3d2c27] hover:border-[#f39c12]/50'
+                      }`}
                     >
                       {/* Top Horizontal Row */}
                       <div className="flex">
@@ -1905,7 +1999,14 @@ export default function G60gyeDemoPage() {
                               alt={menu.name}
                               className="w-full h-full object-cover"
                             />
-                            {menu.tag && (
+                            {isSoldOut && (
+                              <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex items-center justify-center z-20">
+                                <span className="bg-rose-600 text-white font-black text-[10px] px-2 py-1 rounded-lg border border-rose-400 shadow">
+                                  🔴 품절
+                                </span>
+                              </div>
+                            )}
+                            {menu.tag && !isSoldOut && (
                               <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-[#f39c12] text-[#1a1210] text-[8px] font-black uppercase tracking-wider">
                                 {menu.tag}
                               </span>
@@ -1917,7 +2018,14 @@ export default function G60gyeDemoPage() {
                         <div className="flex-1 p-3.5 flex flex-col justify-between">
                           <div>
                             <div className="flex items-center justify-between gap-1">
-                              <h4 className="text-sm font-extrabold text-white leading-tight">{menu.name}</h4>
+                              <h4 className="text-sm font-extrabold text-white leading-tight flex items-center gap-1.5">
+                                <span>{menu.name}</span>
+                                {isSoldOut && (
+                                  <span className="text-[9px] bg-rose-950 text-rose-300 border border-rose-700 px-1.5 py-0.2 rounded font-black">
+                                    품절
+                                  </span>
+                                )}
+                              </h4>
                               <span className="text-xs font-black text-[#f39c12] shrink-0">{activePrice.toLocaleString()}원</span>
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1 leading-snug line-clamp-2">
@@ -1927,7 +2035,11 @@ export default function G60gyeDemoPage() {
 
                           {/* Cart Add/Remove Buttons */}
                           <div className="flex justify-end items-center mt-2">
-                            {menu.isHalfAndHalf ? (
+                            {isSoldOut ? (
+                              <span className="h-8 px-3 bg-rose-950/60 border border-rose-800/80 text-rose-300 font-bold rounded-xl flex items-center text-[10px]">
+                                🚫 재료소진 품절
+                              </span>
+                            ) : menu.isHalfAndHalf ? (
                               <button
                                 onClick={() => setShowHalfModal(true)}
                                 className="h-8 px-3.5 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl flex items-center gap-1 transition-all text-[11px] shadow"
@@ -2147,8 +2259,12 @@ export default function G60gyeDemoPage() {
                       onChange={(e) => setPickupTime(e.target.value)}
                       className="w-full h-10 px-3 bg-[#0d0908] border border-[#3d2c27] text-slate-100 rounded-xl text-xs focus:outline-none focus:border-[#f39c12] transition-colors"
                     >
-                      <option value="20분 뒤 방문">20분 뒤 방문</option>
-                      <option value="30분 뒤 방문">30분 뒤 방문</option>
+                      <option value="20분 뒤 방문" disabled={storeSettings.busyLevel === 'busy' || storeSettings.busyLevel === 'peak'}>
+                        20분 뒤 방문 {storeSettings.busyLevel === 'busy' || storeSettings.busyLevel === 'peak' ? '(혼잡 조리 지연 🚫)' : ''}
+                      </option>
+                      <option value="30분 뒤 방문" disabled={storeSettings.busyLevel === 'peak'}>
+                        30분 뒤 방문 {storeSettings.busyLevel === 'peak' ? '(피크타임 선택불가 🚫)' : ''}
+                      </option>
                       <option value="45분 뒤 방문">45분 뒤 방문</option>
                       <option value="60분 뒤 방문">60분 뒤 방문</option>
                     </select>
@@ -2459,6 +2575,29 @@ export default function G60gyeDemoPage() {
                 </div>
               </div>
             </div>
+
+            {/* 주류 포함 시 만 19세 성인 인증 의무 동의 체크박스 */}
+            {cart.some(item => isAlcoholItem(item.menu.name)) && (
+              <div className="bg-rose-950/70 border-2 border-rose-500/80 rounded-2xl p-4 space-y-2.5 text-left shadow-lg">
+                <div className="flex items-center gap-2 text-rose-300 font-extrabold text-xs">
+                  <Wine className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>[만 19세 미만 주류 구매 불가] 성인 인증 확인 의무</span>
+                </div>
+                <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                  청소년보호법 제28조에 의거하여 미성년자에게는 주류 판매가 엄격히 금지됩니다. 
+                  상품 수령(방문 포장 및 배달) 시 <strong>주민등록증, 운전면허증, 모바일 신분증</strong> 등 실물 신분증을 반드시 대면 확인합니다.
+                </p>
+                <label className="flex items-center gap-2.5 text-xs font-black text-rose-200 cursor-pointer pt-1 bg-rose-900/50 p-2.5 rounded-xl border border-rose-400">
+                  <input
+                    type="checkbox"
+                    checked={alcoholAgeConfirmed}
+                    onChange={(e) => setAlcoholAgeConfirmed(e.target.checked)}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 accent-rose-600"
+                  />
+                  <span>[필수] 본인은 만 19세 이상 성인이며, 상품 수령 시 실물 신분증을 제시하겠습니다.</span>
+                </label>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex gap-3 pt-2">
@@ -3413,6 +3552,127 @@ export default function G60gyeDemoPage() {
                 </button>
               </div>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🪙 내 포인트 조회 및 적립 내역 모달 */}
+      <AnimatePresence>
+        {myPointsModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1310] border-2 border-amber-500/70 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl relative text-left"
+            >
+              <button
+                type="button"
+                onClick={() => setMyPointsModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold"
+              >
+                ×
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-[#1a1210] bg-[#f39c12] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  60gye Points
+                </span>
+                <h3 className="text-base font-extrabold text-white flex items-center gap-1.5">
+                  <span>🪙 내 포인트 및 적립 내역</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  휴대전화 번호 기준으로 2% 포인트가 자동 누적됩니다.
+                </p>
+              </div>
+
+              {/* 전화번호 입력/확인 */}
+              <div className="space-y-1.5 bg-[#140b09] border border-[#3d2c27] p-3 rounded-2xl">
+                <label className="text-[10px] font-bold text-slate-400 block">조회할 전화번호</label>
+                <input
+                  type="tel"
+                  placeholder="010-0000-0000"
+                  value={pointsQueryPhone}
+                  onChange={(e) => setPointsQueryPhone(e.target.value)}
+                  className="w-full h-9 bg-[#1c1310] border border-[#3d2c27] focus:border-[#f39c12] rounded-xl px-3 text-xs text-white font-mono placeholder-slate-600 focus:outline-none"
+                />
+              </div>
+
+              {/* 포인트 조회 결과 */}
+              {(() => {
+                const qPhone = pointsQueryPhone.trim();
+                const matchedOrders = myOrders.filter(o => 
+                  o.status !== 'cancelled' && 
+                  (qPhone ? o.phone === qPhone : true)
+                );
+                
+                // 로컬스토리지 누적 포인트
+                let totalPts = 0;
+                if (typeof window !== 'undefined') {
+                  try {
+                    const savedPts = localStorage.getItem('youngwol_user_points');
+                    if (savedPts) totalPts = parseInt(savedPts, 10) || 0;
+                  } catch (e) {}
+                }
+                // 주문별 포인트 합산
+                const orderPtsSum = matchedOrders.reduce((sum, o) => sum + (o.rewardPoints || Math.round(o.total * 0.02)), 0);
+                const finalPts = Math.max(totalPts, orderPtsSum);
+
+                return (
+                  <div className="space-y-3">
+                    <div className="bg-gradient-to-br from-amber-950/50 to-orange-950/40 border border-amber-500/50 rounded-2xl p-4 text-center space-y-1 shadow-inner">
+                      <span className="text-[11px] text-amber-200 font-bold block">현재 사용 가능한 총 포인트</span>
+                      <div className="text-3xl font-black text-[#f39c12] font-mono tracking-tight">
+                        {finalPts.toLocaleString()} <span className="text-sm font-normal text-slate-300">P</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block pt-1">
+                        (주문 결제 시 현금처럼 1,000P 단위로 사용 가능)
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-[11px] text-slate-400 font-bold px-1">
+                        <span>최근 적립 내역</span>
+                        <span>{matchedOrders.length}건</span>
+                      </div>
+
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 divide-y divide-[#2d1d19] border border-[#3d2c27] rounded-xl p-2 bg-[#140b09] text-xs">
+                        {matchedOrders.length === 0 ? (
+                          <div className="text-center text-slate-500 text-[11px] py-4">
+                            적립된 주문 내역이 없습니다.<br/>첫 주문 시 2% 포인트가 자동 적립됩니다!
+                          </div>
+                        ) : (
+                          matchedOrders.map((o, idx) => (
+                            <div key={idx} className="pt-1.5 first:pt-0 flex justify-between items-center text-[11px]">
+                              <div>
+                                <span className="text-white font-bold block">{o.name || '방문/배달 주문'}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">{o.timestamp}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-mono text-amber-400 font-black">
+                                  +{o.rewardPoints || Math.round(o.total * 0.02)}P
+                                </span>
+                                <span className="text-[9px] text-slate-400 block">({o.total.toLocaleString()}원)</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMyPointsModalOpen(false)}
+                  className="w-full h-11 bg-slate-900 border border-[#3d2c27] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition-colors"
+                >
+                  확인 (닫기)
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -6,10 +6,36 @@ export const revalidate = 0;
 const GIST_ID = '99f22649b72fe419dabe570bdad42f5e';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ['gho', '_uxKDiTfd9', 'BDKlp59JH9', 'YLtKqh7STe', 'w0xfymV'].join('');
 
+export interface BusyConfig {
+  takeoutMin: number;
+  deliveryMin: number;
+}
+
 export interface StoreSettings {
   isPaused: boolean;
   pauseReason: string;
+  busyLevel?: 'normal' | 'busy' | 'peak';
+  customTimes?: {
+    normal: BusyConfig;
+    busy: BusyConfig;
+    peak: BusyConfig;
+  };
+  customNotice?: string;
+  soldOutMenuIds?: string[];
 }
+
+export const DEFAULT_STORE_SETTINGS: StoreSettings = {
+  isPaused: false,
+  pauseReason: '',
+  busyLevel: 'normal',
+  customTimes: {
+    normal: { takeoutMin: 20, deliveryMin: 40 },
+    busy: { takeoutMin: 35, deliveryMin: 50 },
+    peak: { takeoutMin: 50, deliveryMin: 65 },
+  },
+  customNotice: '',
+  soldOutMenuIds: [],
+};
 
 declare global {
   // eslint-disable-next-line no-var
@@ -22,7 +48,7 @@ declare global {
 
 if (!globalThis.__youngwol_orders__) {
   globalThis.__youngwol_orders__ = [];
-  globalThis.__youngwol_store_settings__ = { isPaused: false, pauseReason: '' };
+  globalThis.__youngwol_store_settings__ = { ...DEFAULT_STORE_SETTINGS };
   globalThis.__youngwol_orders_last_sync__ = 0;
 }
 
@@ -35,7 +61,10 @@ async function getPersistentData(): Promise<{ orders: any[], storeSettings: Stor
   if (globalThis.__youngwol_orders__ && globalThis.__youngwol_orders__.length > 0 && now - lastSync < 1000) {
     return {
       orders: globalThis.__youngwol_orders__,
-      storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+      storeSettings: {
+        ...DEFAULT_STORE_SETTINGS,
+        ...(globalThis.__youngwol_store_settings__ || {})
+      }
     };
   }
 
@@ -57,17 +86,26 @@ async function getPersistentData(): Promise<{ orders: any[], storeSettings: Stor
           globalThis.__youngwol_orders_last_sync__ = now;
           return {
             orders: parsed,
-            storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+            storeSettings: {
+              ...DEFAULT_STORE_SETTINGS,
+              ...(globalThis.__youngwol_store_settings__ || {})
+            }
           };
         } else if (parsed && Array.isArray(parsed.orders)) {
           globalThis.__youngwol_orders__ = parsed.orders;
           if (parsed.storeSettings) {
-            globalThis.__youngwol_store_settings__ = parsed.storeSettings;
+            globalThis.__youngwol_store_settings__ = {
+              ...DEFAULT_STORE_SETTINGS,
+              ...parsed.storeSettings
+            };
           }
           globalThis.__youngwol_orders_last_sync__ = now;
           return {
             orders: parsed.orders,
-            storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+            storeSettings: {
+              ...DEFAULT_STORE_SETTINGS,
+              ...(globalThis.__youngwol_store_settings__ || {})
+            }
           };
         }
       }
@@ -78,7 +116,10 @@ async function getPersistentData(): Promise<{ orders: any[], storeSettings: Stor
 
   return {
     orders: globalThis.__youngwol_orders__ || [],
-    storeSettings: globalThis.__youngwol_store_settings__ || { isPaused: false, pauseReason: '' }
+    storeSettings: {
+      ...DEFAULT_STORE_SETTINGS,
+      ...(globalThis.__youngwol_store_settings__ || {})
+    }
   };
 }
 
@@ -169,7 +210,11 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, status, cancelReason, isStorePaused, pauseReason } = body;
+    const { 
+      id, status, cancelReason, 
+      isStorePaused, pauseReason,
+      busyLevel, customTimes, customNotice, soldOutMenuIds
+    } = body;
 
     const { orders, storeSettings } = await getPersistentData();
 
@@ -179,6 +224,30 @@ export async function PATCH(request: Request) {
       if (pauseReason !== undefined) {
         storeSettings.pauseReason = pauseReason;
       }
+    }
+
+    // 피크타임 혼잡도 단계 갱신
+    if (busyLevel !== undefined) {
+      storeSettings.busyLevel = busyLevel;
+    }
+
+    // 커스텀 조리/배달 시간 갱신
+    if (customTimes !== undefined) {
+      storeSettings.customTimes = {
+        ...DEFAULT_STORE_SETTINGS.customTimes,
+        ...(storeSettings.customTimes || {}),
+        ...customTimes
+      };
+    }
+
+    // 담당자 실시간 공지 문구 갱신
+    if (customNotice !== undefined) {
+      storeSettings.customNotice = customNotice;
+    }
+
+    // 품절 메뉴 목록 갱신
+    if (soldOutMenuIds !== undefined) {
+      storeSettings.soldOutMenuIds = soldOutMenuIds;
     }
 
     // 개별 주문 상태 및 거절 사유 갱신
