@@ -36,6 +36,7 @@ interface Order {
   timestamp: string;
   status: 'pending' | 'accepted' | 'cooking' | 'done' | 'cancelled';
   cancelReason?: string;
+  rewardPoints?: number;
 }
 
 export default function KitchenDashboardPage() {
@@ -567,6 +568,9 @@ export default function KitchenDashboardPage() {
             <div className="text-sm font-black border-t border-black pt-1 mt-1">
               최종 결제: {selectedOrderForPrint.total.toLocaleString()}원
             </div>
+            {selectedOrderForPrint.rewardPoints && selectedOrderForPrint.rewardPoints > 0 && (
+              <div className="text-[10px] font-bold text-black">적립 포인트 (2%): +{selectedOrderForPrint.rewardPoints.toLocaleString()}P</div>
+            )}
             <div className="text-[10px] text-slate-600">결제 방식: {getPaymentLabel(selectedOrderForPrint.paymentMethod)}</div>
           </div>
 
@@ -933,18 +937,43 @@ export default function KitchenDashboardPage() {
                       <div className="bg-[#0e0908] border border-[#2b1d19] rounded-xl p-3 space-y-2">
                         <h5 className="text-[10px] font-black text-slate-450 uppercase tracking-widest">주문 제품</h5>
                         <div className="space-y-1.5">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between text-xs">
-                              <span className="font-bold text-white">
-                                {item.name} 
-                                <span className="text-[#f39c12] text-[9px] bg-[#f39c12]/10 px-1.5 py-0.5 rounded ml-1.5">{item.type}</span>
-                                {item.isCustom && item.customDetails && (
-                                  <span className="block text-[9px] text-red-400 mt-0.5 font-normal italic">*요구사항: {item.customDetails}</span>
-                                )}
-                              </span>
-                              <span className="text-slate-400 font-bold">{item.quantity}개</span>
-                            </div>
-                          ))}
+                          {order.items.map((item, idx) => {
+                            const isFreeGift = item.price === 0 || item.name?.includes('선물') || item.name?.includes('서비스');
+                            return (
+                              <div 
+                                key={idx} 
+                                className={`flex justify-between items-center text-xs p-1.5 rounded-lg transition-all ${
+                                  isFreeGift 
+                                    ? 'bg-amber-500/15 border border-amber-500/40 text-amber-200 shadow-sm' 
+                                    : ''
+                                }`}
+                              >
+                                <div className="min-w-0 pr-2">
+                                  <span className={`font-bold ${isFreeGift ? 'text-amber-200 font-black' : 'text-white'}`}>
+                                    {item.name} 
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded ml-1.5 font-bold ${
+                                      isFreeGift 
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
+                                        : 'bg-[#f39c12]/10 text-[#f39c12]'
+                                    }`}>
+                                      {item.type}
+                                    </span>
+                                    {item.isCustom && item.customDetails && (
+                                      <span className="block text-[9px] text-red-400 mt-0.5 font-normal italic">*요구사항: {item.customDetails}</span>
+                                    )}
+                                    {isFreeGift && (
+                                      <span className="block text-[9px] text-amber-300 font-black mt-0.5 animate-pulse">
+                                        ⚡ [자사몰 덤 서비스] 튀김 포장백 동봉 필수!
+                                      </span>
+                                    )}
+                                  </span>
+                                </div>
+                                <span className={`font-black shrink-0 ${isFreeGift ? 'text-amber-300 text-sm' : 'text-slate-400'}`}>
+                                  {item.quantity}개
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 

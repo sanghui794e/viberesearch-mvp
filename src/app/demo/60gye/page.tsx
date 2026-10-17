@@ -1040,10 +1040,40 @@ export default function G60gyeDemoPage() {
     setCart(cart.filter(item => !(item.menu.id === menuId && item.selectedType === type && item.customDetails === customDetails)));
   };
 
+  // 한 마리당 포장 할인 계산 로직 (대표님 공식 룰 100% 반영)
+  // - 포장 할인 적용 대상: 일반 치킨 및 반반치킨 중 '뼈' 또는 '순살'
+  // - 포장 할인 제외 대상: 윙봉, 콤보 (반반 윙봉/콤보 포함), 순살세트 3종, 부분육 단품(윙/봉/다리), 사이드 전체, 음료/소스/주류 전체
+  const isEligibleForTakeoutDiscount = (item: CartItem) => {
+    if (item.menu.category !== '치킨' && item.menu.category !== '반반치킨') {
+      return false;
+    }
+    if (item.selectedType === '윙봉' || item.selectedType === '콤보') {
+      return false;
+    }
+    if (item.selectedType === '뼈' || item.selectedType === '순살') {
+      return true;
+    }
+    return false;
+  };
+
+  const getTakeoutDiscountEligibleCount = () => {
+    if (orderType !== 'takeout') return 0;
+    return cart.reduce((count, item) => {
+      if (isEligibleForTakeoutDiscount(item)) {
+        return count + item.quantity;
+      }
+      return count;
+    }, 0);
+  };
+
   const getSubtotal = () => cart.reduce((sum, item) => sum + (item.selectedPrice * item.quantity), 0);
-  const getDiscount = () => (orderType === 'takeout' && getSubtotal() > 0) ? 2000 : 0;
+  const getDiscount = () => (orderType === 'takeout') ? (getTakeoutDiscountEligibleCount() * 2000) : 0;
   const getDeliveryFee = () => (orderType === 'delivery' && getSubtotal() > 0) ? 3000 : 0;
-  const getTotalPrice = () => getSubtotal() - getDiscount() + getDeliveryFee();
+  const getTotalPrice = () => Math.max(0, getSubtotal() - getDiscount() + getDeliveryFee());
+
+  // 포인트 적립 계산 (최종 실 결제금액의 2% 적립)
+  // - 포장할인 적용 메뉴는 할인 후 실 결제액 기준, 배달 및 할인 제외 메뉴(윙봉, 콤보, 단품, 사이드 등)는 정상 결제액 100% 기준
+  const getRewardPoints = () => Math.floor(getTotalPrice() * 0.02);
 
   // 픽업/완료 목표 시각까지 남은 분(Minutes) 계산 헬퍼
   const getRemainingMinutes = () => {
@@ -1298,6 +1328,18 @@ export default function G60gyeDemoPage() {
     const orderId = `ord-${Date.now()}`;
     setCurrentOrderId(orderId);
 
+    // 모바일 자사몰 단독 고객 감사 덤 서비스 아이템 자동 추가
+    const serviceGiftItem = {
+      name: orderType === 'takeout' ? '🎁 [자사몰 선물] 미니 쫀득볼 5개' : '🎁 [자사몰 선물] 미니 쫀득볼 10개',
+      type: '무료 덤',
+      price: 0,
+      quantity: orderType === 'takeout' ? 5 : 10,
+      isCustom: false,
+      customDetails: orderType === 'takeout' ? '방문 포장 고객 감사 무료 덤 5개' : '배달 주문 고객 감사 무료 덤 10개'
+    };
+
+    const earnedPoints = getRewardPoints();
+
     const orderData = {
       id: orderId,
       name,
@@ -1309,21 +1351,33 @@ export default function G60gyeDemoPage() {
       minutesToAdd,
       paymentMethod,
       requestText,
-      items: cart.map(item => ({
-        name: item.menu.name,
-        type: item.selectedType,
-        price: item.selectedPrice,
-        quantity: item.quantity,
-        isCustom: item.menu.isCustom,
-        customDetails: item.customDetails
-      })),
+      items: [
+        ...cart.map(item => ({
+          name: item.menu.name,
+          type: item.selectedType,
+          price: item.selectedPrice,
+          quantity: item.quantity,
+          isCustom: item.menu.isCustom,
+          customDetails: item.customDetails
+        })),
+        serviceGiftItem
+      ],
       subtotal: getSubtotal(),
       discount: getDiscount(),
       deliveryFee: getDeliveryFee(),
       total: getTotalPrice(),
+      rewardPoints: earnedPoints,
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
       status: 'pending'
     };
+
+    // 포인트 누적 업데이트 (로컬스토리지 영구 보존)
+    if (typeof window !== 'undefined') {
+      try {
+        const savedPts = parseInt(localStorage.getItem('youngwol_user_points') || '0', 10);
+        localStorage.setItem('youngwol_user_points', String(savedPts + earnedPoints));
+      } catch (e) {}
+    }
 
     const existingOrders = JSON.parse(localStorage.getItem('youngwol_orders') || '[]');
     const updatedOrderList = [orderData, ...existingOrders];
@@ -2017,24 +2071,30 @@ export default function G60gyeDemoPage() {
               <button
                 type="button"
                 onClick={() => setOrderType('takeout')}
-                className={`py-2 rounded-lg text-xs font-extrabold transition-all ${
+                className={`py-2 px-1 rounded-lg text-xs font-extrabold transition-all flex flex-col items-center justify-center gap-0.5 ${
                   orderType === 'takeout' 
                     ? 'bg-[#f39c12] text-[#1a1210] shadow' 
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🚴 포장 요청 (-2,000원)
+                <span>🚴 포장 요청 (마리당 -2,000원)</span>
+                <span className={`text-[9px] font-black ${orderType === 'takeout' ? 'text-[#1a1210]/80' : 'text-emerald-400'}`}>
+                  + 미니 쫀득볼 5개 덤 🎁
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setOrderType('delivery')}
-                className={`py-2 rounded-lg text-xs font-extrabold transition-all ${
+                className={`py-2 px-1 rounded-lg text-xs font-extrabold transition-all flex flex-col items-center justify-center gap-0.5 ${
                   orderType === 'delivery' 
                     ? 'bg-[#f39c12] text-[#1a1210] shadow' 
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🏠 배달 주문 (+3,000원)
+                <span>🏠 배달 주문 (+3,000원)</span>
+                <span className={`text-[9px] font-black ${orderType === 'delivery' ? 'text-[#1a1210]/80' : 'text-amber-400'}`}>
+                  + 미니 쫀득볼 10개 덤 🎁
+                </span>
               </button>
             </div>
 
@@ -2125,46 +2185,86 @@ export default function G60gyeDemoPage() {
                     장바구니에 담긴 메뉴가 없습니다.
                   </div>
                 ) : (
-                  cart.map((item, idx) => (
-                    <div key={idx} className="bg-[#140d0b] border border-[#2e201c] rounded-xl p-3 flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h5 className="text-xs font-extrabold text-white truncate">{item.menu.name}</h5>
-                          <span className="text-[9px] font-bold text-[#f39c12] bg-[#2a1b16] px-1.5 py-0.5 rounded border border-[#442c23]">
-                            {item.selectedType}
-                          </span>
+                  cart.map((item, idx) => {
+                    const isDiscountItem = orderType === 'takeout' && isEligibleForTakeoutDiscount(item);
+                    return (
+                      <div key={idx} className="bg-[#140d0b] border border-[#2e201c] rounded-xl p-3 flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="text-xs font-extrabold text-white truncate">{item.menu.name}</h5>
+                            <span className="text-[9px] font-bold text-[#f39c12] bg-[#2a1b16] px-1.5 py-0.5 rounded border border-[#442c23]">
+                              {item.selectedType}
+                            </span>
+                            {orderType === 'takeout' && (
+                              isDiscountItem ? (
+                                <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.2 rounded">
+                                  포장할인 적용 (-{(item.quantity * 2000).toLocaleString()}원)
+                                </span>
+                              ) : (
+                                <span className="text-[8px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-1.5 py-0.2 rounded">
+                                  포장할인 제외 (윙봉/콤보/세트/단품)
+                                </span>
+                              )
+                            )}
+                          </div>
+                          {item.customDetails && (
+                            <p className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">{item.customDetails}</p>
+                          )}
+                          <p className="text-[11px] font-black text-slate-300 mt-1">
+                            {(item.selectedPrice * item.quantity).toLocaleString()}원
+                            <span className="text-[9px] text-slate-500 font-normal ml-1">
+                              ({item.selectedPrice.toLocaleString()}원 × {item.quantity})
+                            </span>
+                          </p>
                         </div>
-                        {item.customDetails && (
-                          <p className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">{item.customDetails}</p>
-                        )}
-                        <p className="text-[11px] font-black text-slate-300 mt-1">
-                          {(item.selectedPrice * item.quantity).toLocaleString()}원
-                          <span className="text-[9px] text-slate-500 font-normal ml-1">
-                            ({item.selectedPrice.toLocaleString()}원 × {item.quantity})
-                          </span>
-                        </p>
-                      </div>
 
-                      <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-xl h-8 px-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => updateCartQty(item.menu.id, item.selectedType, -1, item.customDetails)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-7 text-center text-xs font-bold text-white">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateCartQty(item.menu.id, item.selectedType, 1, item.customDetails)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center bg-[#0d0908] border border-[#3d2c27] rounded-xl h-8 px-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.menu.id, item.selectedType, -1, item.customDetails)}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-7 text-center text-xs font-bold text-white">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.menu.id, item.selectedType, 1, item.customDetails)}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#3d2c27] text-slate-400 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
+
+                {/* 모바일 자사몰 단독 고객 감사 덤 서비스 카드 */}
+                <div className="bg-gradient-to-r from-amber-950/40 via-[#261712] to-amber-950/40 border border-amber-500/50 rounded-xl p-3 flex items-center justify-between gap-3 shadow-md animate-fade-in">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-lg shrink-0">
+                      🎁
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h5 className="text-xs font-black text-amber-200">
+                          [자사몰 단독 선물] 미니 쫀득볼 {orderType === 'takeout' ? '5개' : '10개'}
+                        </h5>
+                        <span className="text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.2 rounded-full">
+                          무료 증정
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {orderType === 'takeout' ? '방문 포장 고객 감사 무료 덤 5개' : '배달 주문 고객 감사 무료 덤 10개'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-black text-emerald-400">0원 (덤)</span>
+                  </div>
+                </div>
+
               </div>
 
               {/* 금액 정산 요약표 */}
@@ -2176,8 +2276,19 @@ export default function G60gyeDemoPage() {
 
                 {orderType === 'takeout' && (
                   <div className="flex justify-between text-emerald-450 font-bold">
-                    <span>🎁 포장 방문 할인</span>
-                    <span>-2,000원</span>
+                    <span>
+                      🎁 방문 포장 할인
+                      {getTakeoutDiscountEligibleCount() > 0 ? (
+                        <span className="text-[10px] text-emerald-300 ml-1 font-normal">
+                          (-2,000원 × {getTakeoutDiscountEligibleCount()}마리)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 ml-1 font-normal">
+                          (윙봉/콤보/단품/사이드 제외)
+                        </span>
+                      )}
+                    </span>
+                    <span>-{getDiscount().toLocaleString()}원</span>
                   </div>
                 )}
 
@@ -2194,6 +2305,20 @@ export default function G60gyeDemoPage() {
                     {getTotalPrice().toLocaleString()}원
                   </span>
                 </div>
+
+                {/* 포인트 적립 안내 카드 */}
+                <div className="bg-[#140b09] border border-amber-500/30 rounded-xl p-2.5 mt-2 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-200">
+                    <span className="text-sm">🪙</span>
+                    <span>적립 예정 포인트 (2%)</span>
+                  </div>
+                  <span className="font-mono font-black text-amber-400 text-sm">
+                    +{getRewardPoints().toLocaleString()} P
+                  </span>
+                </div>
+                <p className="text-[9px] text-slate-500 pl-1 leading-snug">
+                  * 포장할인 적용 메뉴는 할인 후 실 결제액 기준, 배달 및 할인 제외 메뉴(윙봉, 콤보, 단품, 사이드 등)는 정상 결제액 100% 기준으로 포인트가 적립됩니다.
+                </p>
               </div>
             </div>
 
@@ -2670,27 +2795,41 @@ export default function G60gyeDemoPage() {
 
               {/* 주문 품목 리스트 */}
               <div className="space-y-2.5">
-                {(currentOrderState?.items || cart).map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-start justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
-                        <span>{item.name}</span>
-                        <span className="text-[9px] font-semibold text-[#f39c12] bg-[#2a1b16] px-1.5 py-0.5 rounded border border-[#442c23]">
-                          {item.type || '기본'}
+                {(currentOrderState?.items || cart).map((item: any, idx: number) => {
+                  const isFreeGift = item.price === 0 || item.name?.includes('선물') || item.name?.includes('서비스');
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`flex items-start justify-between text-xs p-2 rounded-xl transition-all ${
+                        isFreeGift 
+                          ? 'bg-amber-950/25 border border-amber-500/40 shadow-sm' 
+                          : 'bg-[#140b09]/50 border border-transparent'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
+                          <span className={isFreeGift ? 'text-amber-200' : 'text-white'}>{item.name}</span>
+                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${
+                            isFreeGift 
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-black' 
+                              : 'bg-[#2a1b16] text-[#f39c12] border-[#442c23]'
+                          }`}>
+                            {item.type || '기본'}
+                          </span>
+                        </div>
+                        {item.customDetails && (
+                          <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{item.customDetails}</p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-slate-400 font-medium">{item.quantity}개</span>
+                        <span className={`font-bold ml-2 ${isFreeGift ? 'text-emerald-400 font-black' : 'text-white'}`}>
+                          {isFreeGift ? '무료 (덤)' : `${((item.price || item.selectedPrice || 0) * item.quantity).toLocaleString()}원`}
                         </span>
                       </div>
-                      {item.customDetails && (
-                        <p className="text-[9px] text-slate-400 mt-0.5">{item.customDetails}</p>
-                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-slate-400 font-medium">{item.quantity}개</span>
-                      <span className="text-white font-bold ml-2">
-                        {((item.price || item.selectedPrice || 0) * item.quantity).toLocaleString()}원
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* 금액 정산 표 */}
@@ -2701,8 +2840,19 @@ export default function G60gyeDemoPage() {
                 </div>
                 {orderType === 'takeout' && (
                   <div className="flex justify-between text-emerald-450 font-bold">
-                    <span>🎁 포장 주문 할인</span>
-                    <span>-{(currentOrderState?.discount || getDiscount()).toLocaleString()}원</span>
+                    <span>
+                      🎁 방문 포장 할인
+                      {(currentOrderState?.discount !== undefined ? currentOrderState.discount : getDiscount()) > 0 ? (
+                        <span className="text-[10px] text-emerald-300 ml-1 font-normal">
+                          (-2,000원 × {getTakeoutDiscountEligibleCount()}마리)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 ml-1 font-normal">
+                          (윙봉/콤보/단품/사이드 제외)
+                        </span>
+                      )}
+                    </span>
+                    <span>-{(currentOrderState?.discount !== undefined ? currentOrderState.discount : getDiscount()).toLocaleString()}원</span>
                   </div>
                 )}
                 {orderType === 'delivery' && (
@@ -2715,6 +2865,17 @@ export default function G60gyeDemoPage() {
                   <span className="text-white">최종 결제 금액</span>
                   <span className="text-[#f39c12] text-base">
                     {(currentOrderState?.total || getTotalPrice()).toLocaleString()}원
+                  </span>
+                </div>
+
+                {/* 포인트 적립 결과 표시 */}
+                <div className="flex justify-between items-center bg-[#15100e] border border-amber-500/30 rounded-xl p-2.5 text-[11px] text-amber-200 font-bold mt-2">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-sm">🪙</span>
+                    <span>이번 주문 적립 포인트 (2%)</span>
+                  </span>
+                  <span className="font-mono font-black text-amber-400 text-xs">
+                    +{(currentOrderState?.rewardPoints !== undefined ? currentOrderState.rewardPoints : getRewardPoints()).toLocaleString()} P
                   </span>
                 </div>
               </div>
@@ -2881,14 +3042,29 @@ export default function G60gyeDemoPage() {
                     ))}
                   </div>
 
-                  <div className="border-t border-[#261915] pt-3 text-[10px] font-bold text-slate-400 space-y-1">
+                  <div className="border-t border-[#261915] pt-3 text-[10px] font-bold text-slate-400 space-y-1.5">
                     <div className="flex justify-between">
                       <span>선택 메뉴 합계</span>
-                      <span>{getSubtotal().toLocaleString()}원</span>
+                      <span className="text-slate-200">{getSubtotal().toLocaleString()}원</span>
                     </div>
-                    <div className="flex justify-between text-emerald-400">
-                      <span>주문 혜택 (포장 기본 선택)</span>
-                      <span>-2,000원</span>
+                    {getDiscount() > 0 ? (
+                      <div className="flex justify-between text-emerald-400">
+                        <span>포장 할인 (-2,000원 × {getTakeoutDiscountEligibleCount()}마리)</span>
+                        <span>-{getDiscount().toLocaleString()}원</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-slate-500">
+                        <span>포장 할인 (윙봉/콤보/단품/사이드 제외)</span>
+                        <span>0원</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-amber-300">
+                      <span>🎁 [자사몰 선물] 미니 쫀득볼 (포장 5개 / 배달 10개)</span>
+                      <span className="text-emerald-400 font-black">무료 증정</span>
+                    </div>
+                    <div className="flex justify-between text-amber-400/90 pt-0.5">
+                      <span>🪙 적립 예정 포인트 (2%)</span>
+                      <span className="font-mono">+{getRewardPoints().toLocaleString()}P</span>
                     </div>
                   </div>
                 </motion.div>
