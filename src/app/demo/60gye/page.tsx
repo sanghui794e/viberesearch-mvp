@@ -732,6 +732,11 @@ export default function G60gyeDemoPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>('store_payment');
   const [requestText, setRequestText] = useState<string>('');
 
+  // 포인트 사용 및 공지 모달 상태 (대표님 최종 마진 방어 룰 100% 반영)
+  const [usedPoints, setUsedPoints] = useState<number>(0);
+  const [userAvailablePoints, setUserAvailablePoints] = useState<number>(0);
+  const [showNoticeModal, setShowNoticeModal] = useState<boolean>(false);
+
   // 기타 직접 입력 모달 상태
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
   const [customMenuName, setCustomMenuName] = useState<string>('');
@@ -754,6 +759,14 @@ export default function G60gyeDemoPage() {
       defaults[menu.id] = menu.prices[0].type;
     });
     setSelectedTypes(defaults);
+
+    // 보유 포인트 로드 (로컬스토리지)
+    if (typeof window !== 'undefined') {
+      try {
+        const savedPts = localStorage.getItem('youngwol_user_points');
+        setUserAvailablePoints(savedPts ? parseInt(savedPts, 10) || 0 : 0);
+      } catch (e) {}
+    }
   }, []);
 
   // 반반치킨 가격 계산 헬퍼 (대표님 공식 룰 100% 매핑)
@@ -1074,11 +1087,43 @@ export default function G60gyeDemoPage() {
   const getSubtotal = () => cart.reduce((sum, item) => sum + (item.selectedPrice * item.quantity), 0);
   const getDiscount = () => (orderType === 'takeout') ? (getTakeoutDiscountEligibleCount() * 2000) : 0;
   const getDeliveryFee = () => (orderType === 'delivery' && getSubtotal() > 0) ? 3000 : 0;
-  const getTotalPrice = () => Math.max(0, getSubtotal() - getDiscount() + getDeliveryFee());
+  const getTotalPrice = () => Math.max(0, getSubtotal() - getDiscount() + getDeliveryFee() - usedPoints);
 
-  // 포인트 적립 계산 (최종 실 결제금액의 2% 적립)
-  // - 포장할인 적용 메뉴는 할인 후 실 결제액 기준, 배달 및 할인 제외 메뉴(윙봉, 콤보, 단품, 사이드 등)는 정상 결제액 100% 기준
-  const getRewardPoints = () => Math.floor(getTotalPrice() * 0.02);
+  // 포인트 적립 계산 로직 (대표님 최종 마진 방어 룰 100% 반영)
+  // - 뼈 / 순살 (단품 및 반반): 포장 500P 적립 / 배달 1,500P 적립
+  // - 콤보 / 윙봉 (단품 및 반반): 포장할인 없음 + 포장 1,500P 적립 / 배달 1,500P 적립
+  // - 순살세트: 포장할인 없음 + 포장 1,000P 적립 / 배달 1,500P 적립 (대용량 콜라 1.5L 기본 제공)
+  // - 단품(윙/봉/다리 부분육), 사이드, 음료, 주류, 소스, 기타: 적립 제외 (0P)
+  const getRewardPoints = () => {
+    return cart.reduce((total, item) => {
+      const cat = item.menu.category;
+      const type = item.selectedType;
+      const qty = item.quantity;
+
+      // 단품(부분육 윙/봉/다리), 사이드, 음료, 소스, 주류, 기타: 적립 제외 (0P)
+      if (cat === '부분육' || cat === '사이드' || cat === '음료' || cat === '소스' || cat === '주류' || cat === '기타 직접입력') {
+        return total;
+      }
+
+      // 순살세트: 포장 1,000P / 배달 1,500P
+      if (cat === '순살세트') {
+        return total + ((orderType === 'takeout' ? 1000 : 1500) * qty);
+      }
+
+      // 치킨 및 반반치킨
+      if (cat === '치킨' || cat === '반반치킨') {
+        if (type === '콤보' || type === '윙봉') {
+          // 콤보, 윙봉: 포장 1,500P / 배달 1,500P
+          return total + (1500 * qty);
+        } else if (type === '뼈' || type === '순살') {
+          // 뼈, 순살: 포장 500P (2,000원 할인 포함) / 배달 1,500P
+          return total + ((orderType === 'takeout' ? 500 : 1500) * qty);
+        }
+      }
+
+      return total;
+    }, 0);
+  };
 
   // 픽업/완료 목표 시각까지 남은 분(Minutes) 계산 헬퍼
   const getRemainingMinutes = () => {
@@ -1372,15 +1417,25 @@ export default function G60gyeDemoPage() {
     const orderId = `ord-${Date.now()}`;
     setCurrentOrderId(orderId);
 
-    // 모바일 자사몰 단독 고객 감사 덤 서비스 아이템 자동 추가
-    const serviceGiftItem = {
-      name: orderType === 'takeout' ? '🎁 [자사몰 선물] 미니 쫀득볼 5개' : '🎁 [자사몰 선물] 미니 쫀득볼 10개',
+    // 이달 미니쫀득볼 증정 횟수 체크 (매월 최대 5회 한정)
+    const currentMonthKey = `youngwol_gift_count_${new Date().getFullYear()}_${new Date().getMonth() + 1}`;
+    let currentGiftCount = 0;
+    if (typeof window !== 'undefined') {
+      try {
+        currentGiftCount = parseInt(localStorage.getItem(currentMonthKey) || '0', 10);
+      } catch (e) {}
+    }
+    const isGiftEligible = currentGiftCount < 5;
+
+    // 모바일 자사몰 단독 고객 감사 덤 서비스 아이템 자동 추가 (월 5회 제한, 포장/배달 5개)
+    const serviceGiftItem = isGiftEligible ? {
+      name: `🎁 [자사몰 선물] 미니 쫀득볼 5개 (이달 ${currentGiftCount + 1}/5회)`,
       type: '무료 덤',
       price: 0,
-      quantity: orderType === 'takeout' ? 5 : 10,
+      quantity: 5,
       isCustom: false,
-      customDetails: orderType === 'takeout' ? '방문 포장 고객 감사 무료 덤 5개' : '배달 주문 고객 감사 무료 덤 10개'
-    };
+      customDetails: '배달/포장 고객 감사 무료 덤 5개 (매월 최대 5회 한정)'
+    } : null;
 
     const earnedPoints = getRewardPoints();
 
@@ -1404,22 +1459,29 @@ export default function G60gyeDemoPage() {
           isCustom: item.menu.isCustom,
           customDetails: item.customDetails
         })),
-        serviceGiftItem
+        ...(serviceGiftItem ? [serviceGiftItem] : [])
       ],
       subtotal: getSubtotal(),
       discount: getDiscount(),
       deliveryFee: getDeliveryFee(),
+      usedPoints: usedPoints,
       total: getTotalPrice(),
       rewardPoints: earnedPoints,
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
       status: 'pending'
     };
 
-    // 포인트 누적 업데이트 (로컬스토리지 영구 보존)
+    // 포인트 누적 및 사용 업데이트 (로컬스토리지 영구 보존)
     if (typeof window !== 'undefined') {
       try {
         const savedPts = parseInt(localStorage.getItem('youngwol_user_points') || '0', 10);
-        localStorage.setItem('youngwol_user_points', String(savedPts + earnedPoints));
+        const nextPts = Math.max(0, savedPts - usedPoints + earnedPoints);
+        localStorage.setItem('youngwol_user_points', String(nextPts));
+        setUserAvailablePoints(nextPts);
+
+        if (isGiftEligible) {
+          localStorage.setItem(currentMonthKey, String(currentGiftCount + 1));
+        }
       } catch (e) {}
     }
 
@@ -1762,6 +1824,28 @@ export default function G60gyeDemoPage() {
                 </div>
               </div>
             ) : null}
+
+            {/* 사장님 공식 공지문 배너 (대표님 요청 100% 반영) */}
+            <div 
+              onClick={() => setShowNoticeModal(true)}
+              className="cursor-pointer bg-gradient-to-r from-[#2c1d18] via-[#3a2219] to-[#201410] border-2 border-amber-500/70 hover:border-amber-400 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3 transition-all hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl shrink-0">📢</span>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black text-amber-300">[사장님 공지] 자사몰 혜택 및 이용 수칙</span>
+                    <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold">필독</span>
+                  </div>
+                  <p className="text-[10px] text-slate-300 mt-0.5 line-clamp-1">
+                    포장 2,000원 할인·포인트 1,500P 적립·매장 쿠폰 안내 (터치하여 전체보기)
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg shrink-0">
+                공지 확인 ➔
+              </span>
+            </div>
 
             {/* Live Store status */}
             <div className="bg-[#1c1310] border border-[#3d2c27] rounded-xl p-3 flex items-center justify-between">
@@ -2415,6 +2499,13 @@ export default function G60gyeDemoPage() {
                   </div>
                 )}
 
+                {usedPoints > 0 && (
+                  <div className="flex justify-between text-rose-400 font-bold">
+                    <span>💰 포인트 사용 차감</span>
+                    <span>-{usedPoints.toLocaleString()}원</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center border-t border-[#3d2c27] pt-2.5 text-sm font-black">
                   <span className="text-white">최종 결제 예정 금액</span>
                   <span className="text-[#f39c12] text-base">
@@ -2426,15 +2517,105 @@ export default function G60gyeDemoPage() {
                 <div className="bg-[#140b09] border border-amber-500/30 rounded-xl p-2.5 mt-2 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 font-bold text-amber-200">
                     <span className="text-sm">🪙</span>
-                    <span>적립 예정 포인트 (2%)</span>
+                    <span>적립 예정 포인트</span>
                   </div>
                   <span className="font-mono font-black text-amber-400 text-sm">
                     +{getRewardPoints().toLocaleString()} P
                   </span>
                 </div>
-                <p className="text-[9px] text-slate-500 pl-1 leading-snug">
-                  * 포장할인 적용 메뉴는 할인 후 실 결제액 기준, 배달 및 할인 제외 메뉴(윙봉, 콤보, 단품, 사이드 등)는 정상 결제액 100% 기준으로 포인트가 적립됩니다.
+                <p className="text-[9px] text-slate-400 pl-1 leading-snug">
+                  * 뼈/순살/콤보/윙봉/순살세트 배달 1,500P 적립 (포장 뼈/순살 500P, 순살세트 1,000P, 콤보/윙봉 1,500P / 단품·사이드 제외)
                 </p>
+
+                {/* 포인트 사용 UI (2,000P 이상 시 사용 가능, 1회 최대 5,000P) */}
+                <div className="bg-[#180e0b] border border-amber-600/40 rounded-xl p-3 mt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                      <span>💰 포인트 사용</span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        (보유: <strong className="text-amber-400 font-mono">{userAvailablePoints.toLocaleString()}P</strong>)
+                      </span>
+                    </div>
+                    {usedPoints > 0 && (
+                      <span className="text-xs font-mono font-black text-rose-400">
+                        -{usedPoints.toLocaleString()} P 적용
+                      </span>
+                    )}
+                  </div>
+
+                  {userAvailablePoints < 2000 ? (
+                    <div className="text-[10px] text-slate-500 bg-[#120907] p-2 rounded-lg border border-[#2d1b15]">
+                      ℹ️ 포인트는 <strong>2,000P 이상</strong> 보유 시 1회 최대 5,000P까지 현금처럼 사용 가능합니다.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step={1000}
+                          min={2000}
+                          max={Math.min(5000, userAvailablePoints, getSubtotal() - getDiscount() + getDeliveryFee())}
+                          value={usedPoints || ''}
+                          placeholder="사용할 포인트 (1,000P 단위)"
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value || '0', 10);
+                            const maxAllowed = Math.min(5000, userAvailablePoints, getSubtotal() - getDiscount() + getDeliveryFee());
+                            if (val > maxAllowed) {
+                              setUsedPoints(Math.floor(maxAllowed / 1000) * 1000);
+                            } else {
+                              setUsedPoints(Math.max(0, Math.floor(val / 1000) * 1000));
+                            }
+                          }}
+                          className="flex-1 bg-[#120907] border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                        />
+                        {usedPoints > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setUsedPoints(0)}
+                            className="text-[10px] font-bold text-slate-400 hover:text-white bg-slate-800 px-2 py-1.5 rounded-lg"
+                          >
+                            취소
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[2000, 3000, 5000].map(amt => {
+                          const maxLimit = Math.min(5000, userAvailablePoints, getSubtotal() - getDiscount() + getDeliveryFee());
+                          const isPossible = amt <= maxLimit;
+                          return (
+                            <button
+                              key={amt}
+                              type="button"
+                              disabled={!isPossible}
+                              onClick={() => setUsedPoints(amt)}
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                                usedPoints === amt
+                                  ? 'bg-amber-500 text-black border-amber-400 font-black'
+                                  : isPossible
+                                  ? 'bg-[#251511] text-amber-200 border-amber-500/30 hover:border-amber-400'
+                                  : 'bg-[#150d0a] text-slate-600 border-slate-800 cursor-not-allowed'
+                              }`}
+                            >
+                              {amt.toLocaleString()}P 사용
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 매장 쿠폰 및 미니쫀득볼 사장님 공지 카드 */}
+                <div className="bg-[#120907] border border-amber-500/30 rounded-xl p-2.5 mt-2 space-y-1 text-[10px] text-slate-300">
+                  <div className="text-amber-300 font-bold flex items-center gap-1">
+                    <span>📢 사장님 공식 안내</span>
+                  </div>
+                  <p className="text-amber-200 font-bold">• ※ 자사몰에서는 매장 쿠폰이 지급되지 않습니다.</p>
+                  <p className="text-slate-400 pl-2 leading-tight">
+                    (자사몰 주문은 모바일 포인트가 즉시 자동 적립되므로 종이 쿠폰은 중복 지급되지 않습니다)
+                  </p>
+                  <p className="text-slate-300 pt-0.5">• 🍡 미니쫀득볼 덤은 매월 최대 5회까지 무료 제공됩니다.</p>
+                </div>
               </div>
             </div>
 
@@ -3011,7 +3192,7 @@ export default function G60gyeDemoPage() {
                 <div className="flex justify-between items-center bg-[#15100e] border border-amber-500/30 rounded-xl p-2.5 text-[11px] text-amber-200 font-bold mt-2">
                   <span className="flex items-center gap-1.5">
                     <span className="text-sm">🪙</span>
-                    <span>이번 주문 적립 포인트 (2%)</span>
+                    <span>이번 주문 적립 포인트</span>
                   </span>
                   <span className="font-mono font-black text-amber-400 text-xs">
                     +{(currentOrderState?.rewardPoints !== undefined ? currentOrderState.rewardPoints : getRewardPoints()).toLocaleString()} P
@@ -3198,11 +3379,11 @@ export default function G60gyeDemoPage() {
                       </div>
                     )}
                     <div className="flex justify-between text-amber-300">
-                      <span>🎁 [자사몰 선물] 미니 쫀득볼 (포장 5개 / 배달 10개)</span>
+                      <span>🎁 [자사몰 선물] 미니 쫀득볼 5개 (월 5회 한정)</span>
                       <span className="text-emerald-400 font-black">무료 증정</span>
                     </div>
                     <div className="flex justify-between text-amber-400/90 pt-0.5">
-                      <span>🪙 적립 예정 포인트 (2%)</span>
+                      <span>🪙 적립 예정 포인트</span>
                       <span className="font-mono">+{getRewardPoints().toLocaleString()}P</span>
                     </div>
                   </div>
@@ -3226,6 +3407,106 @@ export default function G60gyeDemoPage() {
           </div>
         </div>
       )}
+
+      {/* 사장님 공식 공지문 팝업 모달 (대표님 확정안 100% 반영) */}
+      <AnimatePresence>
+        {showNoticeModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1310] border-2 border-amber-500/70 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto"
+            >
+              <button
+                type="button"
+                onClick={() => setShowNoticeModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold w-7 h-7 rounded-full bg-[#261713] flex items-center justify-center transition-colors"
+              >
+                ×
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 inline-block">
+                  CEO NOTICE
+                </span>
+                <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                  <span>📢 60계치킨 영월점 자사몰 안내</span>
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-200 leading-relaxed">
+                <p className="text-amber-200/90 font-medium bg-[#140b08] p-2.5 rounded-xl border border-amber-500/20">
+                  항상 저희 60계치킨 강원영월점을 찾아주시는 고객님께 감사드립니다! 배달앱보다 더 큰 실질적인 혜택을 돌려드리고자 아래와 같이 운영합니다.
+                </p>
+
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1.5">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    1. 🎁 포장 주문 혜택
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1 leading-normal">
+                    • <strong>2,000원 즉시 할인 + 500P 적립</strong> (뼈, 순살 한정 - 반반 포함)<br/>
+                    • 콤보, 윙봉, 단품, 순살세트 메뉴는 포장 할인 대상에서 제외됩니다. (순살세트 1,000P 적립, 콤보/윙봉 1,500P 적립)
+                  </p>
+                </div>
+
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1.5">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    2. 🚀 배달 주문 포인트 적립
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1 leading-normal">
+                    • <strong>뼈 / 콤보, 윙봉 / 순살 / 순살세트</strong> : <strong>1,500P 적립</strong><br/>
+                    • 단품(윙/봉/다리) 메뉴는 포인트 적립에서 제외됩니다.
+                  </p>
+                </div>
+
+                <div className="bg-[#2a0e08] p-3 rounded-xl border border-rose-500/50 space-y-1">
+                  <h5 className="font-black text-rose-300 text-xs">
+                    3. 🎫 매장 쿠폰 관련 필수 안내
+                  </h5>
+                  <p className="text-[11px] text-rose-200 font-bold pl-1">
+                    • ※ 자사몰에서는 매장 쿠폰이 지급되지 않습니다.
+                  </p>
+                  <p className="text-[10px] text-slate-400 pl-1">
+                    (자사몰 주문은 모바일 포인트가 즉시 자동 적립되므로 종이 쿠폰은 중복 지급되지 않습니다)
+                  </p>
+                </div>
+
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    4. 🍡 자사몰 단골 전용 '미니쫀득볼' 서비스
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1">
+                    • 미니쫀득볼은 더 많은 단골분들께 골고루 혜택을 드리고자 <strong>[배달 / 포장 포함 매달 최대 5회까지만]</strong> 무료 제공됩니다.
+                  </p>
+                </div>
+
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    5. 💰 포인트 사용 조건
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1">
+                    • 적립된 포인트는 <strong>2,000P부터 (1회 최대 5,000P까지)</strong> 현금처럼 차감 사용 가능합니다.
+                  </p>
+                </div>
+
+                <p className="text-[10px] text-center text-slate-400 pt-1">
+                  매일 새 기름으로 60마리만 정직하게 조리하겠습니다. 감사합니다!<br/>
+                  <strong className="text-amber-300">- 60계치킨 강원영월점 대표 올림 -</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowNoticeModal(false)}
+                className="w-full py-2.5 rounded-xl bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black text-xs shadow-lg transition-all active:scale-[0.98]"
+              >
+                확인했습니다 👍
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 내 맘대로 반반치킨 선택 모달 (대표님 공식 룰 100% 반영) */}
       <AnimatePresence>
@@ -3583,7 +3864,7 @@ export default function G60gyeDemoPage() {
                   <span>🪙 내 포인트 및 적립 내역</span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  휴대전화 번호 기준으로 2% 포인트가 자동 누적됩니다.
+                  휴대전화 번호 기준으로 자사몰 포인트가 자동 누적됩니다.
                 </p>
               </div>
 
@@ -3640,7 +3921,7 @@ export default function G60gyeDemoPage() {
                       <div className="max-h-40 overflow-y-auto space-y-1.5 divide-y divide-[#2d1d19] border border-[#3d2c27] rounded-xl p-2 bg-[#140b09] text-xs">
                         {matchedOrders.length === 0 ? (
                           <div className="text-center text-slate-500 text-[11px] py-4">
-                            적립된 주문 내역이 없습니다.<br/>첫 주문 시 2% 포인트가 자동 적립됩니다!
+                            적립된 주문 내역이 없습니다.<br/>자사몰 주문 시 혜택별 포인트가 자동 적립됩니다!
                           </div>
                         ) : (
                           matchedOrders.map((o, idx) => (

@@ -34,6 +34,7 @@ interface Order {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  usedPoints?: number;
   total: number;
   timestamp: string;
   status: 'pending' | 'accepted' | 'cooking' | 'done' | 'cancelled';
@@ -874,6 +875,9 @@ export default function KitchenDashboardPage() {
             {selectedOrderForPrint.discount > 0 && (
               <div>할인 (포장 혜택): -{selectedOrderForPrint.discount.toLocaleString()}원</div>
             )}
+            {selectedOrderForPrint.usedPoints && selectedOrderForPrint.usedPoints > 0 && (
+              <div>포인트 사용 차감: -{selectedOrderForPrint.usedPoints.toLocaleString()}원</div>
+            )}
             {selectedOrderForPrint.deliveryFee > 0 && (
               <div>배달 요금: +{selectedOrderForPrint.deliveryFee.toLocaleString()}원</div>
             )}
@@ -881,7 +885,7 @@ export default function KitchenDashboardPage() {
               최종 결제: {selectedOrderForPrint.total.toLocaleString()}원
             </div>
             {selectedOrderForPrint.rewardPoints && selectedOrderForPrint.rewardPoints > 0 && (
-              <div className="text-[10px] font-bold text-black">적립 포인트 (2%): +{selectedOrderForPrint.rewardPoints.toLocaleString()}P</div>
+              <div className="text-[10px] font-bold text-black">적립 포인트: +{selectedOrderForPrint.rewardPoints.toLocaleString()}P</div>
             )}
             <div className="text-[10px] text-slate-600">결제 방식: {getPaymentLabel(selectedOrderForPrint.paymentMethod)}</div>
           </div>
