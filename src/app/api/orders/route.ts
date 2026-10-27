@@ -1,3 +1,4 @@
+import { INITIAL_MOCK_ORDERS } from '@/app/demo/60gye/kitchen/mockData';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -46,8 +47,8 @@ declare global {
   var __youngwol_orders_last_sync__: number | undefined;
 }
 
-if (!globalThis.__youngwol_orders__) {
-  globalThis.__youngwol_orders__ = [];
+if (!globalThis.__youngwol_orders__ || globalThis.__youngwol_orders__.length === 0) {
+  globalThis.__youngwol_orders__ = [...INITIAL_MOCK_ORDERS];
   globalThis.__youngwol_store_settings__ = { ...DEFAULT_STORE_SETTINGS };
   globalThis.__youngwol_orders_last_sync__ = 0;
 }

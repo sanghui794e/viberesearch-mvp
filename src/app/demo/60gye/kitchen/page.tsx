@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { INITIAL_MOCK_ORDERS } from './mockData';
 import { 
+  Sparkles,
   Printer, Check, X, ShieldCheck, HelpCircle, Volume2, 
   Clock, ShoppingBag, MapPin, Phone, AlertCircle, ArrowLeft, RefreshCw,
   PauseCircle, Play, AlertTriangle, BarChart3, Users, Settings, Search,
@@ -296,10 +298,10 @@ export default function KitchenDashboardPage() {
               } catch (e) {}
             }
             const activeOrders = serverOrders.filter(o => !currentDismissed.includes(o.id));
-
-            setOrders(activeOrders);
+            const finalOrders = (activeOrders.length > 0) ? activeOrders : INITIAL_MOCK_ORDERS;
+            setOrders(finalOrders);
             if (typeof window !== 'undefined') {
-              localStorage.setItem('youngwol_orders', JSON.stringify(activeOrders));
+              localStorage.setItem('youngwol_orders', JSON.stringify(finalOrders));
             }
           }
           if (json.storeSettings) {
@@ -329,9 +331,13 @@ export default function KitchenDashboardPage() {
         const data = localStorage.getItem('youngwol_orders');
         if (data) {
           const parsed = JSON.parse(data);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setOrders(parsed);
+            return;
           }
+          // 기본 105건 실전 시연 데이터 자동 주입
+          setOrders(INITIAL_MOCK_ORDERS);
+          localStorage.setItem('youngwol_orders', JSON.stringify(INITIAL_MOCK_ORDERS));
         }
       } catch (e) {
         console.error('loadOrders fallback error:', e);
@@ -1101,6 +1107,21 @@ export default function KitchenDashboardPage() {
 
           </div>
 
+          <button
+            type="button"
+            onClick={() => {
+              setOrders(INITIAL_MOCK_ORDERS);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('youngwol_orders', JSON.stringify(INITIAL_MOCK_ORDERS));
+              }
+              alert('✨ 105건의 실전 주문 및 25명 단골 장부 데이터가 성공적으로 충전되었습니다!');
+            }}
+            className="h-9 px-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+            title="시연용 105건 실전 주문 데이터 즉시 충전"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>시연 데이터 105건 충전</span>
+          </button>
           <button
             onClick={clearAllOrders}
             className="h-9 px-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"

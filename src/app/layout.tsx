@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rewaveon (리웨이브온) - 보이지 않던 흐름을, 보이는 성장으로",
-  description: "AI 리서치와 웹 솔루션, 전략적 실행으로 비즈니스의 지속 가능한 성장을 만드는 파트너",
+  title: "리웨이브온 (Rewaveon) - 소상공인 배달앱 수수료 0원 모바일 스마트오더 & 자사몰",
+  description: "기기값 0원, 배달앱 수수료 0원! 손님 스마트폰 카메라 QR 하나로 주문/결제 완료. 60계치킨 영월점 실전 검증 완료. 입점 시 30만원 상당 AI 상권분석 리포트 100% 무료 증정!",
 };
 
 export default function RootLayout({
