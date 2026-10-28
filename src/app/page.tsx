@@ -669,19 +669,19 @@ export default function LandingPage() {
                 <tr>
                   <td className="py-4 px-4 font-semibold text-white">초기 기기/설치비</td>
                   <td className="py-4 px-4 text-slate-300 bg-card/10">0원 (앱 입점)</td>
-                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">대당 40~60만 원 (테이블 10개 시 400~600만 원 목돈)</td>
+                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">기기값 0원 유혹 뒤 3년(36개월) 노예 약정 의무 계약</td>
                   <td className="py-4 px-4 text-emerald-400 font-extrabold bg-primary/5">0원 (손님 스마트폰 활용)</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 font-semibold text-white">월 고정 렌탈비</td>
-                  <td className="py-4 px-4 text-slate-300 bg-card/10">깃발 1개당 월 88,000원 + 오픈리스트</td>
-                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">대당 월 2~3만 원 (테이블 10개 시 월 20~30만 원 고정비)</td>
+                  <td className="py-4 px-4 text-slate-300 bg-card/10">배민1 강제 전환 (건당 9.8% + 점주 배달비 2,900~3,400원 부담)</td>
+                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">대당 월 1.5만~2.2만 원 (테이블 10개 시 월 15만~22만 원 고정 렌탈료)</td>
                   <td className="py-4 px-4 text-emerald-400 font-extrabold bg-primary/5">월 0원 ~ 29,000원 (치킨 10마리 수수료면 전액 회수)</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 font-semibold text-white">의무 약정 & 위약금</td>
                   <td className="py-4 px-4 text-slate-300 bg-card/10">없음</td>
-                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">대부분 3년 의무 약정 (폐업/이전 시 수백만 원 위약금)</td>
+                  <td className="py-4 px-4 text-red-400 font-medium bg-card/10">3년 의무 약정 필수 (해지/폐업 시 잔여 기기값 + 수백만 원 위약금 폭탄)</td>
                   <td className="py-4 px-4 text-emerald-400 font-extrabold bg-primary/5">의무 약정 없음 (위약금 0원)</td>
                 </tr>
                 <tr>

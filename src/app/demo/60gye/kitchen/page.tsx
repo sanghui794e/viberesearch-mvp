@@ -1686,7 +1686,7 @@ export default function KitchenDashboardPage() {
             const summary = calculateSalesSummary();
             return (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                   <div className="bg-[#1c1310] border border-[#3d2c27] rounded-2xl p-5 space-y-1">
                     <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
                       <DollarSign className="w-3.5 h-3.5 text-[#f39c12]" /> 총 매출액 ({analyticsPeriod === 'today' ? '오늘' : analyticsPeriod === 'month' ? '이번달' : analyticsPeriod === 'year' ? '올해' : '전체'})
@@ -1739,6 +1739,17 @@ export default function KitchenDashboardPage() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* 5번째 신규 카드: 아낀 배달앱 수수료 (13.5% 기준) */}
+                  <div className="bg-gradient-to-br from-[#0c2417] via-[#142d1f] to-[#1c1310] border-2 border-emerald-500/50 rounded-2xl p-5 space-y-1 shadow-lg shadow-emerald-950/40">
+                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" /> 아낀 배달앱 수수료
+                    </span>
+                    <div className="text-2xl font-black text-emerald-300">
+                      +{Math.round(summary.totalRevenue * 0.135).toLocaleString()} <span className="text-sm font-normal text-emerald-400/80">원</span>
+                    </div>
+                    <div className="text-[10px] text-emerald-400/80 font-medium">배민1 13.5% 기준 순이익 방어</div>
                   </div>
                 </div>
 
