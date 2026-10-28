@@ -732,7 +732,17 @@ export default function LandingPage() {
                   <FileText className="w-5 h-5 text-amber-400" />
                   <span className="text-xs sm:text-sm font-bold text-white">[실물 샘플] 영월군 영월읍 요식업 상권 AI 정밀 진단서 요약본</span>
                 </div>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">12페이지 PDF 제공</span>
+                <div className="flex items-center gap-2">
+  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">12페이지 PDF 제공</span>
+  <a 
+    href="/sample_ai_report.html" 
+    target="_blank"
+    className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-md shadow-md transition-all"
+  >
+    <span>실물 샘플 보고서 열기</span>
+    <ArrowRight className="w-3 h-3" />
+  </a>
+</div>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-3 text-xs">

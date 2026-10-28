@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>60계치킨 영월점 시스템 구축 현황 보고서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #334155;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    /* Floating Print Action Bar (Hidden on Print) */
+    .print-bar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      padding: 12px 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-print {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-print:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.5);
+    }
+
+    /* A4 Document Paper Style */
+    .paper {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 60px;
+      border-radius: 4px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      position: relative;
+    }
+
+    /* Header Styling */
+    .doc-header {
+      border-b: 3px solid #0f172a;
+      padding-bottom: 24px;
+      margin-bottom: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .doc-title-group h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .doc-title-group p {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .doc-meta {
+      text-align: right;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .doc-meta strong {
+      color: #0f172a;
+    }
+
+    /* Section Styling */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      border-left: 4px solid #d97706;
+      padding-left: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-text {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #fef3c7;
+      color: #b45309;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Table Styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    /* Footer Stamp */
+    .doc-footer {
+      margin-top: 50px;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .stamp-box {
+      margin-top: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* Print Media Query */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 15mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      .print-bar {
+        display: none !important;
+      }
+
+      .paper {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .card {
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+      }
+
+      th {
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control Bar -->
+  <div class="print-bar">
+    <button onclick="window.print()" class="btn-print">
+      🖨️ 보고서 인쇄 / PDF 저장하기
+    </button>
+  </div>
+
+  <!-- Main Report Paper Container -->
+  <div class="paper">
+
+    <!-- Header Section -->
+    <header class="doc-header">
+      <div class="doc-title-group">
+        <span class="tag">공식 기술보고서</span>
+        <h1>📊 60계치킨 영월점 시스템 구축 현황</h1>
+        <p>온라인 주문 · 주방 KDS · 텔레그램 알림 · 영수증 인쇄 풀스택 솔루션</p>
+      </div>
+      <div class="doc-meta">
+        <div><strong>작성일자:</strong> 2026년 09월 12일</div>
+        <div><strong>수신:</strong> 60계치킨 영월점 대표님</div>
+        <div><strong>발신:</strong> 리웨이브온 (Rewaveon) 기술팀</div>
+      </div>
+    </header>
+
+    <!-- Executive Summary -->
+    <section class="section">
+      <h2 class="section-title">1. 개요 및 핵심 요약</h2>
+      <div class="card" style="background: #fffbe0; border-color: #fde68a;">
+        <p class="card-text" style="color: #78350f; font-weight: 600;">
+          본 보고서는 60계치킨 강원영월점의 매장 운영 효율화 및 직거래 온라인 주문 활성화를 위해 구축된 통합 시스템 자산 현황을 정리한 문서입니다. 고객 스마트 주문 홈페이지부터 주방 모니터(KDS), 실시간 텔레그램 알림, 80mm 감열 영수증 인쇄 기능까지 완전히 연동되어 구축 완료되었습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- Component Details -->
+    <section class="section">
+      <h2 class="section-title">2. 세부 시스템 구성 현황</h2>
+      
+      <div class="grid-container">
+        
+        <!-- Card 1 -->
+        <div class="card">
+          <span class="tag">고객용 주문 웹</span>
+          <div class="card-title">🍗 스마트 주문 홈페이지</div>
+          <p class="card-text">
+            <strong>경로:</strong> <code>/demo/60gye</code><br>
+            <strong>도메인 매핑:</strong> <code>youngwol-chicken.co.kr</code> 고화질 메뉴 이미지 100% 매핑<br>
+            <strong>주요 기능:</strong> 참지마라치킨, 크크크, 크랑이 등 인기 메뉴 부위별(뼈/순살/콤보) 세분화, 포장/배달 선택 및 장바구니 기능.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+          <span class="tag">매장 주방용</span>
+          <div class="card-title">👩‍🍳 주방 실시간 KDS 전광판</div>
+          <p class="card-text">
+            <strong>경로:</strong> <code>/demo/60gye/kitchen</code><br>
+            <strong>주요 기능:</strong> 주문 즉시 "띵동" 사운드 알림, 실시간 주문 수신, 조리 목표 시간 타이머 표시, 영수증 1-Click 출력 및 주문 상태 관리.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+          <span class="tag">모바일 연동</span>
+          <div class="card-title">📱 텔레그램 실시간 알림 API</div>
+          <p class="card-text">
+            <strong>경로:</strong> <code>/api/telegram-notify</code><br>
+            <strong>연동 ID:</strong> <code>-5362496406</code><br>
+            <strong>주요 기능:</strong> 주문 발생 시 사장님 휴대폰 텔레그램 메시지로 주문자 성함, 전화번호, 배달주소, 주문 메뉴명, 결제금액 자동 통보.
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+          <span class="tag">하드웨어 출력</span>
+          <div class="card-title">🖨️ 80mm 영수증 프린트 시스템</div>
+          <p class="card-text">
+            <strong>규격:</strong> 80mm 감열지 표준 규격 (`@media print`)<br>
+            <strong>주요 기능:</strong> 접수 시 주방용 영수증 자동 인쇄 레이아웃 지원, 불필요한 화면 요소 숨김 처리로 용지 절약 및 명확한 조리 가이드 출력.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Menu & Specs Summary -->
+    <section class="section">
+      <h2 class="section-title">3. 탑재 데이터 및 기술 사양</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>상세 내용</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>대표 메뉴</strong></td>
+            <td>참지마라치킨, 크크크치킨, 크랑이치킨, 크크크+크랑이 반반, 호랑이치킨, 고추치킨, 간지치킨 등</td>
+            <td>최신 메뉴 100% 반영</td>
+          </tr>
+          <tr>
+            <td><strong>주문 유형</strong></td>
+            <td>🛍️ 방문 포장 (할인 옵션 지원) / 🛵 매장 배달 (배달 팁 계산)</td>
+            <td>실시간 맞춤 연동</td>
+          </tr>
+          <tr>
+            <td><strong>알림 시스템</strong></td>
+            <td>Web Audio 비프음 + Telegram API 모바일 메시지 + KDS 화면 팝업 3중 구조</td>
+            <td>누락 제로 보장</td>
+          </tr>
+          <tr>
+            <td><strong>인쇄 지원</strong></td>
+            <td>80mm 영수증 감열 프린터 및 A4/PDF 보고서 출력 전용 CSS 미디어 쿼리</td>
+            <td>즉시 사용 가능</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Marketing Assets -->
+    <section class="section">
+      <h2 class="section-title">4. 아웃리치 및 마케팅 활용 자산</h2>
+      <div class="card">
+        <p class="card-text">
+          본 60계치킨 영월점의 스마트 주문 시스템 구축 사례는 <code>outreach_templates.md</code>에 포트폴리오로 정리되어 있어, 영월 지역 로컬 피자집, 떡볶이집 등 소상공인을 대상으로 한 아웃리치 및 제안서 문서 자산으로 활발히 활용되고 있습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer Stamp -->
+    <footer class="doc-footer">
+      <p>위와 같이 60계치킨 영월점의 스마트 주문 및 매장 관리 인프라 구축 현황을 보고합니다.</p>
+      <div class="stamp-box">
+        리웨이브온 (Rewaveon) 대표 및 개발팀 드림
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

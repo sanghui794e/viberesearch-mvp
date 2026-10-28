@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[실물 샘플] 영월군 영월읍 요식업 상권 AI 정밀 진단서 - 리웨이브온</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --accent: #f59e0b;
+      --accent-dark: #d97706;
+      --bg: #0b0f14;
+      --paper-bg: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: #0b0f14;
+      color: var(--text);
+      line-height: 1.6;
+      padding: 30px 15px;
+    }
+    .action-bar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 10px 18px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn-action {
+      background: linear-gradient(135deg, #00f2c3, #059669);
+      color: #0b0f14;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 242, 195, 0.4); }
+    .btn-back {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+    }
+    .btn-back:hover { background: #334155; }
+
+    .paper {
+      max-width: 860px;
+      margin: 0 auto 40px auto;
+      background: var(--paper-bg);
+      padding: 60px 50px;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .report-badge {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      border: 1px solid #fde68a;
+    }
+    .report-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .report-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+    .meta-box {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 35px;
+      font-size: 12px;
+    }
+    .meta-item strong { display: block; color: #0f172a; font-size: 13px; margin-top: 2px; }
+    .meta-label { color: #64748b; font-size: 11px; font-weight: 600; }
+
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      border-left: 4px solid #00f2c3;
+      padding-left: 10px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-desc { font-size: 12px; color: #64748b; margin-bottom: 14px; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 900; color: #0f766e; }
+    .stat-sub { font-size: 11px; color: #64748b; margin-top: 3px; }
+
+    .analysis-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .analysis-card h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .analysis-card p {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    .highlight-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #1e40af;
+      margin-top: 10px;
+    }
+
+    .kakao-preview {
+      background: #fee500;
+      color: #3c1e1e;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      max-width: 480px;
+      margin: 12px auto;
+    }
+
+    .report-footer {
+      border-top: 2px solid #0f172a;
+      padding-top: 20px;
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .action-bar { display: none !important; }
+      .paper { box-shadow: none; border: none; padding: 20px; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="action-bar">
+    <a href="https://rewaveon-mvp.vercel.app" class="btn-action btn-back">
+      ← 홈페이지로 돌아가기
+    </a>
+    <button onclick="window.print()" class="btn-action">
+      🖨️ 보고서 인쇄 (PDF 저장)
+    </button>
+  </div>
+
+  <div class="paper">
+    
+    <div class="report-badge">리웨이브온 소상공인 실전 지원 특전 • 실물 샘플 리포트</div>
+    <h1 class="report-title">
+      영월군 영월읍 요식업 상권 & 배달 경쟁점 AI 정밀 진단서
+    </h1>
+    <p class="report-subtitle">
+      인공지능 기반 반경 3km 실시간 데이터 분석 • 배달 리뷰 2,410건 감성 마이닝 • 킬러 메뉴 최적화 전략
+    </p>
+
+    <div class="meta-box">
+      <div class="meta-item">
+        <span class="meta-label">진단 대상 상권</span>
+        <strong>강원특별자치도 영월군 영월읍</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">분석 범위</span>
+        <strong>매장 반경 3.0km 이내 전수</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">분석 데이터 수</span>
+        <strong>경쟁점 42개소 / 리뷰 2,410건</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">제공 기관</span>
+        <strong>리웨이브온 (대표: 박종숙)</strong>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>1. 핵심 상권 지표 요약 (Key Executive Summary)</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-val">42개소</div>
+          <div class="stat-sub">동종 배달/외식 경쟁 매장 전수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="color: #d97706;">18:30~21:00</div>
+          <div class="stat-sub">주간 최대 피크 타임 (금/토 집중)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="color: #2563eb;">24,900원</div>
+          <div class="stat-sub">객단가 극대화 추천 킬러 세트선</div>
+        </div>
+      </div>
+      <div class="highlight-box">
+        💡 <strong>AI 진단 총평:</strong> 영월읍 상권은 주말 및 저녁 야식 시간대(18:30~21:00) 안주 세트 주문 비중이 68%로 매우 높습니다. 단품 치킨(20,900원)보다 사이드(치즈볼/웨지감자)를 결합한 <strong>24,900원대 세트 메뉴를 자사몰 전용 할인으로 전진 배치</strong>할 경우, 주문 1건당 순이익이 약 +25% 이상 즉시 상승합니다.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>2. 반경 3km 배달 리뷰 2,410건 심층 분석 (Voice of Customer)</span>
+      </div>
+      
+      <div class="analysis-card">
+        <h4>👍 영월 손님들이 가장 칭찬하는 포인트 (긍정 키워드 Top 3)</h4>
+        <p>
+          1. <strong>바삭함 & 깨끗한 기름 맛 (64%):</strong> "기름 냄새 없이 담백하다", "다음날 먹어도 바삭하다"<br />
+          2. <strong>푸짐한 사이드 구성 (22%):</strong> "쫀득볼/치즈볼 서비스가 혜자롭다", "치킨이랑 같이 먹기 딱 좋음"<br />
+          3. <strong>빠른 픽업/포장 준비 (14%):</strong> "전화하고 20분 만에 가니 바로 나와서 좋았음"
+        </p>
+      </div>
+
+      <div class="analysis-card">
+        <h4>⚠️ 손님들이 가장 불만을 표하는 포인트 (타사 배달앱 이탈 원인)</h4>
+        <p>
+          1. <strong>과도한 배달팁 (48%):</strong> "치킨 2만 원인데 배달비 4,000원은 너무 비싸다 ➔ 포장으로 갈아탐"<br />
+          2. <strong>배달앱 주문 시 사이드 선택 애매 (31%):</strong> 세트 구성이 복잡하여 단품만 시키게 됨<br />
+          👉 <strong>해결책:</strong> 리웨이브온 자사몰의 <strong>"포장 2,000원 즉시 할인 + 미니쫀득볼 5개 무료"</strong> 혜택을 배달 봉투 스티커로 노출하면 배민 손님의 30% 이상을 자사몰 단골로 직행 유입 가능!
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>3. 영월 현지인 & 관광객 잡는 네이버 플레이스 공략법</span>
+      </div>
+      <div class="analysis-card">
+        <h4>🎯 1순위 집중 타겟 검색 키워드 5선</h4>
+        <p>
+          [영월 맛집], [영월 치킨 맛집], [영월 야식 배달], [영월 청령포 맛집], [영월 포장 할인]<br />
+          * <strong>공략 비법:</strong> 네이버 플레이스 소식 란에 <em>"자사몰 QR 주문 시 포장 2,000원 할인 & 쫀득볼 증정"</em> 이벤트를 등록하고, 대표 키워드에 [영월 포장 맛집]을 1순위 등록하여 네이버 검색 유입자를 자사몰로 직결합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>4. 비수기/우천 시 매출을 깨우는 카카오 알림톡 실전 문구</span>
+      </div>
+      <p class="section-desc">비 오는 날이나 월요일 저녁 등 한가한 시간대에 자사몰 고객장부 단골들에게 1초 만에 전송할 수 있는 실전 템플릿입니다.</p>
+
+      <div class="kakao-preview">
+        [60계치킨 영월점 단골 감사 깜짝 혜택 🍗]<br /><br />
+        비 오는 오늘 저녁, 바삭한 크크크치킨 생각나시죠? 😊<br />
+        오늘 하루만 자사몰 단골 고객님께 <strong>[미니쫀득볼 10개 무료 쿠폰]</strong>을 선물합니다!<br /><br />
+        👉 수수료 없는 자사몰로 지금 주문하기:<br />
+        https://rewaveon-mvp.vercel.app/demo/60gye<br /><br />
+        (매장 픽업 시 2,000원 즉시 추가 할인!)
+      </div>
+    </div>
+
+    <div class="report-footer">
+      <div>
+        <strong>리웨이브온(Rewaveon) AI 상권분석센터</strong> | 대표자: 박종숙 | 문의: 010-3363-7945
+      </div>
+      <div>
+        본 리포트는 리웨이브온 입점 소상공인 사장님께 독점 무상 제공되는 비매품 전략서입니다.
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
