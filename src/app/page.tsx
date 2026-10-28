@@ -145,7 +145,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3">
             <a
-              href="tel:010-3363-7945"
+              href="tel:010-6721-1156"
               className="hidden sm:inline-flex text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 h-9 items-center gap-1.5 rounded-lg transition-colors"
             >
               <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
@@ -329,7 +329,7 @@ export default function LandingPage() {
 
                 <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
                   <p>💡 배달 봉투에 <strong>[포장 2,000원 할인+사이드 무료]</strong> 스티커를 붙이면 배달앱 손님의 약 30%가 자연스럽게 수수료 0원인 사장님 자사몰로 유입됩니다.</p>
-                  <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">🏢 <strong>월 배달 매출 8,000만 원 초과 또는 다점포 프랜차이즈</strong>는 고객직통(010-3363-7945)으로 연락 주시면 대형 매장 전용 엔터프라이즈 맞춤 설계를 지원해 드립니다.</p>
+                  <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">🏢 <strong>월 배달 매출 8,000만 원 초과 또는 다점포 프랜차이즈</strong>는 고객직통(010-6721-1156)으로 연락 주시면 대형 매장 전용 엔터프라이즈 맞춤 설계를 지원해 드립니다.</p>
                 </div>
               </div>
 
@@ -498,7 +498,7 @@ export default function LandingPage() {
 
             <div className="shrink-0 flex flex-col sm:flex-row gap-3">
               <a
-                href="tel:010-3363-7945"
+                href="tel:010-6721-1156"
                 className="px-5 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-md shadow-primary/20 text-xs sm:text-sm"
               >
                 <PhoneCall className="w-4 h-4" />
@@ -1169,9 +1169,17 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500">
-            <p>
-              상호: 리웨이브온 (Rewaveon) | 대표자: 김상희 | 본사: 강원특별자치도 영월군 영월읍 (굽네치킨 2층 최고사령부) | 고객직통: 010-3363-7945
-            </p>
+            <div className="space-y-1.5 text-left">
+              <p className="font-semibold text-slate-400">
+                상호: sanghui의 슬기로운생활 (서비스명: 리웨이브온 Rewaveon) | 대표자: 김상희 | 사업자등록번호: 226-06-69537
+              </p>
+              <p>
+                통신판매업신고: 제 2026-강원영월-0012호 | 개인정보관리책임자: 김상희 (sanghui794e@gmail.com)
+              </p>
+              <p>
+                사업장 소재지: 강원특별자치도 영월군 영월읍 하송안길 85 | 대표직통: 010-6721-1156 | 고객상담: 010-2513-1157 | 팩스: 033-375-1156
+              </p>
+            </div>
             <p>© 2026 Rewaveon. All rights reserved.</p>
           </div>
         </div>
@@ -1186,9 +1194,9 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-2.5">
           <a 
-            href="tel:010-3363-7945" 
+            href="tel:010-6721-1156" 
             className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black px-4 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all transform hover:scale-105"
-            title="대표 직통 전화 상담 (010-3363-7945)"
+            title="대표 직통 전화 상담 (010-6721-1156)"
           >
             <PhoneCall className="w-5 h-5 text-slate-950" />
             <span className="text-xs sm:text-sm font-extrabold">전화 상담</span>
