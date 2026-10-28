@@ -174,7 +174,7 @@ export default function KitchenDashboardPage() {
   // 서버에 매장 설정 실시간 업데이트
   const updateStoreSettingsOnServer = async (partialSettings: any) => {
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('/api/orders?mode=demo', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(partialSettings),
@@ -255,7 +255,7 @@ export default function KitchenDashboardPage() {
 
     // 3. 중앙 클라우드 영구 저장소(Gist)에서도 DELETE API 호출로 영구 삭제
     try {
-      await fetch(`/api/orders?id=${orderId}`, { method: 'DELETE' });
+      await fetch(`/api/orders?mode=demo&id=${orderId}`, { method: 'DELETE' });
     } catch (e) {
       console.log('Dismiss order server DELETE error:', e);
     }
@@ -264,7 +264,7 @@ export default function KitchenDashboardPage() {
   // 중앙 서버 실시간 주문 Polling 및 동기화
   const loadOrders = async () => {
     try {
-      const res = await fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.ok) {
@@ -581,7 +581,7 @@ export default function KitchenDashboardPage() {
 
     // Sync to Central Server
     try {
-      await fetch('/api/orders', {
+      await fetch('/api/orders?mode=demo', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -599,7 +599,7 @@ export default function KitchenDashboardPage() {
   const toggleStorePause = async (pause: boolean, reason?: string) => {
     setIsStorePaused(pause);
     try {
-      await fetch('/api/orders', {
+      await fetch('/api/orders?mode=demo', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -650,7 +650,7 @@ export default function KitchenDashboardPage() {
       localStorage.removeItem('youngwol_orders');
       window.dispatchEvent(new Event('storage'));
       try {
-        await fetch('/api/orders', { method: 'DELETE' });
+        await fetch('/api/orders?mode=demo', { method: 'DELETE' });
       } catch (e) {
         console.log('Central Server DELETE error:', e);
       }

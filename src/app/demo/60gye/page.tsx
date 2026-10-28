@@ -1204,7 +1204,7 @@ export default function G60gyeDemoPage() {
 
   useEffect(() => {
     const fetchSettings = () => {
-      fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(d => {
           if (d && d.storeSettings) {
@@ -1232,7 +1232,7 @@ export default function G60gyeDemoPage() {
       : `[고객 직접 취소] ${customerCancelReason}`;
 
     try {
-      await fetch('/api/orders', {
+      await fetch('/api/orders?mode=demo', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1493,7 +1493,7 @@ export default function G60gyeDemoPage() {
     setRecentOrder(orderData);
     
     try {
-      await fetch('/api/orders', {
+      await fetch('/api/orders?mode=demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
@@ -1523,7 +1523,7 @@ export default function G60gyeDemoPage() {
         if (!orderIdToFind) return;
 
         try {
-          const res = await fetch(`/api/orders?t=${Date.now()}`, { cache: 'no-store' });
+          const res = await fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' });
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {
