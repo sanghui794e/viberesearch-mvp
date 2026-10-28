@@ -119,7 +119,7 @@ export default function LandingPage() {
           
           <nav className="hidden lg:flex items-center gap-6">
             <Link 
-              href="/demo/60gye" 
+              href="/sample/store" 
               className="text-xs font-bold text-emerald-400 hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20"
             >
               <Store className="w-3.5 h-3.5" />
@@ -204,7 +204,7 @@ export default function LandingPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2"
           >
             <Link
-              href="/demo/60gye"
+              href="/sample/store"
               className="w-full sm:w-auto px-7 h-13 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-primary/25 transition-all text-sm sm:text-base group"
             >
               <Store className="w-5 h-5" />
@@ -564,14 +564,14 @@ export default function LandingPage() {
 
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/demo/60gye"
+                  href="/sample/store"
                   className="px-5 h-11 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg flex items-center justify-center gap-2 shadow-md shadow-primary/20"
                 >
                   <span>고객용 자사몰 화면 체험하기</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  href="/demo/60gye/kitchen"
+                  href="/sample/kitchen"
                   className="px-5 h-11 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-2"
                 >
                   <span>주방 실시간 주문 접수 화면 보기</span>
@@ -586,7 +586,7 @@ export default function LandingPage() {
                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  <span className="text-[11px] font-mono text-slate-400 ml-2">rewaveon-mvp.vercel.app/demo/60gye</span>
+                  <span className="text-[11px] font-mono text-slate-400 ml-2">rewaveon-mvp.vercel.app/sample/store</span>
                 </div>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">운영 중</span>
               </div>
@@ -1156,10 +1156,10 @@ export default function LandingPage() {
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">
-              <Link href="/demo/60gye" className="text-slate-300 hover:text-primary transition-colors">
+              <Link href="/sample/store" className="text-slate-300 hover:text-primary transition-colors">
                 60계치킨 영월점 라이브 데모
               </Link>
-              <Link href="/demo/60gye/kitchen" className="text-slate-300 hover:text-primary transition-colors">
+              <Link href="/sample/kitchen" className="text-slate-300 hover:text-primary transition-colors">
                 주방 주문 접수 시스템
               </Link>
               <a href="#contact" className="text-slate-300 hover:text-primary transition-colors">

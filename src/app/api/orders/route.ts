@@ -82,7 +82,7 @@ function getModeConfig(mode: 'live' | 'demo') {
     };
   }
   return {
-    fileName: 'demo_orders.json',
+    fileName: 'sample_orders.json',
     getOrders: () => globalThis.__youngwol_demo_orders__ || [...INITIAL_MOCK_ORDERS],
     setOrders: (o: any[]) => { globalThis.__youngwol_demo_orders__ = o; },
     getSettings: () => globalThis.__youngwol_demo_settings__ || { ...DEFAULT_STORE_SETTINGS },

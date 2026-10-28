@@ -1204,7 +1204,7 @@ export default function G60gyeDemoPage() {
 
   useEffect(() => {
     const fetchSettings = () => {
-      fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`/api/orders?mode=live?mode=live&t=${Date.now()}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(d => {
           if (d && d.storeSettings) {
@@ -1232,7 +1232,7 @@ export default function G60gyeDemoPage() {
       : `[고객 직접 취소] ${customerCancelReason}`;
 
     try {
-      await fetch('/api/orders?mode=demo', {
+      await fetch('/api/orders?mode=live?mode=live', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1243,11 +1243,11 @@ export default function G60gyeDemoPage() {
       });
 
       if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('youngwol_orders');
+        const stored = localStorage.getItem('youngwol_live_orders');
         if (stored) {
           const list = JSON.parse(stored);
           const updated = list.map((o: any) => o.id === orderIdToCancel ? { ...o, status: 'cancelled', cancelReason: finalReason } : o);
-          localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+          localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
           window.dispatchEvent(new Event('storage'));
         }
       }
@@ -1265,7 +1265,7 @@ export default function G60gyeDemoPage() {
     if (typeof window !== 'undefined') {
       try {
         const dismissed: string[] = JSON.parse(localStorage.getItem('youngwol_dismissed_orders') || '[]');
-        const ordersData = localStorage.getItem('youngwol_orders');
+        const ordersData = localStorage.getItem('youngwol_live_orders');
         if (ordersData) {
           const list = JSON.parse(ordersData);
           if (Array.isArray(list) && list.length > 0) {
@@ -1317,11 +1317,11 @@ export default function G60gyeDemoPage() {
         localStorage.removeItem('youngwol_latest_order_id');
 
         // 2. 영수증 목록에서 완전히 영구 삭제
-        const stored = localStorage.getItem('youngwol_orders');
+        const stored = localStorage.getItem('youngwol_live_orders');
         if (stored) {
           const list = JSON.parse(stored);
           const updated = list.filter((o: any) => o.id !== targetId && (targetId ? true : o.status !== 'cancelled'));
-          localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+          localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
           setMyOrders(updated);
         }
 
@@ -1485,15 +1485,15 @@ export default function G60gyeDemoPage() {
       } catch (e) {}
     }
 
-    const existingOrders = JSON.parse(localStorage.getItem('youngwol_orders') || '[]');
+    const existingOrders = JSON.parse(localStorage.getItem('youngwol_live_orders') || '[]');
     const updatedOrderList = [orderData, ...existingOrders];
-    localStorage.setItem('youngwol_orders', JSON.stringify(updatedOrderList));
+    localStorage.setItem('youngwol_live_orders', JSON.stringify(updatedOrderList));
     localStorage.setItem('youngwol_latest_order_id', orderId);
     setMyOrders(updatedOrderList);
     setRecentOrder(orderData);
     
     try {
-      await fetch('/api/orders?mode=demo', {
+      await fetch('/api/orders?mode=live?mode=live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
@@ -1523,7 +1523,7 @@ export default function G60gyeDemoPage() {
         if (!orderIdToFind) return;
 
         try {
-          const res = await fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' });
+          const res = await fetch(`/api/orders?mode=live?mode=live&t=${Date.now()}`, { cache: 'no-store' });
           if (res.ok) {
             const json = await res.json();
             if (json.ok && Array.isArray(json.orders)) {

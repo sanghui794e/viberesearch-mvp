@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { INITIAL_MOCK_ORDERS } from './mockData';
+// Live store mode: clean
 import { 
   Sparkles,
   Printer, Check, X, ShieldCheck, HelpCircle, Volume2, 
@@ -174,7 +174,7 @@ export default function KitchenDashboardPage() {
   // 서버에 매장 설정 실시간 업데이트
   const updateStoreSettingsOnServer = async (partialSettings: any) => {
     try {
-      const res = await fetch('/api/orders?mode=demo', {
+      const res = await fetch('/api/orders?mode=live', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(partialSettings),
@@ -229,7 +229,7 @@ export default function KitchenDashboardPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const savedDismissed = localStorage.getItem('youngwol_dismissed_orders');
+        const savedDismissed = localStorage.getItem('youngwol_live_dismissed_orders');
         if (savedDismissed) {
           const parsed = JSON.parse(savedDismissed);
           if (Array.isArray(parsed)) setDismissedIds(parsed);
@@ -248,14 +248,14 @@ export default function KitchenDashboardPage() {
     const nextDismissed = Array.from(new Set([...dismissedIds, orderId]));
     setDismissedIds(nextDismissed);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('youngwol_dismissed_orders', JSON.stringify(nextDismissed));
-      localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+      localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(nextDismissed));
+      localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
     }
 
     // 3. 중앙 클라우드 영구 저장소(Gist)에서도 DELETE API 호출로 영구 삭제
     try {
-      await fetch(`/api/orders?mode=demo&id=${orderId}`, { method: 'DELETE' });
+      await fetch(`/api/orders?mode=live&id=${orderId}`, { method: 'DELETE' });
     } catch (e) {
       console.log('Dismiss order server DELETE error:', e);
     }
@@ -264,7 +264,7 @@ export default function KitchenDashboardPage() {
   // 중앙 서버 실시간 주문 Polling 및 동기화
   const loadOrders = async () => {
     try {
-      const res = await fetch(`/api/orders?mode=demo&t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/orders?mode=live&t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.ok) {
@@ -293,15 +293,15 @@ export default function KitchenDashboardPage() {
             let currentDismissed: string[] = dismissedIds;
             if (typeof window !== 'undefined') {
               try {
-                const storedD = localStorage.getItem('youngwol_dismissed_orders');
+                const storedD = localStorage.getItem('youngwol_live_dismissed_orders');
                 if (storedD) currentDismissed = JSON.parse(storedD);
               } catch (e) {}
             }
             const activeOrders = serverOrders.filter(o => !currentDismissed.includes(o.id));
-            const finalOrders = (activeOrders.length > 0) ? activeOrders : INITIAL_MOCK_ORDERS;
+            const finalOrders = (activeOrders.length > 0) ? activeOrders : [];
             setOrders(finalOrders);
             if (typeof window !== 'undefined') {
-              localStorage.setItem('youngwol_orders', JSON.stringify(finalOrders));
+              localStorage.setItem('youngwol_live_orders', JSON.stringify(finalOrders));
             }
           }
           if (json.storeSettings) {
@@ -328,7 +328,7 @@ export default function KitchenDashboardPage() {
     // 서버 조회 실패 시 로컬 스토리지 Fallback
     if (typeof window !== 'undefined') {
       try {
-        const data = localStorage.getItem('youngwol_orders');
+        const data = localStorage.getItem('youngwol_live_orders');
         if (data) {
           const parsed = JSON.parse(data);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -336,8 +336,8 @@ export default function KitchenDashboardPage() {
             return;
           }
           // 기본 105건 실전 시연 데이터 자동 주입
-          setOrders(INITIAL_MOCK_ORDERS);
-          localStorage.setItem('youngwol_orders', JSON.stringify(INITIAL_MOCK_ORDERS));
+          setOrders([]);
+          localStorage.setItem('youngwol_live_orders', JSON.stringify([]));
         }
       } catch (e) {
         console.error('loadOrders fallback error:', e);
@@ -576,12 +576,12 @@ export default function KitchenDashboardPage() {
       return ord;
     });
     setOrders(updated);
-    localStorage.setItem('youngwol_orders', JSON.stringify(updated));
+    localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
     window.dispatchEvent(new Event('storage'));
 
     // Sync to Central Server
     try {
-      await fetch('/api/orders?mode=demo', {
+      await fetch('/api/orders?mode=live', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -599,7 +599,7 @@ export default function KitchenDashboardPage() {
   const toggleStorePause = async (pause: boolean, reason?: string) => {
     setIsStorePaused(pause);
     try {
-      await fetch('/api/orders?mode=demo', {
+      await fetch('/api/orders?mode=live', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -647,10 +647,10 @@ export default function KitchenDashboardPage() {
   const clearAllOrders = async () => {
     if (confirm("모든 주문 내역을 초기화하시겠습니까?")) {
       setOrders([]);
-      localStorage.removeItem('youngwol_orders');
+      localStorage.removeItem('youngwol_live_orders');
       window.dispatchEvent(new Event('storage'));
       try {
-        await fetch('/api/orders?mode=demo', { method: 'DELETE' });
+        await fetch('/api/orders?mode=live', { method: 'DELETE' });
       } catch (e) {
         console.log('Central Server DELETE error:', e);
       }
@@ -1107,21 +1107,7 @@ export default function KitchenDashboardPage() {
 
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setOrders(INITIAL_MOCK_ORDERS);
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('youngwol_orders', JSON.stringify(INITIAL_MOCK_ORDERS));
-              }
-              alert('✨ 105건의 실전 주문 및 25명 단골 장부 데이터가 성공적으로 충전되었습니다!');
-            }}
-            className="h-9 px-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
-            title="시연용 105건 실전 주문 데이터 즉시 충전"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>시연 데이터 105건 충전</span>
-          </button>
+          
           <button
             onClick={clearAllOrders}
             className="h-9 px-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"
