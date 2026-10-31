@@ -1204,7 +1204,7 @@ export default function G60gyeDemoPage() {
 
   useEffect(() => {
     const fetchSettings = () => {
-      fetch(`/api/orders?mode=live?mode=live&t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`/api/orders?mode=live&t=${Date.now()}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(d => {
           if (d && d.storeSettings) {
@@ -1227,20 +1227,37 @@ export default function G60gyeDemoPage() {
     const orderIdToCancel = currentOrderId || recentOrder?.id || (typeof window !== 'undefined' ? localStorage.getItem('youngwol_latest_order_id') : '');
     if (!orderIdToCancel) return;
 
+    // 🛡️ [주문 소유권 검증] 로컬스토리지에서 비밀 토큰 추출
+    const orderToken = typeof window !== 'undefined' ? (localStorage.getItem(`youngwol_order_token_${orderIdToCancel}`) || '') : '';
+    if (!orderToken) {
+      alert('이전 주문은 시스템 보안 정책에 따라 온라인 즉시 취소가 지원되지 않습니다. 매장(033-374-6660)으로 전화 주시면 즉시 처리해 드리겠습니다.');
+      return;
+    }
+
     const finalReason = customerCancelReason === 'custom' 
       ? `[고객 직접 취소] ${customerCancelCustom.trim() || '고객 요청에 의한 취소'}`
       : `[고객 직접 취소] ${customerCancelReason}`;
 
     try {
-      await fetch('/api/orders?mode=live?mode=live', {
+      // 🛡️ [URL 비노출] 토큰은 x-order-token 요청 헤더로 안전하게 전송
+      const cancelRes = await fetch('/api/orders?mode=live', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-order-token': orderToken
+        },
         body: JSON.stringify({
           id: orderIdToCancel,
           status: 'cancelled',
           cancelReason: finalReason
         })
       });
+
+      if (!cancelRes.ok) {
+        const errJson = await cancelRes.json().catch(() => ({}));
+        alert(errJson.message || '주문 취소에 실패했습니다. 이미 조리가 시작되었거나 취소할 수 없는 상태입니다.');
+        return;
+      }
 
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('youngwol_live_orders');
@@ -1253,6 +1270,7 @@ export default function G60gyeDemoPage() {
       }
 
       setCurrentOrderState((prev: any) => ({ ...prev, status: 'cancelled', cancelReason: finalReason }));
+      setRecentOrder((prev: any) => prev ? { ...prev, status: 'cancelled', cancelReason: finalReason } : null);
       setTrackStep(-1);
       setShowCustomerCancelModal(false);
     } catch (e) {
@@ -1493,11 +1511,20 @@ export default function G60gyeDemoPage() {
     setRecentOrder(orderData);
     
     try {
-      await fetch('/api/orders?mode=live?mode=live', {
+      const orderRes = await fetch('/api/orders?mode=live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
       });
+      if (orderRes.ok) {
+        const orderJson = await orderRes.json();
+        // 🛡️ [주문 소유권 토큰 보관] 발급받은 비밀 토큰을 로컬스토리지에 1:1 보관
+        if (orderJson.ok && orderJson.order && orderJson.order.order_token) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`youngwol_order_token_${orderId}`, orderJson.order.order_token);
+          }
+        }
+      }
     } catch (err) {
       console.log('Central Server Order API error:', err);
     }
@@ -1522,41 +1549,75 @@ export default function G60gyeDemoPage() {
         const orderIdToFind = currentOrderId || recentOrder?.id || (typeof window !== 'undefined' ? localStorage.getItem('youngwol_latest_order_id') : '');
         if (!orderIdToFind) return;
 
+        // 🛡️ [주문 소유권 검증] 로컬스토리지에서 비밀 토큰 추출
+        const orderToken = typeof window !== 'undefined' ? (localStorage.getItem(`youngwol_order_token_${orderIdToFind}`) || '') : '';
+        if (!orderToken) {
+          // 토큰이 없는 레거시 주문: 임의 인증 처리하지 않고 로컬 스토리지 데이터로 안전하게 유지
+          return;
+        }
+
         try {
-          const res = await fetch(`/api/orders?mode=live?mode=live&t=${Date.now()}`, { cache: 'no-store' });
+          // 🛡️ [URL 비노출 및 최소 상태 조회] x-order-token 헤더 전송으로 개인정보 제외 최소 진행 상태만 수신
+          const res = await fetch(`/api/orders?mode=live&id=${orderIdToFind}&t=${Date.now()}`, {
+            headers: {
+              'x-order-token': orderToken
+            },
+            cache: 'no-store'
+          });
+
           if (res.ok) {
             const json = await res.json();
-            if (json.ok && Array.isArray(json.orders)) {
+            if (json.ok && json.order) {
+              const statusUpdate = json.order;
               const dismissed: string[] = JSON.parse(localStorage.getItem('youngwol_dismissed_orders') || '[]');
 
               setMyOrders(prevList => {
                 return prevList
                   .filter(localOrd => !dismissed.includes(localOrd.id))
                   .map(localOrd => {
-                    const serverMatch = json.orders.find((so: any) => so.id === localOrd.id);
-                    return serverMatch ? { ...localOrd, ...serverMatch } : localOrd;
+                    if (localOrd.id === statusUpdate.id) {
+                      return {
+                        ...localOrd,
+                        status: statusUpdate.status,
+                        minutesToAdd: statusUpdate.minutesToAdd ?? localOrd.minutesToAdd,
+                        targetPickupTime: statusUpdate.targetPickupTime ?? localOrd.targetPickupTime,
+                        cancelReason: statusUpdate.cancelReason ?? localOrd.cancelReason,
+                      };
+                    }
+                    return localOrd;
                   });
               });
 
               if (dismissed.includes(orderIdToFind)) return;
 
-              const found = json.orders.find((o: any) => o.id === orderIdToFind);
-              if (found) {
-                setCurrentOrderState(found);
-                setRecentOrder(found);
-                if (found.status === 'cancelled') {
-                  setTrackStep(-1);
-                } else if (found.status === 'cooking') {
-                  setTrackStep(3);
-                } else if (found.status === 'done') {
-                  setTrackStep(4);
-                } else if (found.status === 'accepted') {
-                  setTrackStep(2);
-                } else {
-                  setTrackStep(1);
-                }
-                return;
+              setCurrentOrderState((prev: any) => ({
+                ...prev,
+                status: statusUpdate.status,
+                minutesToAdd: statusUpdate.minutesToAdd ?? prev?.minutesToAdd,
+                targetPickupTime: statusUpdate.targetPickupTime ?? prev?.targetPickupTime,
+                cancelReason: statusUpdate.cancelReason ?? prev?.cancelReason,
+              }));
+
+              setRecentOrder((prev: any) => prev ? {
+                ...prev,
+                status: statusUpdate.status,
+                minutesToAdd: statusUpdate.minutesToAdd ?? prev.minutesToAdd,
+                targetPickupTime: statusUpdate.targetPickupTime ?? prev.targetPickupTime,
+                cancelReason: statusUpdate.cancelReason ?? prev.cancelReason,
+              } : null);
+
+              if (statusUpdate.status === 'cancelled') {
+                setTrackStep(-1);
+              } else if (statusUpdate.status === 'cooking') {
+                setTrackStep(3);
+              } else if (statusUpdate.status === 'done') {
+                setTrackStep(4);
+              } else if (statusUpdate.status === 'accepted') {
+                setTrackStep(2);
+              } else {
+                setTrackStep(1);
               }
+              return;
             }
           }
         } catch (e) {

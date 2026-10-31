@@ -9,7 +9,8 @@ import {
   Clock, ShoppingBag, MapPin, Phone, AlertCircle, ArrowLeft, RefreshCw,
   PauseCircle, Play, AlertTriangle, BarChart3, Users, Settings, Search,
   Download, ChevronRight, Calendar, DollarSign, CheckCircle2, Wine,
-  TrendingUp, CheckSquare, Square
+  TrendingUp, CheckSquare, Square,
+  Lock, LogOut, KeyRound, Loader2
 } from 'lucide-react';
 
 interface OrderItem {
@@ -122,6 +123,119 @@ export default function KitchenDashboardPage() {
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
   // 전광판 화면에서 지운(삭제한) 주문 ID 목록 (부활 방지 블랙리스트)
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+
+  // 🛡️ [주방 관리자 보안 인증 상태]
+  // 개발용과 운영용 인증 경로 분리 원칙:
+  // 개발 환경(NODE_ENV !== 'production')에서는 격리된 /api/dev/kitchen/auth를 호출하며,
+  // 운영 환경(NODE_ENV === 'production')에서는 운영 전용 /api/kitchen/auth 경로를 호출하도록 분리합니다.
+  const kitchenAuthUrl = process.env.NODE_ENV === 'production'
+    ? '/api/kitchen/auth'
+    : '/api/dev/kitchen/auth';
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [loginId, setLoginId] = useState<string>(process.env.NODE_ENV === 'production' ? '' : 'dev_kitchen_admin');
+  const [password, setPassword] = useState<string>('');
+  const [authError, setAuthError] = useState<string>('');
+  const [isSubmittingLogin, setIsSubmittingLogin] = useState<boolean>(false);
+  const [adminMember, setAdminMember] = useState<{ id?: string; name?: string; role?: string } | null>(null);
+
+  // 세션 유효성 검증 함수 (서버 측 관리자 세션 확인)
+  const checkAuth = async () => {
+    try {
+      const res = await fetch(kitchenAuthUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.isAuthenticated) {
+          setIsAuthenticated(true);
+          setIsAuthChecking(false);
+          return true;
+        }
+      }
+    } catch {}
+    setIsAuthenticated(false);
+    setIsAuthChecking(false);
+    return false;
+  };
+
+  // 주방 관리자 로그인 실행
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!password.trim()) {
+      setAuthError('관리자 비밀번호를 입력해 주세요.');
+      return;
+    }
+    setIsSubmittingLogin(true);
+    setAuthError('');
+
+    try {
+      // 1. 환경별 분리된 주방 인증 API(kitchenAuthUrl)로 검증
+      const res = await fetch(kitchenAuthUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          store_id: 'store_60gye_youngwol',
+          login_id: loginId.trim(),
+          password: password.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        // 2. /api/orders 전역 세션 동기화 (쿠키 설정)
+        try {
+          await fetch('/api/orders?mode=live', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'admin_login_verify',
+              store_id: 'store_60gye_youngwol',
+              login_id: loginId.trim(),
+              password: password.trim()
+            })
+          });
+        } catch {}
+
+        setIsAuthenticated(true);
+        setAdminMember(data.member || { name: '주방 매니저', role: 'manager' });
+        setPassword('');
+        setAuthError('');
+        loadOrders();
+      } else {
+        if (data.error === 'ERR_ACCOUNT_LOCKED') {
+          setAuthError(data.message || '로그인 실패 횟수 초과로 계정이 일시 잠금되었습니다.');
+        } else if (data.error === 'ERR_PROD_AUTH_STORAGE_NOT_CONFIGURED') {
+          setAuthError(data.message || '운영 관리자 인증 저장소가 아직 준비되지 않았습니다.');
+        } else {
+          setAuthError(data.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
+        }
+      }
+    } catch {
+      setAuthError('서버 연결 중 오류가 발생했습니다. 네트워크 상태를 확인하세요.');
+    } finally {
+      setIsSubmittingLogin(false);
+    }
+  };
+
+  // 주방 관리자 로그아웃
+  const handleLogout = async () => {
+    try {
+      await fetch(kitchenAuthUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout', store_id: 'store_60gye_youngwol' })
+      });
+      await fetch('/api/orders?mode=live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin_logout' })
+      });
+    } catch {}
+    setIsAuthenticated(false);
+    setAdminMember(null);
+    setOrders([]);
+  };
 
   // 거절 사유 모달 상태
   const [rejectModalOrder, setRejectModalOrder] = useState<Order | null>(null);
@@ -261,12 +375,28 @@ export default function KitchenDashboardPage() {
     }
   };
 
-  // 중앙 서버 실시간 주문 Polling 및 동기화
+  // 중앙 서버 실시간 주문 Polling 및 동기화 (관리자 인증 시에만 수행)
   const loadOrders = async () => {
     try {
       const res = await fetch(`/api/orders?mode=live&t=${Date.now()}`, { cache: 'no-store' });
+      
+      // 세션 만료 감지 시 화면 재잠금 (지침 3 준수)
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        setOrders([]);
+        return;
+      }
+
       if (res.ok) {
         const json = await res.json();
+
+        // 비인증 게스트 뷰로 내려왔을 경우 세션 확인
+        if (json.isGuestView) {
+          setIsAuthenticated(false);
+          setOrders([]);
+          return;
+        }
+
         if (json.ok) {
           if (Array.isArray(json.orders)) {
             const serverOrders: Order[] = json.orders;
@@ -322,45 +452,41 @@ export default function KitchenDashboardPage() {
         }
       }
     } catch (e) {
-      console.warn('Central orders fetch error, fallback to local storage:', e);
-    }
-
-    // 서버 조회 실패 시 로컬 스토리지 Fallback
-    if (typeof window !== 'undefined') {
-      try {
-        const data = localStorage.getItem('youngwol_live_orders');
-        if (data) {
-          const parsed = JSON.parse(data);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders(parsed);
-            return;
-          }
-          // 기본 105건 실전 시연 데이터 자동 주입
-          setOrders([]);
-          localStorage.setItem('youngwol_live_orders', JSON.stringify([]));
-        }
-      } catch (e) {
-        console.error('loadOrders fallback error:', e);
-      }
+      console.warn('Central orders fetch error:', e);
     }
   };
 
+  // 마운트 시 인증 검사 및 폴링 설정
   useEffect(() => {
-    loadOrders();
+    let interval: NodeJS.Timeout | null = null;
+
+    const initAuthAndOrders = async () => {
+      const isAuthed = await checkAuth();
+      if (isAuthed) {
+        loadOrders();
+      }
+    };
+
+    initAuthAndOrders();
 
     const handleStorageChange = () => {
-      loadOrders();
+      if (isAuthenticated) {
+        loadOrders();
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // 1.5초마다 중앙 서버에서 최신 주문 내역 실시간 동기화
-    const interval = setInterval(loadOrders, 1500);
+
+    // 인증된 상태에서만 1.5초마다 중앙 서버에서 최신 주문 내역 실시간 동기화
+    if (isAuthenticated) {
+      interval = setInterval(loadOrders, 1500);
+    }
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
-  }, [soundEnabled]);
+  }, [soundEnabled, isAuthenticated]);
 
     // 로컬 저장소에서 사운드 설정 불러오기
   useEffect(() => {
@@ -829,6 +955,109 @@ export default function KitchenDashboardPage() {
     document.body.removeChild(link);
   };
 
+  // 🛡️ [주방 관리자 보안 인터록 1] 초기 세션 검증 중 로딩 화면
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="flex flex-col items-center gap-4 bg-[#140e0c] border border-[#2d1d19] p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+          <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin" />
+          <p className="text-sm font-bold text-slate-300">주방 관리자 보안 세션을 확인하고 있습니다...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🛡️ [주방 관리자 보안 인터록 2] 미인증 상태: 관리자 정보와 전광판 일체 미표시 및 로그인 잠금창 렌더링
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 w-full max-w-md bg-[#140e0c]/95 border border-[#3d2c27] rounded-3xl p-8 shadow-2xl shadow-black/80 backdrop-blur-md">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-amber-950/40">
+              <Lock className="w-8 h-8 text-[#f39c12]" />
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[#f39c12] text-xs font-black mb-2">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>주방 관제구역 보안 인터록</span>
+            </div>
+            <h1 className="text-xl font-black text-white tracking-tight">60계치킨 주방 관리자 로그인</h1>
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              실시간 주문 수신 및 조리 전광판 제어를 위해<br/>
+              등록된 관리자 계정으로 인증해 주세요.
+            </p>
+          </div>
+
+          {authError && (
+            <div className="mb-6 p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-2.5 text-rose-300 text-xs font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">관리자 아이디</label>
+              <input
+                type="text"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                placeholder="아이디를 입력하세요"
+                required
+                className="w-full h-11 bg-[#1f1715] border border-[#3d2c27] focus:border-[#f39c12] rounded-xl px-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-[#f39c12] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">관리자 비밀번호</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="비밀번호를 입력하세요"
+                required
+                autoFocus
+                className="w-full h-11 bg-[#1f1715] border border-[#3d2c27] focus:border-[#f39c12] rounded-xl px-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-[#f39c12] transition-colors font-mono"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmittingLogin}
+              className="w-full h-12 bg-gradient-to-r from-[#f39c12] to-[#e67e22] hover:from-[#e67e22] hover:to-[#d35400] text-[#140e0c] font-black text-sm rounded-xl shadow-lg shadow-amber-950/50 flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50 mt-6"
+            >
+              {isSubmittingLogin ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>인증 확인 중...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>주방 전광판 접속하기</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-[#251814] flex flex-col items-center gap-3 text-center">
+            <Link
+              href="/demo/60gye"
+              className="text-xs text-slate-500 hover:text-amber-400 flex items-center gap-1 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>고객 주문 화면으로 돌아가기</span>
+            </Link>
+            <p className="text-[10px] text-slate-600 leading-normal">
+              ※ 본 시스템은 보안 통제 구역입니다. 5회 연속 실패 시 15분간 잠금됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans">
       
@@ -1114,6 +1343,23 @@ export default function KitchenDashboardPage() {
           >
             주문 리셋
           </button>
+
+          {/* 🛡️ 주방 관리자 인증 뱃지 및 로그아웃 버튼 */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-[#3d2c27]">
+            <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-[11px] font-bold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{adminMember?.name || '관리자'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="h-9 px-3 bg-[#1f1715] hover:bg-rose-950/40 border border-[#3d2c27] hover:border-rose-800 text-slate-300 hover:text-rose-300 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+              title="주방 관리자 세션 종료 및 화면 잠금"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>로그아웃</span>
+            </button>
+          </div>
         </div>
       </header>
 
