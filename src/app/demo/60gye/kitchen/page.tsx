@@ -123,6 +123,9 @@ export default function KitchenDashboardPage() {
   const [activeGuideTab, setActiveGuideTab] = useState<'kds' | 'bluetooth' | 'silent'>('kds');
   // 전광판 화면에서 지운(삭제한) 주문 ID 목록 (부활 방지 블랙리스트)
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  // 새로고침 수동 실행 상태 (idle: 대기, loading: 조회 중, success: 동기화 완료, error: 오류)
+  const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [refreshErrorMsg, setRefreshErrorMsg] = useState<string>('');
 
   // 🛡️ [주방 관리자 보안 인증 상태]
   // 개발용과 운영용 인증 경로 분리 원칙:
@@ -376,7 +379,7 @@ export default function KitchenDashboardPage() {
   };
 
   // 중앙 서버 실시간 주문 Polling 및 동기화 (관리자 인증 시에만 수행)
-  const loadOrders = async () => {
+  const loadOrders = async (): Promise<boolean> => {
     try {
       const res = await fetch(`/api/orders?mode=live&t=${Date.now()}`, { cache: 'no-store' });
       
@@ -384,7 +387,7 @@ export default function KitchenDashboardPage() {
       if (res.status === 401) {
         setIsAuthenticated(false);
         setOrders([]);
-        return;
+        return false;
       }
 
       if (res.ok) {
@@ -394,7 +397,7 @@ export default function KitchenDashboardPage() {
         if (json.isGuestView) {
           setIsAuthenticated(false);
           setOrders([]);
-          return;
+          return false;
         }
 
         if (json.ok) {
@@ -448,11 +451,35 @@ export default function KitchenDashboardPage() {
               setSoldOutMenuIds(json.storeSettings.soldOutMenuIds);
             }
           }
-          return;
+          return true;
         }
       }
+      return false;
     } catch (e) {
       console.warn('Central orders fetch error:', e);
+      return false;
+    }
+  };
+
+  // 수동 새로고침 버튼 핸들러 (실제 서버 응답 성공/실패와 상태 동기화)
+  const handleManualRefresh = async () => {
+    if (refreshState === 'loading') return;
+    setRefreshState('loading');
+    setRefreshErrorMsg('');
+    try {
+      const isSuccess = await loadOrders();
+      if (isSuccess) {
+        setRefreshState('success');
+        setTimeout(() => setRefreshState('idle'), 1500);
+      } else {
+        setRefreshState('error');
+        setRefreshErrorMsg('조회 실패');
+        setTimeout(() => setRefreshState('idle'), 3000);
+      }
+    } catch (err: any) {
+      setRefreshState('error');
+      setRefreshErrorMsg(err?.message || '통신 오류');
+      setTimeout(() => setRefreshState('idle'), 3000);
     }
   };
 
@@ -1506,13 +1533,34 @@ export default function KitchenDashboardPage() {
               </button>
             </div>
 
-            <button 
-              onClick={loadOrders}
-              className="text-xs text-[#f39c12] hover:underline font-semibold flex items-center gap-1 shrink-0 self-end sm:self-auto"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>새로고침</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+              <button 
+                type="button"
+                onClick={handleManualRefresh}
+                disabled={refreshState === 'loading'}
+                className={`text-xs font-semibold flex items-center gap-1 px-2 py-1 rounded-lg transition-all ${
+                  refreshState === 'loading'
+                    ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20 cursor-wait'
+                    : refreshState === 'success'
+                      ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                      : refreshState === 'error'
+                        ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20'
+                        : 'text-[#f39c12] hover:text-[#e67e22] hover:bg-[#f39c12]/10 border border-transparent'
+                }`}
+                title="서버의 최신 주문 내역을 즉시 다시 조회합니다."
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshState === 'loading' ? 'animate-spin' : ''}`} />
+                <span>
+                  {refreshState === 'loading' && '조회 중...'}
+                  {refreshState === 'success' && '동기화 완료'}
+                  {refreshState === 'error' && '조회 실패'}
+                  {refreshState === 'idle' && '새로고침'}
+                </span>
+              </button>
+              {refreshState === 'error' && refreshErrorMsg && (
+                <span className="text-[10px] text-rose-400 font-medium">({refreshErrorMsg})</span>
+              )}
+            </div>
           </div>
 
           {/* Filtered Orders List */}
