@@ -174,7 +174,8 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (memberFetchErr) {
-      console.error('운영 관리자 계정 조회 오류:', memberFetchErr);
+      const errCode = memberFetchErr.code || 'UNKNOWN';
+      console.error(`[AUTH_DB_ERROR_CODE] location=kitchen/auth:memberFetch code=${errCode}`);
       return NextResponse.json({ ok: false, error: 'ERR_AUTH_DATABASE_ERROR', message: '인증 저장소 조회 중 오류가 발생했습니다.' }, { status: 500 });
     }
 
