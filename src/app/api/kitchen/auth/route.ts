@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. 운영 store_members 테이블에서 계정 조회 및 활성 여부 확인
-    const { data: member, error: memberFetchErr } = await supabase
+    const { data: member, error: memberFetchErr, status: fetchStatus } = await supabase
       .from('store_members')
       .select('id, store_id, member_name, login_id, role, password_hash, is_active')
       .eq('store_id', storeId)
@@ -174,8 +174,33 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (memberFetchErr) {
-      const errCode = memberFetchErr.code || 'UNKNOWN';
-      console.error(`[AUTH_DB_ERROR_CODE] location=kitchen/auth:memberFetch code=${errCode}`);
+      let isTargetHostExactMatch = false;
+      try {
+        const activeUrl = (process.env.PROD_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+        const parsed = new URL(activeUrl);
+        isTargetHostExactMatch = (parsed.hostname === 'wmyszrjnrvlxhxjaspsu.supabase.co');
+      } catch {}
+
+      const rawCode = memberFetchErr.code || 'NO_CODE';
+      let diagnosticCategory = 'UNCLASSIFIED';
+      if (rawCode === '42501') {
+        diagnosticCategory = 'INSUFFICIENT_PRIVILEGE';
+      } else if (rawCode === '42P01') {
+        diagnosticCategory = 'UNDEFINED_TABLE';
+      } else if (rawCode === 'PGRST301') {
+        diagnosticCategory = 'POSTGREST_JWT_AUTH_ERROR';
+      }
+
+      const httpStatusLabel = (fetchStatus === 0 || !fetchStatus) ? 'NO_HTTP_RESPONSE' : String(fetchStatus);
+
+      console.error(
+        `[AUTH_DB_DIAGNOSTIC] location=kitchen/auth:memberFetch ` +
+        `hostExactMatch=${isTargetHostExactMatch} ` +
+        `httpStatus=${httpStatusLabel} ` +
+        `sqlCode=${rawCode} ` +
+        `category=${diagnosticCategory}`
+      );
+
       return NextResponse.json({ ok: false, error: 'ERR_AUTH_DATABASE_ERROR', message: '인증 저장소 조회 중 오류가 발생했습니다.' }, { status: 500 });
     }
 
