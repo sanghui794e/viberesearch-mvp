@@ -42,7 +42,7 @@ export interface CartItem {
   customDetails?: string; // 직접 입력 메뉴의 세부사항 또는 반반치킨 맛 조합 / 순살세트 맛
 }
 
-// 60계치킨 강원영월점 실제 공식 홈페이지(youngwol-chicken.co.kr) 실제 업로드 이미지 100% 매핑
+// 리웨이브 치킨 강원영월점 실제 공식 홈페이지(youngwol-chicken.co.kr) 실제 업로드 이미지 100% 매핑
 // ※ 웨지감자 이미지는 오직 웨지감자 단품에만 사용하며, 음료/주류/사이드/부분육/세트는 전용 이미지 적용
 const menuList: Menu[] = [
   // 1. 치킨 단품 (뼈, 순살, 윙봉, 콤보)
@@ -1397,7 +1397,7 @@ export default function G60gyeDemoPage() {
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (storeSettings.isPaused) {
-      alert(`⚠️ 현재 60계치킨 영월점은 주문 폭주(또는 재료 준비)로 인해 주문 접수가 일시 정지되었습니다.\n\n사유: ${storeSettings.pauseReason || '매장 사정'}\n\n매장 직통 전화(033-374-6660)로 직접 문의해 주시기 바랍니다.`);
+      alert(`⚠️ 현재 [체험용] 리웨이브 치킨은 주문 폭주(또는 재료 준비)로 인해 주문 접수가 일시 정지되었습니다.\n\n사유: ${storeSettings.pauseReason || '매장 사정'}\n\n매장 직통 전화(033-374-6660)로 직접 문의해 주시기 바랍니다.`);
       return;
     }
 
@@ -1593,6 +1593,13 @@ export default function G60gyeDemoPage() {
     <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans selection:bg-[#f39c12]/30 selection:text-white pb-24">
       
       {/* Mobile Top Header */}
+      
+      {/* ⚠️ 영업 시연용 가상 체험 안내 띠 배너 */}
+      <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white text-xs py-2 px-4 text-center font-black shadow-md flex items-center justify-center gap-2 sticky top-0 z-50">
+        <Sparkles className="w-4 h-4 text-yellow-200 animate-spin" />
+        <span>[영업 시연용 가상 매장] 실제 결제 및 배달되지 않는 모의 체험관입니다. 마음껏 주문해 보세요!</span>
+      </div>
+
       <header className="border-b border-[#32231e] bg-[#1a1210]/95 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
           {currentStep > 1 ? (
@@ -1607,14 +1614,14 @@ export default function G60gyeDemoPage() {
           ) : (
             <div 
               className="w-8 h-8 rounded-full bg-[#1c1310] border border-[#3d2c27] flex items-center justify-center text-sm shadow-inner"
-              title="60계치킨 강원영월점"
+              title="리웨이브 치킨 강원영월점"
             >
               🍗
             </div>
           )}
           <div className="text-center">
             <h1 className="text-sm font-black text-[#f39c12] tracking-wide flex items-center justify-center gap-1">
-              <span>60계치킨</span>
+              <span>리웨이브 치킨</span>
               <span className="bg-[#f39c12] text-[#1a1210] text-[9px] font-extrabold px-1 rounded">강원영월점</span>
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</p>
@@ -2702,7 +2709,7 @@ export default function G60gyeDemoPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400 font-semibold">예금주</span>
-                        <strong className="text-white font-black">박종숙 (60계치킨 영월점)</strong>
+                        <strong className="text-white font-black">박종숙 ([체험용] 리웨이브 치킨)</strong>
                       </div>
                       <div className="flex items-center justify-between text-xs border-t border-[#261510] pt-2">
                         <span className="text-slate-400 font-semibold">입금하실 금액</span>
@@ -2948,7 +2955,7 @@ export default function G60gyeDemoPage() {
                   <p className="text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
                     {currentOrderState?.status === 'cooking' 
                       ? `사장님이 주문을 확인했습니다! ${currentOrderState.targetPickupTime || '18:10'}분까지 따뜻하게 조리하여 준비해 두겠습니다.`
-                      : '60계치킨 강원영월점 주방으로 고객님의 주문서가 전송되었습니다. 사장님의 접수 승인을 잠시만 기다려 주세요!'}
+                      : '리웨이브 치킨 강원영월점 주방으로 고객님의 주문서가 전송되었습니다. 사장님의 접수 승인을 잠시만 기다려 주세요!'}
                   </p>
                 </div>
 
@@ -3054,7 +3061,7 @@ export default function G60gyeDemoPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400 font-semibold">예금주:</span>
-                    <strong className="text-white">박종숙 (60계치킨 영월점)</strong>
+                    <strong className="text-white">박종숙 ([체험용] 리웨이브 치킨)</strong>
                   </div>
                   <div className="flex justify-between items-center border-t border-[#261510] pt-1">
                     <span className="text-slate-400 font-semibold">입금하실 금액:</span>
@@ -3431,13 +3438,13 @@ export default function G60gyeDemoPage() {
                   CEO NOTICE
                 </span>
                 <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                  <span>📢 60계치킨 영월점 자사몰 안내</span>
+                  <span>📢 [체험용] 리웨이브 치킨 자사몰 안내</span>
                 </h3>
               </div>
 
               <div className="space-y-3 text-xs text-slate-200 leading-relaxed">
                 <p className="text-amber-200/90 font-medium bg-[#140b08] p-2.5 rounded-xl border border-amber-500/20">
-                  항상 저희 60계치킨 강원영월점을 찾아주시는 고객님께 감사드립니다! 배달앱보다 더 큰 실질적인 혜택을 돌려드리고자 아래와 같이 운영합니다.
+                  항상 저희 리웨이브 치킨 강원영월점을 찾아주시는 고객님께 감사드립니다! 배달앱보다 더 큰 실질적인 혜택을 돌려드리고자 아래와 같이 운영합니다.
                 </p>
 
                 <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1.5">
@@ -3492,7 +3499,7 @@ export default function G60gyeDemoPage() {
 
                 <p className="text-[10px] text-center text-slate-400 pt-1">
                   매일 새 기름으로 60마리만 정직하게 조리하겠습니다. 감사합니다!<br/>
-                  <strong className="text-amber-300">- 60계치킨 강원영월점 대표 올림 -</strong>
+                  <strong className="text-amber-300">- 리웨이브 치킨 강원영월점 대표 올림 -</strong>
                 </p>
               </div>
 
@@ -3528,7 +3535,7 @@ export default function G60gyeDemoPage() {
               
               <div className="space-y-1">
                 <span className="text-[9px] font-extrabold text-[#f39c12] bg-[#f39c12]/15 px-2 py-0.5 rounded-full border border-[#f39c12]/30 inline-block">
-                  60계치킨 공식 반반 조합기
+                  리웨이브 치킨 공식 반반 조합기
                 </span>
                 <h3 className="text-sm font-black text-white flex items-center gap-1.5">
                   <span>🔄 내 맘대로 반반치킨 만들기</span>

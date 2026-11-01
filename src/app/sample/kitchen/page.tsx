@@ -742,7 +742,7 @@ export default function KitchenDashboardPage() {
     const periodLabel = analyticsPeriod === 'today' ? '일간(오늘)' : analyticsPeriod === 'month' ? '월간(이번달)' : analyticsPeriod === 'year' ? '연간(올해)' : '전체기간';
     
     let csvContent = '\uFEFF'; // UTF-8 BOM
-    csvContent += `[60계치킨 영월점] 매출 통계 보고서 (${periodLabel})\n`;
+    csvContent += `[[체험용] 리웨이브 치킨] 매출 통계 보고서 (${periodLabel})\n`;
     csvContent += `총 매출액,${summary.totalRevenue.toLocaleString()}원,총 주문건수,${summary.totalOrders}건\n`;
     csvContent += `방문포장 매출,${summary.takeoutRevenue.toLocaleString()}원 (${summary.takeoutCount}건),배달 매출,${summary.deliveryRevenue.toLocaleString()}원 (${summary.deliveryCount}건)\n\n`;
     csvContent += `순위,메뉴명,카테고리,판매수량(개),총매출액(원),매출비중(%)\n`;
@@ -813,7 +813,7 @@ export default function KitchenDashboardPage() {
   const downloadCrmCsv = () => {
     const customers = calculateCrmCustomers();
     let csvContent = '\uFEFF';
-    csvContent += `[60계치킨 영월점] 단골 고객 포인트 및 주문 관리 장부\n`;
+    csvContent += `[[체험용] 리웨이브 치킨] 단골 고객 포인트 및 주문 관리 장부\n`;
     csvContent += `순번,고객명,전화번호,총주문횟수,총누적결제액(원),누적보유포인트(P),최근주문일시\n`;
 
     customers.forEach((c, idx) => {
@@ -924,10 +924,10 @@ export default function KitchenDashboardPage() {
           </Link>
           <div>
             <h1 className="text-base font-black text-[#f39c12] flex items-center gap-1.5">
-              <span>60계치킨 주방 주문 전광판</span>
+              <span>리웨이브 치킨 [영업 시연용] 주방 주문 전광판</span>
               <span className="bg-[#f39c12] text-[#1a1210] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Kitchen Display System</span>
             </h1>
-            <p className="text-xs text-slate-500">실시간 영월 손님 주문 자동 수신 및 영수증 자동 인쇄 (실전 매장 전용)</p>
+            <p className="text-xs text-slate-500">다른 사장님 영업 시연용 가상 KDS (105건 모의 주문 및 CRM 완벽 탑재)</p>
           </div>
         </div>
 
@@ -1629,7 +1629,7 @@ export default function KitchenDashboardPage() {
             <div>
               <h2 className="text-base font-extrabold text-white flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-[#f39c12]" />
-                <span>60계치킨 영월점 매출 통계 및 판매 분석</span>
+                <span>[체험용] 리웨이브 치킨 매출 통계 및 판매 분석</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 실제 접수 및 완료된 주문 데이터 기반 실시간 집계 (취소/거절 주문 자동 제외)

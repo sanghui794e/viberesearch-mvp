@@ -404,9 +404,9 @@ export default function KitchenDashboardPage() {
           if (Array.isArray(json.orders)) {
             const serverOrders: Order[] = json.orders;
             
-            // 취소된 주문 감지 (이전에는 취소가 아니었는데 이번에 cancelled가 된 경우)
-            if (!isInitialLoadRef.current && prevOrdersRef.current.length > 0) {
-              const newlyCancelled = serverOrders.find(so => 
+            // 신규 주문 또는 취소 감지 시 알림음 재생
+            if (!isInitialLoadRef.current) {
+              const newlyCancelled = prevOrdersRef.current.length > 0 && serverOrders.find(so => 
                 so.status === 'cancelled' && 
                 prevOrdersRef.current.some(po => po.id === so.id && po.status !== 'cancelled')
               );
@@ -799,13 +799,27 @@ export default function KitchenDashboardPage() {
 
   const clearAllOrders = async () => {
     if (confirm("모든 주문 내역을 초기화하시겠습니까?")) {
+      const allIds = orders.map(o => o.id);
       setOrders([]);
-      localStorage.removeItem('youngwol_live_orders');
-      window.dispatchEvent(new Event('storage'));
+
+      // 브라우저 블랙리스트에 등록하여 1.5초 폴링 시에도 재등장 원천 차단
+      const nextDismissed = Array.from(new Set([...dismissedIds, ...allIds]));
+      setDismissedIds(nextDismissed);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(nextDismissed));
+        localStorage.removeItem('youngwol_live_orders');
+        window.dispatchEvent(new Event('storage'));
+      }
+
+      // 서버 임시 메모리 주문 초기화 요청
       try {
-        await fetch('/api/orders?mode=live', { method: 'DELETE' });
+        await fetch('/api/orders?mode=live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset_all' }),
+        });
       } catch (e) {
-        console.log('Central Server DELETE error:', e);
+        console.log('Central Server reset error:', e);
       }
     }
   };
