@@ -915,6 +915,16 @@ export default function KitchenDashboardPage() {
     }
   };
 
+  // 🛡️ [주문 복구] 실수로 리셋하거나 숨긴 모든 주문 내역 즉시 원상 복구
+  const restoreAllOrders = async () => {
+    setDismissedIds([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('youngwol_live_dismissed_orders');
+    }
+    // 중앙 클라우드 저장소(Gist)에서 최신 주문 내역 즉시 재동기화
+    await loadOrders();
+  };
+
   const getPaymentLabel = (method: string) => {
     switch (method) {
       case 'store_payment': return '카드/매장결제';
@@ -1492,8 +1502,25 @@ export default function KitchenDashboardPage() {
           <button
             onClick={clearAllOrders}
             className="h-9 px-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"
+            title="현재 주문 카드를 화면에서 초기화합니다"
           >
             주문 리셋
+          </button>
+
+          {/* 🛡️ 실수 방지 주문 복구 원터치 버튼 */}
+          <button
+            type="button"
+            onClick={restoreAllOrders}
+            className="h-9 px-3 bg-emerald-950/30 hover:bg-emerald-900/60 border border-emerald-600/50 hover:border-emerald-500 text-emerald-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+            title="실수로 리셋하거나 숨긴 모든 주문 내역을 즉시 원상 복구합니다"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>주문 복구</span>
+            {dismissedIds.length > 0 && (
+              <span className="bg-emerald-500/20 text-emerald-200 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                {dismissedIds.length}
+              </span>
+            )}
           </button>
 
           {/* 🛡️ 주방 관리자 인증 뱃지 및 로그아웃 버튼 */}
