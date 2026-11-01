@@ -889,40 +889,59 @@ export default function KitchenDashboardPage() {
   };
 
   const clearAllOrders = async () => {
-    if (confirm("모든 주문 내역을 초기화하시겠습니까?")) {
+    if (confirm("주방 화면의 주문 카드를 정리하시겠습니까?\n(서버의 실제 고객 주문과 매출 장부는 안전하게 보존됩니다)")) {
       const allIds = orders.map(o => o.id);
       setOrders([]);
 
-      // 브라우저 블랙리스트에 등록하여 1.5초 폴링 시에도 재등장 원천 차단
+      // 브라우저 화면에서만 임시 숨김 처리 (서버 원본 주문 및 고객 화면은 보존)
       const nextDismissed = Array.from(new Set([...dismissedIds, ...allIds]));
       setDismissedIds(nextDismissed);
       if (typeof window !== 'undefined') {
         localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(nextDismissed));
-        localStorage.removeItem('youngwol_live_orders');
-        window.dispatchEvent(new Event('storage'));
-      }
-
-      // 서버 임시 메모리 주문 초기화 요청
-      try {
-        await fetch('/api/orders?mode=live', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'reset_all' }),
-        });
-      } catch (e) {
-        console.log('Central Server reset error:', e);
       }
     }
   };
 
-  // 🛡️ [주문 복구] 실수로 리셋하거나 숨긴 모든 주문 내역 즉시 원상 복구
+  // 🛡️ [정밀 주문 복구] 대표님 3대 헌법: 오늘 날짜의 미완료 활성 주문(대기/조리중)만 안전하게 선별 복구
   const restoreAllOrders = async () => {
-    setDismissedIds([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('youngwol_live_dismissed_orders');
+    try {
+      // 1. 서버에서 최신 원본 주문 가져오기
+      const res = await fetch(`/api/orders?mode=live&t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.orders)) {
+          const now = new Date();
+          const todayPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+          // 🛡️ 필터 1 & 2: 당일(오늘) 주문이면서 아직 완료/취소되지 않은 실제 조리 대상 주문(대기/조리중)
+          const activeTodayOrders = data.orders.filter((o: Order) => {
+            const isToday = !o.timestamp || o.timestamp.includes('오전') || o.timestamp.includes('오후') || o.timestamp.startsWith(todayPrefix);
+            const isActive = o.status === 'pending' || o.status === 'cooking' || o.status === 'accepted';
+            return isToday && isActive;
+          });
+
+          if (activeTodayOrders.length === 0) {
+            alert('현재 복구할 오늘 미완료(대기/조리중) 주문이 없습니다.\n(과거 완료된 주문은 매출 통계 및 고객 장부에서 확인하실 수 있습니다)');
+            return;
+          }
+
+          // 🛡️ 필터 3: 오늘 활성 주문들만 블랙리스트에서 선별 해제
+          const activeIds = activeTodayOrders.map((o: Order) => o.id);
+          const updatedDismissed = dismissedIds.filter(id => !activeIds.includes(id));
+          setDismissedIds(updatedDismissed);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(updatedDismissed));
+          }
+
+          // 주방 화면에 즉각 재동기화
+          await loadOrders();
+          alert(`오늘 미완료 주문 ${activeTodayOrders.length}건이 주방 전광판에 안전하게 복구되었습니다!`);
+        }
+      }
+    } catch (e) {
+      console.error('Restore orders error:', e);
+      alert('주문 복구 중 통신 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     }
-    // 중앙 클라우드 저장소(Gist)에서 최신 주문 내역 즉시 재동기화
-    await loadOrders();
   };
 
   const getPaymentLabel = (method: string) => {

@@ -584,6 +584,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === 'reset_all') {
+      if (mode === 'live') {
+        // 🛡️ [운영 헌법] 60계치킨 실제 매장 운영 모드에서는 고객 주문 DB 영구 보존 (실제 주문 증발 원천 차단)
+        return NextResponse.json({ ok: true, mode, message: '주방 화면 정리가 완료되었습니다. (고객 주문 및 매출 DB 안전 보존)', orders: currentOrders });
+      }
       currentOrders = [];
       await savePersistentData(mode, currentOrders, currentSettings);
       return NextResponse.json({ ok: true, mode, message: '주문 목록이 초기화되었습니다.', orders: currentOrders });
