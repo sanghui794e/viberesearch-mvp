@@ -115,7 +115,7 @@ export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'cooking' | 'done' | 'cancelled'>('all');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [soundType, setSoundType] = useState<'baemin' | 'bell' | 'siren' | 'fanfare' | 'voice'>('baemin');
+  const [soundType, setSoundType] = useState<'baemin' | 'bell' | 'siren' | 'fanfare' | 'voice'>('voice');
   const [volume, setVolume] = useState<number>(0.8);
   const [repeatPendingAlert, setRepeatPendingAlert] = useState<boolean>(true);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(false);
@@ -523,13 +523,36 @@ export default function KitchenDashboardPage() {
     };
   }, [soundEnabled, isAuthenticated]);
 
-    // 로컬 저장소에서 사운드 설정 불러오기
+  // 브라우저 한국어 음성 엔진 사전 준비 (Chrome voiceschanged 이벤트 연동)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const onVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+      };
+    }
+  }, []);
+
+  // 로컬 저장소에서 사운드 설정 불러오기 (한국어 음성 안내 기본 보장)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const savedType = localStorage.getItem('youngwol_kitchen_sound_type');
         if (savedType && ['baemin', 'bell', 'siren', 'fanfare', 'voice'].includes(savedType)) {
-          setSoundType(savedType as any);
+          // 🛡️ 과거 캐시로 'baemin'이 남아있으면 대표님 헌법에 따라 'voice'(한국어 음성)로 강제 승격
+          if (savedType === 'baemin') {
+            setSoundType('voice');
+            localStorage.setItem('youngwol_kitchen_sound_type', 'voice');
+          } else {
+            setSoundType(savedType as any);
+          }
+        } else {
+          setSoundType('voice');
+          localStorage.setItem('youngwol_kitchen_sound_type', 'voice');
         }
         const savedVol = localStorage.getItem('youngwol_kitchen_sound_volume');
         if (savedVol) {
@@ -733,7 +756,7 @@ export default function KitchenDashboardPage() {
           } catch (e) {}
         }, 120);
 
-        // 차임벨과 함께 직통 한국어 음성 방송 (크롬 cancel 버그 원천 제거 및 resume 강제)
+        // 차임벨과 함께 직통 한국어 음성 방송 (보이스 명시 바인딩 & 가비지 컬렉터 방어)
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
           try {
             if (window.speechSynthesis.paused) {
@@ -741,9 +764,25 @@ export default function KitchenDashboardPage() {
             }
             const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
             utter.lang = 'ko-KR';
+
+            // 🛡️ 한국어 음성 엔진(Microsoft Heami, Google 한국어 등) 명시적 바인딩
+            try {
+              const voices = window.speechSynthesis.getVoices();
+              if (voices && voices.length > 0) {
+                const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang.startsWith('ko') || v.name.includes('Korean') || v.name.includes('Heami'));
+                if (koVoice) utter.voice = koVoice;
+              }
+            } catch (ve) {}
+
             utter.volume = Math.min(1, Math.max(0.8, vol * 1.5));
             utter.rate = 1.0;
             utter.pitch = 1.0;
+
+            // 🛡️ 크롬 가비지 컬렉터(GC)에 의한 음성 중단 방어 (전역 보관)
+            (window as any)._kdsActiveUtterance = utter;
+            utter.onend = () => { (window as any)._kdsActiveUtterance = null; };
+            utter.onerror = () => { (window as any)._kdsActiveUtterance = null; };
+
             window.speechSynthesis.speak(utter);
           } catch (e) {
             console.warn('TTS speak error:', e);
@@ -1233,6 +1272,26 @@ export default function KitchenDashboardPage() {
         </div>
       )}
 
+      {/* 🛡️ 브라우저 오디오 보안 잠금 해제 알림 배너 (첫 접속 시 1회 터치 안내) */}
+      {!isAudioUnlocked && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg print:hidden animate-pulse">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-black">
+            <span className="text-lg">🔊</span>
+            <span>[주방 음성 알림 대기] 브라우저 보안 규정상 화면을 한 번 클릭하셔야 한국어 음성이 시원하게 울립니다!</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              unlockAudioContext();
+              playAlertSound('voice', volume);
+            }}
+            className="px-3 py-1 bg-black/40 hover:bg-black/60 text-amber-200 border border-amber-300/40 rounded-lg text-xs font-black shrink-0 transition-all shadow active:scale-95 flex items-center gap-1.5"
+          >
+            <span>👉 여기를 눌러 즉시 켜기</span>
+          </button>
+        </div>
+      )}
+
       {/* Screen Header Bar */}
       <header className="bg-[#140e0c] border-b border-[#2d1d19] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
@@ -1370,11 +1429,11 @@ export default function KitchenDashboardPage() {
               className="h-8 bg-[#0d0908] border border-[#3d2c27] text-slate-200 text-xs font-bold rounded-lg px-2 focus:outline-none focus:border-[#f39c12] disabled:opacity-40"
               title="알림음 종류 선택"
             >
+              <option value="voice">🗣️ 한국어 음성 안내 (기본 권장)</option>
               <option value="baemin">🔔 배민 스타일 띵동</option>
               <option value="bell">🛎️ 매장 카운터 벨 (땡~~)</option>
               <option value="siren">🚨 주방 비상 경보 (삐-삐-삐)</option>
               <option value="fanfare">🎺 신나는 팡파레 멜로디</option>
-              <option value="voice">🗣️ 한국어 음성 안내 (TTS)</option>
             </select>
 
             {/* 볼륨 슬라이더 (0~100%) */}
