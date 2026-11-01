@@ -536,16 +536,36 @@ export default function KitchenDashboardPage() {
     }
   }, []);
 
+  // 🛡️ [영구 오디오 엔진] 브라우저 백그라운드 소리 차단 방지용 싱글톤 AudioContext 참조
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const getOrCreateAudioContext = (): AudioContext | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return null;
+
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      return audioCtxRef.current;
+    } catch {
+      return null;
+    }
+  };
+
   // 브라우저 오디오 잠금 해제 헬퍼 (첫 클릭 시 자동 활성화)
   const unlockAudioContext = () => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const tempCtx = new AudioCtx();
-        if (tempCtx.state === 'suspended') {
-          tempCtx.resume().then(() => {
+      const ctx = getOrCreateAudioContext();
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => {
             setIsAudioUnlocked(true);
-          });
+          }).catch(() => {});
         } else {
           setIsAudioUnlocked(true);
         }
@@ -574,12 +594,11 @@ export default function KitchenDashboardPage() {
     const vol = typeof customVol === 'number' ? customVol : volume;
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const audioCtx = new AudioCtx();
+      const audioCtx = getOrCreateAudioContext();
+      if (!audioCtx) return;
 
       if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        audioCtx.resume().catch(() => {});
       }
       setIsAudioUnlocked(true);
 
