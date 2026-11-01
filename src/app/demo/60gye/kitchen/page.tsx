@@ -601,6 +601,13 @@ export default function KitchenDashboardPage() {
           setIsAudioUnlocked(true);
         }
       }
+      // 🛡️ 실물 한국어 음성 오디오 플레이어 사전 버퍼 해제
+      if (typeof document !== 'undefined') {
+        const audioElem = document.getElementById('kds-voice-player') as HTMLAudioElement;
+        if (audioElem) {
+          audioElem.load();
+        }
+      }
     } catch (e) {}
   };
 
@@ -756,41 +763,67 @@ export default function KitchenDashboardPage() {
           } catch (e) {}
         }, 120);
 
-        // 차임벨과 함께 직통 한국어 음성 방송 (보이스 명시 바인딩 & 가비지 컬렉터 방어)
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        // 2. 0.35초 뒤 실물 고음질 한국어 음성 파일 직통 재생 (크롬 TTS 씹힘 버그 100% 원천 해결)
+        setTimeout(() => {
           try {
-            if (window.speechSynthesis.paused) {
-              window.speechSynthesis.resume();
-            }
-            const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
-            utter.lang = 'ko-KR';
-
-            // 🛡️ 한국어 음성 엔진(Microsoft Heami, Google 한국어 등) 명시적 바인딩
-            try {
-              const voices = window.speechSynthesis.getVoices();
-              if (voices && voices.length > 0) {
-                const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang.startsWith('ko') || v.name.includes('Korean') || v.name.includes('Heami'));
-                if (koVoice) utter.voice = koVoice;
+            const audioElem = document.getElementById('kds-voice-player') as HTMLAudioElement;
+            if (audioElem) {
+              audioElem.currentTime = 0;
+              audioElem.volume = Math.min(1.0, Math.max(0.7, vol));
+              const playPromise = audioElem.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                  playFallbackSpeech(vol);
+                });
               }
-            } catch (ve) {}
-
-            utter.volume = Math.min(1, Math.max(0.8, vol * 1.5));
-            utter.rate = 1.0;
-            utter.pitch = 1.0;
-
-            // 🛡️ 크롬 가비지 컬렉터(GC)에 의한 음성 중단 방어 (전역 보관)
-            (window as any)._kdsActiveUtterance = utter;
-            utter.onend = () => { (window as any)._kdsActiveUtterance = null; };
-            utter.onerror = () => { (window as any)._kdsActiveUtterance = null; };
-
-            window.speechSynthesis.speak(utter);
-          } catch (e) {
-            console.warn('TTS speak error:', e);
+            } else {
+              const audioObj = new Audio('/audio/60gye_order_alert.wav');
+              audioObj.volume = Math.min(1.0, Math.max(0.7, vol));
+              audioObj.play().catch(() => {
+                playFallbackSpeech(vol);
+              });
+            }
+          } catch {
+            playFallbackSpeech(vol);
           }
-        }
+        }, 350);
       }
     } catch (e) {
       console.warn('Audio Context error or blocked:', e);
+    }
+  };
+
+  // 🛡️ Web Speech API 비상 음성 폴백 함수
+  const playFallbackSpeech = (vol: number) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
+        utter.lang = 'ko-KR';
+
+        // 한국어 음성 엔진(Microsoft Heami 등) 바인딩
+        try {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang.startsWith('ko') || v.name.includes('Korean') || v.name.includes('Heami'));
+            if (koVoice) utter.voice = koVoice;
+          }
+        } catch (ve) {}
+
+        utter.volume = Math.min(1, Math.max(0.8, vol * 1.5));
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+
+        (window as any)._kdsActiveUtterance = utter;
+        utter.onend = () => { (window as any)._kdsActiveUtterance = null; };
+        utter.onerror = () => { (window as any)._kdsActiveUtterance = null; };
+
+        window.speechSynthesis.speak(utter);
+      } catch (e) {
+        console.warn('Fallback TTS error:', e);
+      }
     }
   };
 
@@ -1300,6 +1333,9 @@ export default function KitchenDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* 🛡️ 실물 고음질 한국어 음성 알림 HTML5 오디오 요소 */}
+      <audio id="kds-voice-player" preload="auto" src="/audio/60gye_order_alert.wav" />
 
       {/* 🛡️ 브라우저 오디오 보안 잠금 해제 알림 배너 (첫 접속 시 1회 터치 안내) */}
       {!isAudioUnlocked && (
