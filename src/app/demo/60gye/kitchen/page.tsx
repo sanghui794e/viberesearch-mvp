@@ -417,6 +417,14 @@ export default function KitchenDashboardPage() {
                   playAlertSound();
                 }
               }
+            } else {
+              // 🛡️ 새로고침 직후에도 미승인 대기 주문이 있으면 놓치지 않도록 소리 울림
+              const hasPendingOnLoad = serverOrders.some(o => o.status === 'pending');
+              if (hasPendingOnLoad && soundEnabled && prevOrderCountRef.current === 0) {
+                setTimeout(() => {
+                  if (soundEnabled) playAlertSound();
+                }, 500);
+              }
             }
             prevOrdersRef.current = serverOrders;
             prevOrderCountRef.current = serverOrders.length;
@@ -697,24 +705,49 @@ export default function KitchenDashboardPage() {
       }
       // 5. 한국어 음성 안내 (TTS)
       else if (typeToPlay === 'voice') {
-        // 먼저 경쾌한 띵동 효과음
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(659.25, now);
-        gain.gain.setValueAtTime(vol * 0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
+        // 먼저 카랑카랑한 2단 차임벨 효과음으로 주방 이목 집중
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, now);
+        gain1.gain.setValueAtTime(vol * 0.4, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.35);
 
+        setTimeout(() => {
+          try {
+            const now2 = audioCtx.currentTime;
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(783.99, now2);
+            gain2.gain.setValueAtTime(vol * 0.5, now2);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.5);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now2);
+            osc2.stop(now2 + 0.5);
+          } catch (e) {}
+        }, 120);
+
+        // 차임벨과 함께 직통 한국어 음성 방송 (크롬 cancel 버그 원천 제거 및 resume 강제)
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
-          utter.lang = 'ko-KR';
-          utter.volume = Math.min(1, vol * 1.2);
-          utter.rate = 1.05;
-          window.speechSynthesis.speak(utter);
+          try {
+            if (window.speechSynthesis.paused) {
+              window.speechSynthesis.resume();
+            }
+            const utter = new SpeechSynthesisUtterance('60계치킨, 새로운 주문이 접수되었습니다! 주방 화면을 확인해 주세요.');
+            utter.lang = 'ko-KR';
+            utter.volume = Math.min(1, Math.max(0.8, vol * 1.5));
+            utter.rate = 1.0;
+            utter.pitch = 1.0;
+            window.speechSynthesis.speak(utter);
+          } catch (e) {
+            console.warn('TTS speak error:', e);
+          }
         }
       }
     } catch (e) {
