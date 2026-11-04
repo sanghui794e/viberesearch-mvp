@@ -3551,9 +3551,22 @@ export default function G60gyeDemoPage() {
                   </p>
                 </div>
 
-                <p className="text-[10px] text-center text-slate-400 pt-1">
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1.5">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    6. ⚠️ 주문 취소 및 환불 안내
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1 leading-normal">
+                    • 즉석 조리 식품 특성상 주문 접수 후 조리가 시작된 이후에는 단순 변심으로 인한 주문 취소 및 환불이 불가합니다.<br/>
+                    • 주문과 다른 메뉴가 배달되었거나 상품에 이상이 있는 경우 매장(033-374-6660)으로 바로 연락 주시면 즉시 재조리 또는 100% 환불 처리해 드립니다.
+                  </p>
+                </div>
+
+                <p className="text-[10px] text-center text-slate-400 pt-1 leading-relaxed">
                   매일 새 기름으로 60마리만 정직하게 조리하겠습니다. 감사합니다!<br/>
-                  <strong className="text-amber-300">- 60계치킨 강원영월점 대표 올림 -</strong>
+                  <strong className="text-amber-300">- 60계치킨 강원영월점 대표 박종숙 올림 -</strong><br/>
+                  <span className="text-[9px] text-slate-500 inline-block mt-1">
+                    (사업자등록번호: 205-38-01698 | 주소: 강원특별자치도 영월군 영월읍 관풍헌길 35 | 전화: 033-374-6660 | 통신판매업: 신고 준비 중)
+                  </span>
                 </p>
               </div>
 
