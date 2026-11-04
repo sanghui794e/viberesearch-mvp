@@ -2841,6 +2841,18 @@ export default function G60gyeDemoPage() {
               </div>
             )}
 
+            {/* 개인정보 수집 및 이용 동의 법적 고지 안내 영역 */}
+            <div className="bg-[#160f0d] border border-[#3d2c27] rounded-2xl p-3.5 text-left space-y-1.5 shadow-inner">
+              <p className="text-[11px] font-extrabold text-amber-300 leading-snug">
+                🔒 주문 접수 및 배달·포장 이행을 위한 개인정보(성명, 연락처, 주소) 수집 및 이용에 동의합니다.
+              </p>
+              <div className="text-[10px] text-slate-400 space-y-0.5 pl-1 leading-relaxed border-t border-[#2a1d19] pt-1.5">
+                <p>• <strong className="text-slate-300">수집 항목:</strong> 성명, 휴대전화번호, 배달 주소</p>
+                <p>• <strong className="text-slate-300">수집 목적:</strong> 60계치킨 영월점 주문 확인, 조리, 배달·포장 이행 및 오배송/환불 고객 민원 처리</p>
+                <p>• <strong className="text-slate-300">보유 기간:</strong> 전자상거래법 등 관계 법령에 따른 의무 보존 기간 준수 후 즉시 안전 파기</p>
+              </div>
+            </div>
+
             {/* Action buttons */}
             <div className="flex gap-3 pt-2">
               <button
@@ -3558,6 +3570,16 @@ export default function G60gyeDemoPage() {
                   <p className="text-[11px] text-slate-300 pl-1 leading-normal">
                     • 즉석 조리 식품 특성상 주문 접수 후 조리가 시작된 이후에는 단순 변심으로 인한 주문 취소 및 환불이 불가합니다.<br/>
                     • 주문과 다른 메뉴가 배달되었거나 상품에 이상이 있는 경우 매장(033-374-6660)으로 바로 연락 주시면 즉시 재조리 또는 100% 환불 처리해 드립니다.
+                  </p>
+                </div>
+
+                <div className="bg-[#140b08] p-3 rounded-xl border border-[#3d2720] space-y-1.5">
+                  <h5 className="font-black text-amber-400 text-xs">
+                    7. 🔒 개인정보 수집 및 안전 관리 안내
+                  </h5>
+                  <p className="text-[11px] text-slate-300 pl-1 leading-normal">
+                    • 주문 시 입력해 주신 정보(성함, 연락처, 배달 주소)는 오직 맛있는 치킨 조리와 신속한 배달·포장 서비스 이행을 위해서만 안전하게 사용됩니다.<br/>
+                    • 관련 법령에 따라 배달 완료 및 정산 처리 후 철저히 보호 및 안전 파기됩니다.
                   </p>
                 </div>
 
