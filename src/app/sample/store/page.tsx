@@ -1353,6 +1353,16 @@ export default function G60gyeDemoPage() {
     return () => window.removeEventListener('storage', loadRecentOrder);
   }, []);
 
+  // [리웨이브온 시연 전용] 화면 상단 iOS 푸시 알림 스타일 토스트 팝업 상태
+  const [demoPushToast, setDemoPushToast] = useState<{
+    orderName: string;
+    menuSummary: string;
+    totalPrice: number;
+    orderTypeLabel: string;
+    timestamp: string;
+  } | null>(null);
+
+  // [리웨이브온 시연 전용] Web Audio API 기반 자체 '띵동~' 주문 접수 효과음 재생 (외부 음원 다운로드 없이 784Hz -> 659Hz 2화음 합성)
   const playOrderSuccessSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -1363,36 +1373,73 @@ export default function G60gyeDemoPage() {
       }
       const now = audioCtx.currentTime;
       
+      // 1음 ('띵~' : 784Hz G5 + 은은한 배음 화음)
       const osc1 = audioCtx.createOscillator();
+      const osc1Sub = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(783.99, now);
-      gain1.gain.setValueAtTime(0.35, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1Sub.type = 'triangle';
+      osc1.frequency.setValueAtTime(784, now);
+      osc1Sub.frequency.setValueAtTime(784 * 2, now);
+      gain1.gain.setValueAtTime(0.4, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
       osc1.connect(gain1);
+      osc1Sub.connect(gain1);
       gain1.connect(audioCtx.destination);
       osc1.start(now);
-      osc1.stop(now + 0.35);
+      osc1Sub.start(now);
+      osc1.stop(now + 0.38);
+      osc1Sub.stop(now + 0.38);
 
+      // 2음 ('동~' : 659Hz E5 2화음 합성)
       setTimeout(() => {
         try {
           const now2 = audioCtx.currentTime;
           const osc2 = audioCtx.createOscillator();
+          const osc2Sub = audioCtx.createOscillator();
           const gain2 = audioCtx.createGain();
-          osc2.type = 'triangle';
-          osc2.frequency.setValueAtTime(1046.5, now2);
-          gain2.gain.setValueAtTime(0.4, now2);
-          gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.6);
+          osc2.type = 'sine';
+          osc2Sub.type = 'triangle';
+          osc2.frequency.setValueAtTime(659, now2);
+          osc2Sub.frequency.setValueAtTime(659 * 1.5, now2);
+          gain2.gain.setValueAtTime(0.45, now2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.75);
           osc2.connect(gain2);
+          osc2Sub.connect(gain2);
           gain2.connect(audioCtx.destination);
           osc2.start(now2);
-          osc2.stop(now2 + 0.6);
+          osc2Sub.start(now2);
+          osc2.stop(now2 + 0.75);
+          osc2Sub.stop(now2 + 0.75);
         } catch (e) {}
-      }, 140);
+      }, 220);
     } catch (e) {
       console.log('Order success sound error:', e);
     }
   };
+
+  // [리웨이브온 시연 전용] 주문 완료 시 띵동 효과음 + 상단 iOS 스타일 토스트 팝업 동시 발동 헬퍼
+  const triggerSelfContainedDemoAlert = (orderObj: any) => {
+    playOrderSuccessSound();
+    const firstItemName = orderObj?.items?.[0]?.name || '치킨 메뉴';
+    const extraCount = (orderObj?.items?.length || 1) - 1;
+    const summaryText = extraCount > 0 ? `${firstItemName} 외 ${extraCount}건` : firstItemName;
+    setDemoPushToast({
+      orderName: orderObj?.name || name || '체험 고객',
+      menuSummary: summaryText,
+      totalPrice: orderObj?.total || getTotalPrice(),
+      orderTypeLabel: (orderObj?.orderType || orderType) === 'takeout' ? '🛍️ 방문포장' : '🛵 배달주문',
+      timestamp: '방금 전'
+    });
+  };
+
+  useEffect(() => {
+    if (!demoPushToast) return;
+    const timer = setTimeout(() => {
+      setDemoPushToast(null);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [demoPushToast]);
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1502,18 +1549,23 @@ export default function G60gyeDemoPage() {
       console.log('Central Server Order API error:', err);
     }
 
+    // [리웨이브온 시연 격리 조치] 모의 체험관 주문 시 담당자 스마트폰(텔레그램) 실제 메시지 발송 API 호출 차단 (Comment out)
+    // 시연 중 발생하는 알림 피로를 방지하고, 60계치킨 실전 매장 알림 채널과 100% 분리함
+    /*
     fetch('/api/telegram-notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
     }).catch(err => console.log('Telegram API error:', err));
+    */
 
     window.dispatchEvent(new Event('storage'));
 
     setCurrentOrderState(orderData);
     setCurrentStep(3);
     setTrackStep(1);
-    playOrderSuccessSound();
+    // 브라우저 화면 안에서 시각(iOS 푸시 토스트 팝업)·청각(784Hz->659Hz 띵동 효과음) 자체 완결형 시연 연출 발동
+    triggerSelfContainedDemoAlert(orderData);
   };
 
   useEffect(() => {
@@ -1592,6 +1644,68 @@ export default function G60gyeDemoPage() {
   return (
     <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans selection:bg-[#f39c12]/30 selection:text-white pb-24">
       
+      {/* 🔔 [리웨이브온 시연 전용] 화면 상단 iOS 푸시 알림 스타일 토스트 팝업 */}
+      <AnimatePresence>
+        {demoPushToast && (
+          <motion.div
+            initial={{ y: -90, opacity: 0, scale: 0.94 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -90, opacity: 0, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[94%] max-w-md pointer-events-auto"
+          >
+            <div className="bg-slate-900/95 backdrop-blur-2xl border-2 border-emerald-400/70 rounded-[22px] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] text-left space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 font-black flex items-center justify-center text-base shadow-md shrink-0">
+                    🔔
+                  </div>
+                  <div>
+                    <div className="text-[11px] sm:text-xs font-black text-emerald-300 leading-tight">
+                      🔔 리웨이브온 점주 알림 (시연) - [실시간 주문 접수 1초 연동]
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                      REWAVEON SMART ORDER • {demoPushToast.timestamp}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDemoPushToast(null)}
+                  className="text-slate-400 hover:text-white text-xs bg-slate-800/80 hover:bg-slate-700 w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                  title="알림 닫기"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white space-y-1">
+                <div className="flex items-center justify-between font-extrabold">
+                  <span className="text-amber-300">{demoPushToast.orderTypeLabel} • {demoPushToast.orderName} 님</span>
+                  <span className="text-emerald-400 font-mono">{demoPushToast.totalPrice.toLocaleString()}원</span>
+                </div>
+                <p className="text-[11px] text-slate-200 font-bold truncate">
+                  주문메뉴: {demoPushToast.menuSummary}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <p className="text-[10px] text-emerald-200/90 font-semibold leading-snug">
+                  💡 <strong>실제 도입 시 사장님 폰/카톡으로 1초 만에 전송</strong>됩니다! (현재 모의 체험관은 외부 발송 없는 브라우저 자체 시연 모드입니다)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => playOrderSuccessSound()}
+                  className="text-[10px] font-black bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg shrink-0 transition-colors"
+                >
+                  🔊 띵동~ 재재생
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Top Header */}
       
       {/* ⚠️ 영업 시연용 가상 체험 안내 띠 배너 */}
@@ -2955,8 +3069,19 @@ export default function G60gyeDemoPage() {
                   <p className="text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
                     {currentOrderState?.status === 'cooking' 
                       ? `사장님이 주문을 확인했습니다! ${currentOrderState.targetPickupTime || '18:10'}분까지 따뜻하게 조리하여 준비해 두겠습니다.`
-                      : '리웨이브 치킨 강원영월점 주방으로 고객님의 주문서가 전송되었습니다. 사장님의 접수 승인을 잠시만 기다려 주세요!'}
+                      : '모의 체험관 주문이 정상 완료되었습니다. 실제 매장 도입 시에는 사장님 스마트폰/카톡 및 주방 전광판으로 1초 만에 실시간 전송됩니다!'}
                   </p>
+
+                  {/* 시연용 점주 알림 & 효과음 다시 체험하기 버튼 */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => triggerSelfContainedDemoAlert(currentOrderState || recentOrder)}
+                      className="inline-flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-xs font-black px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      <span>🔔 점주 알림 팝업 & '띵동~' 효과음 다시 시연하기</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Step Timeline */}
