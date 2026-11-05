@@ -826,16 +826,17 @@ export default function LandingPage() {
               소상공인 맞춤 현실 요금제
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-              수백만 원짜리 태블릿 약정도, 배달앱 수수료도 없습니다. 치킨 10마리 수수료만 아껴도 매달 순이익이 남습니다.
+              수백만 원짜리 태블릿 약정도, 배달앱 수수료도 없습니다. 치킨 2마리 수수료만 아껴도 매달 순이익이 남습니다.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+            {/* 카드 1: 스타터 (Starter) */}
             <div className="bg-card border border-border rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold">스타터 (Starter)</h3>
-                  <p className="text-xs text-slate-400">부담 없는 첫 1개월 무료 체험</p>
+                  <p className="text-xs text-slate-400">부담 없는 30일 무료 체험</p>
                 </div>
                 <div className="flex items-baseline gap-1 py-2">
                   <span className="text-4xl font-black tracking-tight text-white">0원</span>
@@ -848,11 +849,11 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>테이블 QR 스티커 기본 10매 증정</span>
+                    <span>실시간 포장 및 매장 주문 알림 접수</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>포장 및 매장 주문 실시간 접수</span>
+                    <span>즉시 출력 가능한 고화질 QR 인쇄 도안(PDF) 제공</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -864,10 +865,11 @@ export default function LandingPage() {
                 href="#contact"
                 className="mt-8 w-full h-11 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center text-xs transition-colors"
               >
-                30일 무료 시작하기
+                [ 30일 무료 시작하기 ]
               </a>
             </div>
 
+            {/* 카드 2: 스탠다드 (Standard) - 사장님 강력 추천 */}
             <div className="bg-card border-2 border-primary rounded-3xl p-6 sm:p-7 flex flex-col justify-between relative shadow-2xl shadow-primary/10">
               <div className="absolute top-0 right-6 -translate-y-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-black tracking-wider uppercase">
                 사장님 강력 추천 ★
@@ -875,10 +877,10 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-primary">스탠다드 (Standard)</h3>
-                  <p className="text-xs text-slate-400">치킨 10마리 수수료면 전액 회수!</p>
+                  <p className="text-xs text-slate-400">하루 1,300원, 치킨 2마리 수수료면 전액 회수!</p>
                 </div>
                 <div className="flex items-baseline gap-1 py-2">
-                  <span className="text-4xl font-black tracking-tight text-white">29,000원</span>
+                  <span className="text-4xl font-black tracking-tight text-white">39,000원</span>
                   <span className="text-xs text-slate-400">/ 월</span>
                 </div>
                 <ul className="space-y-2.5 text-xs text-slate-300">
@@ -888,11 +890,11 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-primary shrink-0" />
-                    <span>고화질 코팅 QR 스티커 20매 무료 제작</span>
+                    <span>고화질 방수 코팅 QR 스티커 20매 무료 제작</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-primary shrink-0" />
-                    <span>카운터/출입문 홍보 미니배너 1세트 증정</span>
+                    <span>카운터 홍보 미니배너 1세트 증정 (6개월 유지 약정 시)</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-primary shrink-0" />
@@ -900,11 +902,11 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-primary shrink-0" />
-                    <span>네이버 스마트플레이스 / SNS 링크 연동</span>
+                    <span>네이버 스마트플레이스 / SNS 링크 연동 지원</span>
                   </li>
                   <li className="flex items-center gap-2 text-amber-300 font-bold bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
                     <Gift className="w-4 h-4 shrink-0 text-amber-400" />
-                    <span>[30만 원 상당] AI 상권 리포트 1회 무료</span>
+                    <span>🎁 [30만 원 상당] 영월 상권 AI 정밀 리포트 1회 무료 증정</span>
                   </li>
                 </ul>
               </div>
@@ -912,10 +914,11 @@ export default function LandingPage() {
                 href="#contact"
                 className="mt-8 w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex items-center justify-center text-xs transition-colors shadow-md shadow-primary/20"
               >
-                스탠다드 입점 신청
+                [ 스탠다드 입점 신청 ]
               </a>
             </div>
 
+            {/* 카드 3: 올인원 파트너 */}
             <div className="bg-card border border-border rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="space-y-1">
@@ -923,7 +926,7 @@ export default function LandingPage() {
                   <p className="text-xs text-slate-400">영월/강원 권역 전담 밀착 케어</p>
                 </div>
                 <div className="flex items-baseline gap-1 py-2">
-                  <span className="text-4xl font-black tracking-tight text-white">59,000원</span>
+                  <span className="text-4xl font-black tracking-tight text-white">79,000원</span>
                   <span className="text-xs text-slate-400">/ 월</span>
                 </div>
                 <ul className="space-y-2.5 text-xs text-slate-300">
@@ -933,11 +936,15 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>월 1회 메뉴/가격 무상 업데이트 대행</span>
+                    <span>카운터 미니배너 + 코팅 QR 스티커 풀세트 기본 증정</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>주방 전용 태블릿 실시간 알림 시스템 세팅</span>
+                    <span>매장 직접 방문 현장 세팅 & 주방 태블릿 알림 시스템 구축</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>월 1회 메뉴/가격 무상 업데이트 대행</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -953,9 +960,22 @@ export default function LandingPage() {
                 href="#contact"
                 className="mt-8 w-full h-11 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center text-xs transition-colors"
               >
-                전담 파트너 문의
+                [ 전담 파트너 문의 ]
               </a>
             </div>
+          </div>
+
+          {/* [신규] 단독 구축형 패키지 안내 */}
+          <div className="mt-10 text-center">
+            <p className="text-xs sm:text-sm text-slate-400">
+              ※ 리웨이브온 플랫폼 종속 없이 매장 전용 독립 도메인과 자체 서버로 소유하길 원하시나요?{' '}
+              <a
+                href="#contact"
+                className="font-bold text-amber-300 hover:text-amber-200 underline underline-offset-4 ml-1 inline-flex items-center gap-1 transition-colors"
+              >
+                [독립 구축형 패키지 1:1 상담하기]
+              </a>
+            </p>
           </div>
         </div>
       </section>
