@@ -98,7 +98,7 @@ export default function LandingPage() {
       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white text-xs py-2 px-4 text-center font-medium shadow-inner flex items-center justify-center gap-2">
         <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
         <span>
-          <strong>[영월/강원 권역 소상공인 100일 무료 지원]</strong> 기기값 0원 • <strong>대표 1:1 방문 무료 세팅</strong> • <strong>30만 원 상당 AI 상권 리포트 100% 무료 증정!</strong>
+          <strong>[영월 소상공인 상생 프로젝트 : 첫 1개월 전액 무료 체험]</strong> 기기값 0원 • <strong>방문 설치 및 QR 세팅 무료</strong> • <strong>30만 원 상당 AI 상권 리포트 100% 무료 증정!</strong>
         </span>
       </div>
 
@@ -155,7 +155,7 @@ export default function LandingPage() {
               href="#contact"
               className="text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-4 h-9 flex items-center rounded-lg transition-all shadow-md shadow-primary/20"
             >
-              100일 무료 신청
+              30일 무료 신청
             </a>
           </div>
         </div>
@@ -389,7 +389,7 @@ export default function LandingPage() {
                   href="#contact"
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all text-sm"
                 >
-                  <span>100일 무료 체험으로 이 순이익 챙기기</span>
+                  <span>첫 1개월 무료 체험으로 이 순이익 챙기기</span>
                   <ArrowRight className="w-4 h-4" />
                 </a>
 
@@ -811,7 +811,7 @@ export default function LandingPage() {
                 href="#contact"
                 className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-300 hover:text-amber-200 underline underline-offset-4"
               >
-                <span>지금 100일 무료 체험 신청하고 30만 원 상당 AI 리포트 무료 예약하기 →</span>
+                <span>지금 첫 1개월 무료 체험 신청하고 30만 원 상당 AI 리포트 무료 예약하기 →</span>
               </a>
             </div>
           </div>
@@ -835,11 +835,11 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold">스타터 (Starter)</h3>
-                  <p className="text-xs text-slate-400">부담 없는 100일 무료 체험</p>
+                  <p className="text-xs text-slate-400">부담 없는 첫 1개월 무료 체험</p>
                 </div>
                 <div className="flex items-baseline gap-1 py-2">
                   <span className="text-4xl font-black tracking-tight text-white">0원</span>
-                  <span className="text-xs text-slate-400">/ 100일 체험</span>
+                  <span className="text-xs text-slate-400">/ 30일 체험</span>
                 </div>
                 <ul className="space-y-2.5 text-xs text-slate-300">
                   <li className="flex items-center gap-2">
@@ -864,7 +864,7 @@ export default function LandingPage() {
                 href="#contact"
                 className="mt-8 w-full h-11 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center text-xs transition-colors"
               >
-                100일 무료 시작하기
+                30일 무료 시작하기
               </a>
             </div>
 
@@ -964,16 +964,46 @@ export default function LandingPage() {
       <section id="contact" className="py-20 relative">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="bg-card border border-border rounded-3xl p-6 sm:p-10 shadow-xl space-y-6">
-            <div className="text-center space-y-2">
-              <span className="text-xs font-bold text-primary tracking-wider uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                QUICK INQUIRY
-              </span>
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2">
+                <span className="text-xs font-bold text-primary tracking-wider uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                  QUICK INQUIRY
+                </span>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                  방문 설치 및 QR 세팅 무료
+                </span>
+              </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                소상공인 100일 무료 체험 및 방문 신청
+                영월 소상공인 상생 프로젝트 : 첫 1개월 전액 무료 체험
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400">
-                기기값 0원, 중개수수료 0원! 신청해 주시면 담당 매니저가 24시간 내 친절히 안내해 드립니다.
+              <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+                치솟는 배달앱 수수료 부담을 덜어드립니다. 모바일 자사몰 구축부터 매장 방문 설치, QR 테이블 세팅까지 첫 달 0원으로 직접 검증해 보세요.
               </p>
+
+              {/* 3대 핵심 혜택 리스트 */}
+              <div className="grid sm:grid-cols-3 gap-3 pt-3 text-left">
+                <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300">
+                  <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    혜택 1
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-200 font-medium">원스톱 모바일 자사몰 무료 세팅 (30일 무상 지원)</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300">
+                  <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    혜택 2
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-200 font-medium">찾아가는 현장 방문 & QR 주문 안내물 무상 설치</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300">
+                  <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    혜택 3
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-200 font-medium">사장님 1:1 현장 교육 & 네이버 스마트플레이스 연동 가이드 무료 제공</p>
+                </div>
+              </div>
             </div>
 
             {formSubmitted ? (
@@ -1086,8 +1116,11 @@ export default function LandingPage() {
                   className="w-full h-12 bg-primary hover:bg-primary/95 text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all text-sm mt-2"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>100일 무료 체험 & 30만 원 상당 AI 리포트 신청하기</span>
+                  <span>[ 30일 무료 체험 및 방문 세팅 신청하기 ]</span>
                 </button>
+                <p className="text-[11px] sm:text-xs text-slate-400 text-center pt-2">
+                  ※ 30일 무료 체험 기간 종료 후 자동 유료 결제되지 않으며, 위약금이나 의무 사용 조건이 전혀 없습니다.
+                </p>
               </form>
             )}
           </div>
@@ -1205,7 +1238,7 @@ export default function LandingPage() {
           <a 
             href="#contact" 
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-black px-4 py-3 rounded-full shadow-2xl shadow-primary/30 transition-all transform hover:scale-105"
-            title="100일 무료 신청 양식으로 이동"
+            title="30일 무료 신청 양식으로 이동"
           >
             <Sparkles className="w-5 h-5" />
             <span className="text-xs sm:text-sm font-extrabold">무료 신청</span>

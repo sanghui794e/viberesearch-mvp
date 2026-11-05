@@ -15,8 +15,8 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "스타터 플랜 100일 무료 체험 후 자동 결제되나요?",
-    answer: "아니요, 동의 없는 자동 결제는 절대 발생하지 않습니다. 100일 동안 충분히 써보시고 실제 배달앱 수수료 절감 효과를 체감하신 뒤, 사장님의 결정에 따라 유료 전환 여부를 직접 선택하실 수 있습니다."
+    question: "스타터 플랜 30일(첫 1개월) 무료 체험 후 자동 결제되나요?",
+    answer: "아니요, 동의 없는 자동 결제는 절대 발생하지 않습니다. 30일(첫 1개월) 동안 충분히 써보시고 실제 배달앱 수수료 절감 효과를 체감하신 뒤, 사장님의 결정에 따라 유료 전환 여부를 직접 선택하실 수 있습니다."
   },
   {
     question: "테이블오더 태블릿 기기 구입비나 설치비가 정말 0원인가요?",
@@ -71,7 +71,7 @@ export default function PricingPage() {
               href="/#contact"
               className="text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-4 h-9 flex items-center rounded-lg transition-colors shadow-sm shadow-primary/20"
             >
-              100일 무료 신청
+              30일 무료 신청
             </Link>
           </nav>
         </div>
@@ -85,7 +85,7 @@ export default function PricingPage() {
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-bold text-emerald-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>배달앱 수수료 0% • 테이블오더 기기값 0원 • 100일 무료 체험</span>
+              <span>배달앱 수수료 0% • 테이블오더 기기값 0원 • 첫 1개월 전액 무료 체험</span>
             </div>
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
               소상공인 맞춤 현실 요금제
@@ -103,11 +103,11 @@ export default function PricingPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h2 className="text-lg font-bold">스타터 (Starter)</h2>
-                  <p className="text-xs text-slate-400">부담 없는 100일 무료 체험</p>
+                  <p className="text-xs text-slate-400">부담 없는 첫 1개월 무료 체험</p>
                 </div>
                 <div className="flex items-baseline gap-1 py-2">
                   <span className="text-4xl font-black tracking-tight text-white">0원</span>
-                  <span className="text-xs text-slate-400">/ 100일 체험</span>
+                  <span className="text-xs text-slate-400">/ 30일 체험</span>
                 </div>
                 <ul className="space-y-2.5 text-xs text-slate-300">
                   <li className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function PricingPage() {
                 href="/#contact"
                 className="mt-8 w-full h-11 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center text-xs transition-colors"
               >
-                100일 무료 시작하기
+                30일 무료 시작하기
               </Link>
             </div>
 
