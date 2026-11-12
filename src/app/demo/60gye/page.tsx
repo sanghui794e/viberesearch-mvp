@@ -49,9 +49,9 @@ const menuList: Menu[] = [
   // 1. 치킨 단품 (뼈, 순살, 윙봉, 콤보)
   {
     id: 'ccc_gold',
-    name: '크크크 골드',
+    name: '크크크골드',
     category: '치킨',
-    description: '바삭함의 정점 크크크에 황금빛 특제 시즈닝과 골드 소스의 환상적인 조화! (반반 불가)',
+    description: '빠삭한 크크크치킨에 황금치즈가루를 뿌렸다!',
     image: '/ccc_gold_bone.jpg',
     typeImages: {
       '뼈': '/ccc_gold_bone.jpg',
