@@ -28,6 +28,7 @@ export interface Menu {
   tag?: string;
   spicy: number;
   prices: MenuPrice[];
+  typeImages?: Record<string, string>;
   isCustom?: boolean;
   isHalfAndHalf?: boolean; // 반반치킨 여부
   isBonelessSet?: boolean; // 순살세트 여부
@@ -46,6 +47,27 @@ export interface CartItem {
 // ※ 웨지감자 이미지는 오직 웨지감자 단품에만 사용하며, 음료/주류/사이드/부분육/세트는 전용 이미지 적용
 const menuList: Menu[] = [
   // 1. 치킨 단품 (뼈, 순살, 윙봉, 콤보)
+  {
+    id: 'ccc_gold',
+    name: '크크크 골드',
+    category: '치킨',
+    description: '바삭함의 정점 크크크에 황금빛 특제 시즈닝과 골드 소스의 환상적인 조화! (반반 불가)',
+    image: '/ccc_gold_bone.jpg',
+    typeImages: {
+      '뼈': '/ccc_gold_bone.jpg',
+      '순살': '/ccc_gold_boneless.jpg',
+      '윙봉': '/ccc_gold_wingstick.jpg',
+      '콤보': '/ccc_gold_combo.jpg'
+    },
+    tag: 'NEW 골드 신메뉴',
+    spicy: 0,
+    prices: [
+      { type: '뼈', price: 24900 },
+      { type: '순살', price: 25900 },
+      { type: '윙봉', price: 26500 },
+      { type: '콤보', price: 26500 }
+    ]
+  },
   {
     id: 'chamji_mara',
     name: '참지마라치킨',
@@ -317,6 +339,42 @@ const menuList: Menu[] = [
 
   // 4. 부분육 단품 (홈페이지 실제 업로드 전용 사진 연동)
   {
+    id: 'part_ccc_gold_wing',
+    name: '크크크 골드 (윙)',
+    category: '부분육',
+    description: '바삭하고 고소한 크크크 골드 날개(윙) 단품 메뉴 (단품은 포장 2,000원 할인 제외)',
+    image: '/ccc_gold_wingstick.jpg',
+    tag: '골드 단품',
+    spicy: 0,
+    prices: [
+      { type: '단품', price: 15800 }
+    ]
+  },
+  {
+    id: 'part_ccc_gold_bong',
+    name: '크크크 골드 (봉)',
+    category: '부분육',
+    description: '바삭하고 고소한 크크크 골드 봉 단품 메뉴 (단품은 포장 2,000원 할인 제외)',
+    image: '/ccc_gold_wingstick.jpg',
+    tag: '골드 단품',
+    spicy: 0,
+    prices: [
+      { type: '단품', price: 15800 }
+    ]
+  },
+  {
+    id: 'part_ccc_gold_leg',
+    name: '크크크 골드 (다리)',
+    category: '부분육',
+    description: '바삭하고 고소한 크크크 골드 닭다리 단품 메뉴 (단품은 포장 2,000원 할인 제외)',
+    image: '/ccc_gold_combo.jpg',
+    tag: '골드 단품',
+    spicy: 0,
+    prices: [
+      { type: '단품', price: 15800 }
+    ]
+  },
+  {
     id: 'part_wing15',
     name: '윙만 15조각',
     category: '부분육',
@@ -327,7 +385,8 @@ const menuList: Menu[] = [
     prices: [
       { type: '후라이드', price: 12800 },
       { type: '양념/호랑이/고추/간지', price: 13800 },
-      { type: '크크크/크랑이/매운맛', price: 14800 }
+      { type: '크크크/크랑이/매운맛', price: 14800 },
+      { type: '크크크 골드', price: 15800 }
     ]
   },
   {
@@ -341,7 +400,8 @@ const menuList: Menu[] = [
     prices: [
       { type: '후라이드', price: 12800 },
       { type: '양념/호랑이/고추/간지', price: 13800 },
-      { type: '크크크/크랑이/매운맛', price: 14800 }
+      { type: '크크크/크랑이/매운맛', price: 14800 },
+      { type: '크크크 골드', price: 15800 }
     ]
   },
   {
@@ -355,7 +415,8 @@ const menuList: Menu[] = [
     prices: [
       { type: '후라이드', price: 12800 },
       { type: '양념/호랑이/고추/간지', price: 13800 },
-      { type: '크크크/크랑이/매운맛', price: 14800 }
+      { type: '크크크/크랑이/매운맛', price: 14800 },
+      { type: '크크크 골드', price: 15800 }
     ]
   },
 
@@ -631,6 +692,15 @@ const menuList: Menu[] = [
     spicy: 3,
     prices: [{ type: '1개', price: 1500 }]
   },
+  {
+    id: 'sauce_ccc_gold',
+    name: '크크크 골드 소스',
+    category: '소스',
+    description: '크크크 골드의 풍미를 극대화하는 달콤 짭조름한 특제 골드 디핑소스',
+    image: '',
+    spicy: 0,
+    prices: [{ type: '1개', price: 1000 }]
+  },
 
   // 8. 주류
   {
@@ -806,8 +876,8 @@ export default function G60gyeDemoPage() {
 
     if (flavor === '후라이드 기본' || flavor === '후라이드') return base;
     if (['호랑이', '고추', '간지', '양념'].includes(flavor)) return base + 1000;
-    if (['크크크', '크랑이', '더매운', '푸하핫', '하하핫'].includes(flavor)) return base + 2000;
-    if (['쯔란', '참지마라'].includes(flavor)) return base + 3000;
+    if (['크크크', '크랑이', '더매운', '더 매운', '더매운고추', '푸하핫', '하하핫'].includes(flavor)) return base + 2000;
+    if (['쯔란', '참지마라', '크크크 골드', '크크크골드'].includes(flavor)) return base + 3000;
     return base;
   };
 
@@ -2140,7 +2210,7 @@ export default function G60gyeDemoPage() {
                         {menu.image ? (
                           <div className="w-28 h-28 shrink-0 relative bg-slate-900">
                             <img 
-                              src={menu.image} 
+                              src={(menu.typeImages && menu.typeImages[activeType]) || menu.image} 
                               alt={menu.name}
                               className="w-full h-full object-cover"
                             />
@@ -2258,9 +2328,16 @@ export default function G60gyeDemoPage() {
                           <div className="flex gap-1.5">
                             {[
                               { label: '후라이드 기본 (+0원)', val: '후라이드 기본' },
-                              { label: '호랑이/고추/간지/양념 (+1,000원)', val: '호랑이' },
-                              { label: '크크크/크랑이/더매운 (+2,000원)', val: '크크크' },
-                              { label: '쯔란/참지마라 (+3,000원)', val: '쯔란' }
+                              { label: '호랑이 (+1,000원)', val: '호랑이' },
+                              { label: '고추 (+1,000원)', val: '고추' },
+                              { label: '간지 (+1,000원)', val: '간지' },
+                              { label: '양념 (+1,000원)', val: '양념' },
+                              { label: '크크크 (+2,000원)', val: '크크크' },
+                              { label: '크랑이 (+2,000원)', val: '크랑이' },
+                              { label: '더매운 (+2,000원)', val: '더매운' },
+                              { label: '쯔란 (+3,000원)', val: '쯔란' },
+                              { label: '참지마라 (+3,000원)', val: '참지마라' },
+                              { label: '크크크 골드 (+3,000원)', val: '크크크 골드' }
                             ].map((flavorOpt) => {
                               const currentVal = selectedSetFlavors[menu.id] || '후라이드 기본';
                               const isSelected = currentVal === flavorOpt.val;
