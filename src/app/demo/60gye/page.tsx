@@ -1958,8 +1958,8 @@ export default function G60gyeDemoPage() {
         </div>
       </header>
 
-      {/* 실시간 매장 운영 상태 안내 배너 */}
-      {!storeStatus.canOrder ? (
+      {/* 1. 영업시간 제한/오픈 준비 중/휴무 알림 배너 (오픈 전이나 마감 시에만 노출) */}
+      {!storeStatus.canOrder && (
         <div 
           onClick={() => setShowClosedModal(true)}
           className={`px-4 py-2 text-center text-xs font-bold border-b flex items-center justify-center gap-1.5 sticky top-14 z-30 shadow-md cursor-pointer ${storeStatus.badgeColor} bg-[#1a1210]`}
@@ -1967,53 +1967,64 @@ export default function G60gyeDemoPage() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>📢 {storeStatus.modalTitle} <span className="underline ml-1 font-black">[상세 안내 보기]</span></span>
         </div>
-      ) : (
-        <div className="bg-[#1c1310] border-b border-[#3d2c27] px-4 py-1.5 text-center text-[11px] font-bold text-amber-400/90 flex items-center justify-center gap-1.5 sticky top-14 z-30">
-          <Clock className="w-3.5 h-3.5 text-amber-400" />
-          <span>{storeStatus.kitchenDesc} • ⏰ 주문 가능 시간: 오후 3:00 ~ 밤 11:40</span>
-        </div>
       )}
 
-      {/* Store Pause Alert Banner */}
+      {/* 2. 정상 영업 중(15:00~23:40)일 때만 노출되는 실시간 주방 상태 및 매장 공지 배너 */}
+      {storeStatus.canOrder && !storeSettings.isPaused && (
+        <>
+          {/* 혼잡/피크 모드일 때만 조리 대기 발생 안내 노출 */}
+          {(storeSettings.busyLevel === 'busy' || storeSettings.busyLevel === 'peak') ? (
+            <div className={`px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2 sticky top-14 z-30 shadow-md ${
+              storeSettings.busyLevel === 'peak'
+                ? 'bg-rose-950/90 border-b border-rose-500/60 text-rose-200 animate-pulse'
+                : 'bg-amber-950/90 border-b border-amber-500/60 text-amber-200'
+            }`}>
+              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="text-center leading-snug">
+                {storeSettings.busyLevel === 'peak' ? (
+                  <span className="font-black text-rose-400 mr-1.5">🔴 [주문 폭주 피크타임]</span>
+                ) : (
+                  <span className="font-black text-amber-400 mr-1.5">🟡 [주문 혼잡 안내]</span>
+                )}
+                <span>
+                  현재 조리 대기 발생 중 (포장 약 {
+                    storeSettings.busyLevel === 'peak' 
+                      ? (storeSettings.customTimes?.peak.takeoutMin || 50)
+                      : (storeSettings.customTimes?.busy.takeoutMin || 35)
+                  }분 / 배달 약 {
+                    storeSettings.busyLevel === 'peak'
+                      ? (storeSettings.customTimes?.peak.deliveryMin || 65)
+                      : (storeSettings.customTimes?.busy.deliveryMin || 50)
+                  }분 소요)
+                </span>
+                {storeSettings.customNotice && (
+                  <div className="text-[11px] text-white font-extrabold mt-0.5">
+                    📢 {storeSettings.customNotice}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* 여유 모드일 때: 조리 대기 발생 문구 없이 공지 또는 평상시 조리시간만 깔끔하게 노출 */
+            <div className="bg-[#1c1310] border-b border-[#3d2c27] px-4 py-2 text-center text-xs font-bold text-amber-400/90 flex items-center justify-center gap-1.5 sticky top-14 z-30 shadow-sm">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <div className="leading-snug">
+                {storeSettings.customNotice ? (
+                  <span>📢 {storeSettings.customNotice}</span>
+                ) : (
+                  <span>{storeStatus.kitchenDesc} • ⏰ 주문 가능 시간: 오후 3:00 ~ 밤 11:40</span>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 매장 일시 정지 (품절/긴급 접수 중단) 알림 배너 */}
       {storeSettings.isPaused && (
         <div className="bg-red-950/90 border-b border-red-500/60 px-4 py-2.5 text-center text-xs font-bold text-red-200 flex items-center justify-center gap-2 sticky top-14 z-30 shadow-lg">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
           <span>⚠️ {storeSettings.pauseReason || '현재 매장 주문 폭주로 인해 모바일 주문이 잠시 일시 정지되었습니다.'} (문의: 033-374-6660)</span>
-        </div>
-      )}
-
-      {/* Real-time Busy / Notice Banner */}
-      {!storeSettings.isPaused && (storeSettings.busyLevel === 'busy' || storeSettings.busyLevel === 'peak' || storeSettings.customNotice) && (
-        <div className={`px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2 sticky top-14 z-30 shadow-md ${
-          storeSettings.busyLevel === 'peak'
-            ? 'bg-rose-950/90 border-b border-rose-500/60 text-rose-200 animate-pulse'
-            : 'bg-amber-950/90 border-b border-amber-500/60 text-amber-200'
-        }`}>
-          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-          <div className="text-center leading-snug">
-            {storeSettings.busyLevel === 'peak' && (
-              <span className="font-black text-rose-400 mr-1.5">🔴 [주문 폭주 피크타임]</span>
-            )}
-            {storeSettings.busyLevel === 'busy' && (
-              <span className="font-black text-amber-400 mr-1.5">🟡 [주문 혼잡 안내]</span>
-            )}
-            <span>
-              현재 조리 대기 발생 중 (포장 약 {
-                storeSettings.busyLevel === 'peak' 
-                  ? (storeSettings.customTimes?.peak.takeoutMin || 50)
-                  : (storeSettings.customTimes?.busy.takeoutMin || 35)
-              }분 / 배달 약 {
-                storeSettings.busyLevel === 'peak'
-                  ? (storeSettings.customTimes?.peak.deliveryMin || 65)
-                  : (storeSettings.customTimes?.busy.deliveryMin || 50)
-              }분 소요)
-            </span>
-            {storeSettings.customNotice && (
-              <div className="text-[11px] text-white font-extrabold mt-0.5">
-                📢 {storeSettings.customNotice}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
