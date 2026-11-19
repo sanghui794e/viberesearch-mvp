@@ -822,6 +822,168 @@ export default function G60gyeDemoPage() {
   // 트래킹 상태
   const [trackStep, setTrackStep] = useState<number>(1);
 
+  // ⏰ 실시간 매장 운영 제어 (15:00~24:00, 라스트오더 23:40, 매주 화요일 휴무, 긴급마감/임시휴무)
+  const [storeStatus, setStoreStatus] = useState<{
+    state: 'OPEN' | 'PREPARING' | 'REGULAR_HOLIDAY' | 'TEMP_HOLIDAY' | 'LAST_ORDER_OVER' | 'CLOSED' | 'SOLD_OUT';
+    canOrder: boolean;
+    badgeText: string;
+    badgeColor: string;
+    kitchenTitle: string;
+    kitchenDesc: string;
+    modalTitle: string;
+    modalMessage: string;
+  }>({
+    state: 'OPEN',
+    canOrder: true,
+    badgeText: '정상 영업 중',
+    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    kitchenTitle: '보통',
+    kitchenDesc: '포장 조리 완료까지 약 25분 소요 예정',
+    modalTitle: '',
+    modalMessage: ''
+  });
+
+  const [showClosedModal, setShowClosedModal] = useState<boolean>(false);
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [adminPin, setAdminPin] = useState<string>('');
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+
+  // 실시간 매장 상태 검증 함수
+  const checkLiveStoreStatus = () => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const openMinutes = 15 * 60; // 15:00 (900분)
+    const lastOrderMinutes = 23 * 60 + 40; // 23:40 (1420분)
+    const closeMinutes = 24 * 60; // 24:00 (1440분)
+
+    let isSoldOut = false;
+    let isTempHoliday = false;
+    let forceOpenTuesday = false;
+    let customWaitTime = '약 25분';
+
+    if (typeof window !== 'undefined') {
+      try {
+        isSoldOut = localStorage.getItem('60gye_sold_out') === 'true';
+        isTempHoliday = localStorage.getItem('60gye_temp_holiday') === 'true';
+        forceOpenTuesday = localStorage.getItem('60gye_force_open_tuesday') === 'true';
+        customWaitTime = localStorage.getItem('60gye_wait_time') || '약 25분';
+      } catch (e) {}
+    }
+
+    if (isSoldOut) {
+      return {
+        state: 'SOLD_OUT' as const,
+        canOrder: false,
+        badgeText: '재료 소진 마감',
+        badgeColor: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        kitchenTitle: '재료 소진 완판',
+        kitchenDesc: '오늘 준비한 닭과 18L 새 기름이 모두 소진되었습니다.',
+        modalTitle: '오늘 준비한 재료가 모두 소진되었습니다!',
+        modalMessage: '고객님들의 뜨거운 성원에 힘입어 오늘 준비한 신선육과 18L 새 기름이 모두 완판되었습니다.\n\n매일 새 기름으로 60마리만 정직하게 튀기기 위해 조기 마감합니다. 내일 오후 3시에 더 깨끗하고 바삭하게 찾아뵙겠습니다!'
+      };
+    }
+
+    if (isTempHoliday) {
+      return {
+        state: 'TEMP_HOLIDAY' as const,
+        canOrder: false,
+        badgeText: '오늘 임시 휴무',
+        badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        kitchenTitle: '매장 정비 중',
+        kitchenDesc: '위생 점검 및 설비 정비를 위해 오늘 하루 쉬어갑니다.',
+        modalTitle: '오늘 하루 매장 정비를 위해 쉬어갑니다!',
+        modalMessage: '더 쾌적한 매장 환경과 철저한 위생 관리를 위해 오늘 하루 임시 휴무를 갖습니다.\n\n이용에 불편을 드려 대단히 죄송하며, 내일 오후 3시에 정상 오픈합니다.'
+      };
+    }
+
+    // 매주 화요일 정기 휴무 체크 (2: 화요일)
+    if (currentDay === 2 && !forceOpenTuesday) {
+      return {
+        state: 'REGULAR_HOLIDAY' as const,
+        canOrder: false,
+        badgeText: '화요일 정기 휴무',
+        badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+        kitchenTitle: '정기 휴무일',
+        kitchenDesc: '매주 화요일은 영월점 정기 휴무일입니다.',
+        modalTitle: '매주 화요일은 영월점 정기 휴무일입니다!',
+        modalMessage: '60계치킨 영월점은 더 바삭하고 신선한 치킨을 위해 매주 화요일 정기 휴무를 시행하고 있습니다.\n\n수요일 오후 3시에 깨끗한 새 기름과 함께 찾아뵙겠습니다!'
+      };
+    }
+
+    // 00:00 ~ 15:00 (오픈 준비 중 - 방안 A: 오픈 준비 중 팝업 & 둘러보기 허용)
+    if (currentMinutes < openMinutes) {
+      return {
+        state: 'PREPARING' as const,
+        canOrder: false,
+        badgeText: '영업 준비 중 (15:00 OPEN)',
+        badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        kitchenTitle: '오픈 준비 중',
+        kitchenDesc: '오늘 사용할 18L 새 기름 예열 및 신선육 손질 중 (15:00 OPEN)',
+        modalTitle: '지금은 가장 맛있는 치킨을 튀기기 위한 준비 시간입니다!',
+        modalMessage: '60계치킨 영월점은 매일 새 기름(18L 60마리) 원칙을 지키기 위해 오후 3시에 오픈합니다.\n\n⏰ 주문 가능 시간: 오후 3:00 ~ 밤 11:40 (라스트 오더)\n\n미리 메뉴를 둘러보시고 오후 3시 정각에 자사몰 단독 혜택(포장 2,000원 할인 & 미니쫀득볼 무료 증정)과 함께 주문해 주세요!'
+      };
+    }
+
+    // 23:40 ~ 24:00 (라스트 오더 마감)
+    if (currentMinutes >= lastOrderMinutes && currentMinutes < closeMinutes) {
+      return {
+        state: 'LAST_ORDER_OVER' as const,
+        canOrder: false,
+        badgeText: '금일 주문 접수 마감',
+        badgeColor: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+        kitchenTitle: '주문 마감',
+        kitchenDesc: '금일 라스트 오더(23:40)가 마감되었습니다.',
+        modalTitle: '오늘 주문 접수가 마감되었습니다!',
+        modalMessage: '주방 조리 마감 및 안전한 배달을 위해 밤 11:40에 마지막 주문 접수를 마감합니다.\n\n오늘도 영월점을 찾아주셔서 진심으로 감사드리며, 내일 오후 3시에 뵙겠습니다!'
+      };
+    }
+
+    // 24:00 이후 심야
+    if (currentMinutes >= closeMinutes) {
+      return {
+        state: 'CLOSED' as const,
+        canOrder: false,
+        badgeText: '영업 마감',
+        badgeColor: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+        kitchenTitle: '영업 종료',
+        kitchenDesc: '오늘 하루도 영월 군민 덕분에 완판했습니다!',
+        modalTitle: '오늘 영업이 모두 종료되었습니다!',
+        modalMessage: '내일 오후 3시에 깨끗한 새 기름으로 다시 찾아뵙겠습니다. 감사합니다!'
+      };
+    }
+
+    // 정상 영업 중 (15:00 ~ 23:40)
+    return {
+      state: 'OPEN' as const,
+      canOrder: true,
+      badgeText: '정상 영업 중',
+      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+      kitchenTitle: '보통',
+      kitchenDesc: `포장 조리 완료까지 ${customWaitTime} 소요 예정`,
+      modalTitle: '',
+      modalMessage: ''
+    };
+  };
+
+  useEffect(() => {
+    setStoreStatus(checkLiveStoreStatus());
+    const timer = setInterval(() => {
+      setStoreStatus(checkLiveStoreStatus());
+    }, 5000);
+
+    const handleStorageUpdate = () => {
+      setStoreStatus(checkLiveStoreStatus());
+    };
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, []);
+
   // 메뉴 기본 타입 초기화
   useEffect(() => {
     const defaults: Record<string, string> = {};
@@ -1748,7 +1910,17 @@ export default function G60gyeDemoPage() {
               <span>60계치킨</span>
               <span className="bg-[#f39c12] text-[#1a1210] text-[9px] font-extrabold px-1 rounded">강원영월점</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</p>
+            <div className="flex items-center justify-center gap-1.5 mt-0.5">
+              <span className="text-[10px] text-slate-500 font-medium">영월읍 관풍헌길 35 • 033-374-6660</span>
+              <button 
+                type="button" 
+                onClick={() => setShowClosedModal(true)}
+                className={`inline-block px-1.5 py-0.2 rounded-full text-[9px] font-black border transition-transform active:scale-95 ${storeStatus.badgeColor}`}
+                title="매장 운영 시간 및 영업 상태 안내 보기"
+              >
+                {storeStatus.badgeText}
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             {/* 🪙 내 포인트 조회 버튼 */}
@@ -1785,6 +1957,22 @@ export default function G60gyeDemoPage() {
           </div>
         </div>
       </header>
+
+      {/* 실시간 매장 운영 상태 안내 배너 */}
+      {!storeStatus.canOrder ? (
+        <div 
+          onClick={() => setShowClosedModal(true)}
+          className={`px-4 py-2 text-center text-xs font-bold border-b flex items-center justify-center gap-1.5 sticky top-14 z-30 shadow-md cursor-pointer ${storeStatus.badgeColor} bg-[#1a1210]`}
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>📢 {storeStatus.modalTitle} <span className="underline ml-1 font-black">[상세 안내 보기]</span></span>
+        </div>
+      ) : (
+        <div className="bg-[#1c1310] border-b border-[#3d2c27] px-4 py-1.5 text-center text-[11px] font-bold text-amber-400/90 flex items-center justify-center gap-1.5 sticky top-14 z-30">
+          <Clock className="w-3.5 h-3.5 text-amber-400" />
+          <span>{storeStatus.kitchenDesc} • ⏰ 주문 가능 시간: 오후 3:00 ~ 밤 11:40</span>
+        </div>
+      )}
 
       {/* Store Pause Alert Banner */}
       {storeSettings.isPaused && (
@@ -1844,6 +2032,12 @@ export default function G60gyeDemoPage() {
           <button 
             type="button"
             onClick={() => {
+              const live = checkLiveStoreStatus();
+              if (!live.canOrder) {
+                setStoreStatus(live);
+                setShowClosedModal(true);
+                return;
+              }
               if (cart.length > 0) {
                 setCurrentStep(2);
               } else {
@@ -3544,12 +3738,22 @@ export default function G60gyeDemoPage() {
             <div className="mt-3">
               <button
                 onClick={() => {
+                  const live = checkLiveStoreStatus();
+                  if (!live.canOrder) {
+                    setStoreStatus(live);
+                    setShowClosedModal(true);
+                    return;
+                  }
                   setShowCartSheet(false);
                   setCurrentStep(2);
                 }}
-                className="w-full h-11 bg-[#f39c12] hover:bg-[#f39c12]/95 text-[#1a1210] font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md"
+                className={`w-full h-11 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
+                  storeStatus.canOrder 
+                    ? 'bg-[#f39c12] hover:bg-[#f39c12]/95 text-[#1a1210]' 
+                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                }`}
               >
-                <span>주문서 작성하러 가기</span>
+                <span>{storeStatus.canOrder ? '주문서 작성하러 가기' : `${storeStatus.badgeText} (주문 대기)`}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -4127,6 +4331,215 @@ export default function G60gyeDemoPage() {
                   확인 (닫기)
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 영업시간 외 / 휴무 안내 모달 (방안 A: 오픈 전 주문 차단 및 친절 안내) */}
+      <AnimatePresence>
+        {showClosedModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1310] border-2 border-amber-500/60 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl relative text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto text-3xl shadow-inner">
+                📢
+              </div>
+
+              <div className="space-y-1.5">
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border ${storeStatus.badgeColor}`}>
+                  {storeStatus.badgeText}
+                </span>
+                <h3 className="text-base font-black text-white leading-snug">
+                  {storeStatus.modalTitle}
+                </h3>
+              </div>
+
+              <div className="bg-[#130c0a] border border-[#2e1d18] rounded-2xl p-4 text-xs text-slate-300 leading-relaxed whitespace-pre-line font-medium text-left">
+                {storeStatus.modalMessage}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowClosedModal(false)}
+                className="w-full h-11 bg-gradient-to-r from-amber-500 to-[#f39c12] hover:brightness-110 text-[#1a1210] font-black rounded-xl text-xs flex items-center justify-center shadow-lg transition-all"
+              >
+                메뉴 계속 둘러보기 ➔
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 사장님(점주님) 전용 매장 운영 간편 제어 패널 모달 (PIN: 6660) */}
+      <AnimatePresence>
+        {showAdminModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1a1210] border-2 border-[#f39c12] rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl relative"
+            >
+              <div className="flex justify-between items-center border-b border-[#32231e] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚙️</span>
+                  <h3 className="text-sm font-black text-white">매장 운영 간편 제어</h3>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setShowAdminModal(false);
+                    setIsAdminUnlocked(false);
+                    setAdminPin('');
+                  }}
+                  className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {!isAdminUnlocked ? (
+                <div className="space-y-3 py-2 text-center">
+                  <p className="text-xs text-slate-400">점주 전용 비밀번호를 입력해 주세요.</p>
+                  <input
+                    type="password"
+                    maxLength={4}
+                    placeholder="PIN 번호 (기본: 6660)"
+                    value={adminPin}
+                    onChange={(e) => setAdminPin(e.target.value)}
+                    className="w-full h-11 text-center tracking-widest text-lg font-black bg-[#0d0908] border border-[#3d2c27] text-white rounded-xl focus:border-[#f39c12] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (adminPin === '6660') {
+                        setIsAdminUnlocked(true);
+                      } else {
+                        alert('비밀번호가 올바르지 않습니다.');
+                      }
+                    }}
+                    className="w-full h-11 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl text-xs"
+                  >
+                    확인
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3 text-xs">
+                  {/* 스위치 1: 재료 소진 마감 */}
+                  <div className="flex items-center justify-between p-3 bg-[#130c0a] border border-[#2e1d18] rounded-xl">
+                    <div>
+                      <span className="font-bold text-white block">재료 소진 조기 마감</span>
+                      <span className="text-[10px] text-slate-400">당일 즉시 전 메뉴 주문 차단</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = localStorage.getItem('60gye_sold_out') === 'true';
+                        localStorage.setItem('60gye_sold_out', (!current).toString());
+                        window.dispatchEvent(new Event('storage'));
+                        setStoreStatus(checkLiveStoreStatus());
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition-colors ${
+                        storeStatus.state === 'SOLD_OUT'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {storeStatus.state === 'SOLD_OUT' ? '마감 중 (ON)' : '정상 (OFF)'}
+                    </button>
+                  </div>
+
+                  {/* 스위치 2: 임시 휴무 */}
+                  <div className="flex items-center justify-between p-3 bg-[#130c0a] border border-[#2e1d18] rounded-xl">
+                    <div>
+                      <span className="font-bold text-white block">오늘 임시 휴무</span>
+                      <span className="text-[10px] text-slate-400">설비 정비 및 개인 사정 휴무</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = localStorage.getItem('60gye_temp_holiday') === 'true';
+                        localStorage.setItem('60gye_temp_holiday', (!current).toString());
+                        window.dispatchEvent(new Event('storage'));
+                        setStoreStatus(checkLiveStoreStatus());
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition-colors ${
+                        storeStatus.state === 'TEMP_HOLIDAY'
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {storeStatus.state === 'TEMP_HOLIDAY' ? '휴무 중 (ON)' : '정상 (OFF)'}
+                    </button>
+                  </div>
+
+                  {/* 스위치 3: 화요일 정상 영업 강제 해제 */}
+                  <div className="flex items-center justify-between p-3 bg-[#130c0a] border border-[#2e1d18] rounded-xl">
+                    <div>
+                      <span className="font-bold text-white block">화요일 정상 영업 (휴일 대체)</span>
+                      <span className="text-[10px] text-slate-400">화요일 공휴일 정상 오픈 시 사용</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = localStorage.getItem('60gye_force_open_tuesday') === 'true';
+                        localStorage.setItem('60gye_force_open_tuesday', (!current).toString());
+                        window.dispatchEvent(new Event('storage'));
+                        setStoreStatus(checkLiveStoreStatus());
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition-colors ${
+                        localStorage.getItem('60gye_force_open_tuesday') === 'true'
+                          ? 'bg-emerald-500 text-black'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {localStorage.getItem('60gye_force_open_tuesday') === 'true' ? '오픈 (ON)' : '기본 휴무 (OFF)'}
+                    </button>
+                  </div>
+
+                  {/* 스위치 4: 조리 대기 시간 설정 */}
+                  <div className="p-3 bg-[#130c0a] border border-[#2e1d18] rounded-xl space-y-2">
+                    <span className="font-bold text-white block">주방 조리 대기시간 표시</span>
+                    <div className="grid grid-cols-4 gap-1 text-[11px] font-bold">
+                      {['약 15분', '약 25분', '약 40분', '약 60분'].map((timeStr) => (
+                        <button
+                          key={timeStr}
+                          type="button"
+                          onClick={() => {
+                            localStorage.setItem('60gye_wait_time', timeStr);
+                            window.dispatchEvent(new Event('storage'));
+                            setStoreStatus(checkLiveStoreStatus());
+                          }}
+                          className={`py-1.5 rounded-lg border text-center transition-colors ${
+                            (localStorage.getItem('60gye_wait_time') || '약 25분') === timeStr
+                              ? 'bg-[#f39c12] text-[#1a1210] border-[#f39c12]'
+                              : 'bg-slate-900 border-[#3d2c27] text-slate-400'
+                          }`}
+                        >
+                          {timeStr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdminModal(false);
+                      setIsAdminUnlocked(false);
+                      setAdminPin('');
+                    }}
+                    className="w-full h-10 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs"
+                  >
+                    패널 닫기
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

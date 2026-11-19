@@ -57,6 +57,7 @@ export interface MenuItemRef {
 }
 
 export const ALL_MENU_ITEMS: MenuItemRef[] = [
+  { id: 'ccc_gold', name: '크크크골드', category: '치킨' },
   { id: 'chamjimal', name: '참지마라치킨', category: '치킨' },
   { id: 'ccc', name: '크크크치킨', category: '치킨' },
   { id: 'crang', name: '크랑이치킨', category: '치킨' },
@@ -126,6 +127,58 @@ export default function KitchenDashboardPage() {
   // 새로고침 수동 실행 상태 (idle: 대기, loading: 조회 중, success: 동기화 완료, error: 오류)
   const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [refreshErrorMsg, setRefreshErrorMsg] = useState<string>('');
+
+  // 🍗 매장 운영 실시간 제어 상태 (고객 자사몰 실시간 연동)
+  const [isSoldOut, setIsSoldOut] = useState<boolean>(false);
+  const [isTempHoliday, setIsTempHoliday] = useState<boolean>(false);
+  const [forceOpenTuesday, setForceOpenTuesday] = useState<boolean>(false);
+  const [waitTime, setWaitTime] = useState<string>('약 25분');
+
+  const syncControlStates = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        setIsSoldOut(localStorage.getItem('60gye_sold_out') === 'true');
+        setIsTempHoliday(localStorage.getItem('60gye_temp_holiday') === 'true');
+        setForceOpenTuesday(localStorage.getItem('60gye_force_open_tuesday') === 'true');
+        setWaitTime(localStorage.getItem('60gye_wait_time') || '약 25분');
+      } catch (e) {}
+    }
+  };
+
+  const toggleSoldOut = () => {
+    const next = !isSoldOut;
+    setIsSoldOut(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('60gye_sold_out', next.toString());
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
+
+  const toggleTempHoliday = () => {
+    const next = !isTempHoliday;
+    setIsTempHoliday(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('60gye_temp_holiday', next.toString());
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
+
+  const toggleForceTuesday = () => {
+    const next = !forceOpenTuesday;
+    setForceOpenTuesday(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('60gye_force_open_tuesday', next.toString());
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
+
+  const updateWaitTime = (val: string) => {
+    setWaitTime(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('60gye_wait_time', val);
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
 
   // 🛡️ [주방 관리자 보안 인증 상태]
   // 개발용과 운영용 인증 경로 분리 원칙:
@@ -496,6 +549,7 @@ export default function KitchenDashboardPage() {
     let interval: NodeJS.Timeout | null = null;
 
     const initAuthAndOrders = async () => {
+      syncControlStates();
       const isAuthed = await checkAuth();
       if (isAuthed) {
         loadOrders();
@@ -505,6 +559,7 @@ export default function KitchenDashboardPage() {
     initAuthAndOrders();
 
     const handleStorageChange = () => {
+      syncControlStates();
       if (isAuthenticated) {
         loadOrders();
       }
@@ -1596,6 +1651,108 @@ export default function KitchenDashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* ⚠️ 재료 소진 / 임시 휴무 활성화 시 주방 상단 대형 경고 띠 */}
+      {(isSoldOut || isTempHoliday) && (
+        <div className={`px-6 py-3 text-center text-xs font-black flex items-center justify-center gap-2 print:hidden ${
+          isSoldOut 
+            ? 'bg-rose-950 border-b-2 border-rose-500 text-rose-200 animate-pulse' 
+            : 'bg-amber-950 border-b-2 border-amber-500 text-amber-200'
+        }`}>
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+          <span>
+            {isSoldOut 
+              ? '🔴 [현재 재료 소진 조기 마감 모드 ON] 고객 자사몰의 주문 접수가 전면 차단되어 있습니다.' 
+              : '🔵 [현재 임시 휴무 모드 ON] 고객 자사몰의 주문 접수가 차단되어 있습니다.'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (isSoldOut) toggleSoldOut();
+              if (isTempHoliday) toggleTempHoliday();
+            }}
+            className="ml-3 px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white text-[11px]"
+          >
+            정상 영업으로 즉시 해제 ➔
+          </button>
+        </div>
+      )}
+
+      {/* 점주 매장 운영 원터치 제어 센터 (자사몰 실시간 연동) */}
+      <div className="bg-[#18110f] border-b border-[#35231e] px-6 py-3 print:hidden shadow-md">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-base">⚙️</span>
+            <div>
+              <span className="text-xs font-black text-[#f39c12]">자사몰 실시간 매장 제어</span>
+              <span className="text-[10px] text-slate-400 ml-2 hidden sm:inline">* 원터치로 고객 주문 화면에 즉시 적용됩니다</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            {/* 1. 재료 소진 마감 */}
+            <button
+              type="button"
+              onClick={toggleSoldOut}
+              className={`h-9 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-sm ${
+                isSoldOut
+                  ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse'
+                  : 'bg-[#221714] border border-[#3d2c27] text-slate-400 hover:text-white'
+              }`}
+              title="닭/기름 완판 시 즉시 자사몰 주문 차단"
+            >
+              <span>🔴 재료소진 마감: {isSoldOut ? 'ON' : 'OFF'}</span>
+            </button>
+
+            {/* 2. 임시 휴무 */}
+            <button
+              type="button"
+              onClick={toggleTempHoliday}
+              className={`h-9 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-sm ${
+                isTempHoliday
+                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30'
+                  : 'bg-[#221714] border border-[#3d2c27] text-slate-400 hover:text-white'
+              }`}
+              title="매장 정비/개인사정 시 클릭 즉시 임시휴무"
+            >
+              <span>🔵 임시 휴무: {isTempHoliday ? 'ON' : 'OFF'}</span>
+            </button>
+
+            {/* 3. 화요일 정상 영업 */}
+            <button
+              type="button"
+              onClick={toggleForceTuesday}
+              className={`h-9 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-sm ${
+                forceOpenTuesday
+                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
+                  : 'bg-[#221714] border border-[#3d2c27] text-slate-400 hover:text-white'
+              }`}
+              title="화요일 공휴일 정상 오픈 시 자동휴무 해제"
+            >
+              <span>🟢 화요일 오픈: {forceOpenTuesday ? 'ON' : 'OFF (기본휴무)'}</span>
+            </button>
+
+            {/* 4. 조리 대기 시간 설정 */}
+            <div className="flex items-center bg-[#221714] border border-[#3d2c27] rounded-xl p-1 gap-1">
+              <span className="text-[10px] text-amber-400 font-bold px-1.5">조리시간:</span>
+              {['약 15분', '약 25분', '약 40분', '약 60분'].map((timeStr) => (
+                <button
+                  key={timeStr}
+                  type="button"
+                  onClick={() => updateWaitTime(timeStr)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${
+                    waitTime === timeStr
+                      ? 'bg-[#f39c12] text-[#1a1210] shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-[#2b1f1b]'
+                  }`}
+                >
+                  {timeStr.replace('약 ', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 3대 통합 모드 탭 바 (주문 전광판 / 매출 통계 & 분석 / 고객 장부 & CRM) */}
       <div className="bg-[#140e0c]/90 border-b border-[#2d1d19] px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap print:hidden">
