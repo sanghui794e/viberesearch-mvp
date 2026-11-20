@@ -970,10 +970,20 @@ export default function KitchenDashboardPage() {
 
   const handlePrintClick = (order: Order) => {
     setSelectedOrderForPrint(order);
-    // Trigger system print window for 80mm receipt emulation
     setTimeout(() => {
       window.print();
-    }, 300);
+    }, 250);
+  };
+
+  // 🔔 원터치 주문 확인 & 즉시 영수증 인쇄 핸들러
+  const handleAcceptAndPrint = (order: Order) => {
+    // 1. 주문 상태를 즉시 '조리 중(cooking)'으로 변경 (고객 화면에도 실시간 반영)
+    updateOrderStatus(order.id, 'cooking');
+    // 2. 인쇄할 주문 지정 및 즉시 인쇄 발동
+    setSelectedOrderForPrint(order);
+    setTimeout(() => {
+      window.print();
+    }, 250);
   };
 
   const clearAllOrders = async () => {
@@ -1310,81 +1320,141 @@ export default function KitchenDashboardPage() {
   return (
     <div className="min-h-screen bg-[#0e0a09] text-slate-100 flex flex-col font-sans">
       
+      {/* 80mm 감열식 영수증 전용 초선명 대형 글씨 인쇄 스타일 */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0mm !important;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            width: 80mm !important;
+          }
+          .kds-receipt-print-area {
+            display: block !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 !important;
+            padding: 4mm 3mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            line-height: 1.25 !important;
+          }
+          header, main, nav, audio, #kds-voice-player, .no-print {
+            display: none !important;
+          }
+        }
+      ` }} />
+
       {/* Printable Receipt Emulation Area (Hidden on Screen, Visible on Print) */}
       {selectedOrderForPrint && (
-        <div className="hidden print:block print:bg-white print:text-black p-4 w-[80mm] text-xs font-mono leading-tight bg-white text-black">
-          <div className="text-center font-black text-sm border-b-2 border-black pb-2 mb-2">
-            [60계치킨 강원영월점]<br/>
-            주문 영수증 (주방용)<br/>
-            <span className="text-[10px] font-normal">T: 033-374-6660</span>
+        <div className="hidden print:block kds-receipt-print-area text-black bg-white font-sans">
+          {/* 매장 상호명 및 제목 */}
+          <div className="text-center pb-2 mb-2 border-b-2 border-black">
+            <div className="text-[17px] font-black tracking-tight">[ 60계치킨 강원영월점 ]</div>
+            <div className="text-[22px] font-black tracking-wider my-0.5">주방 조리 주문서</div>
+            <div className="text-[12px] font-bold text-black">☎ 033-374-6660 | 010-6721-1156</div>
           </div>
 
-          {/* 주방 조리 목표 시간 대형 강조 헤더 */}
-          <div className="bg-black text-white text-center py-1.5 px-2 my-2 rounded text-sm font-black border border-black">
-            ⏰ [조리/방문 완료 목표시각: {selectedOrderForPrint.targetPickupTime || '18:10'}]
-            <span className="block text-[10px] font-normal mt-0.5">({selectedOrderForPrint.pickupTime || '45분 뒤 방문'})</span>
+          {/* 대형 주문 유형 (포장 / 배달) 강조 박스 */}
+          <div className="border-4 border-black p-2 my-2 text-center rounded-lg bg-white">
+            <div className="text-[24px] font-black tracking-tight">
+              {selectedOrderForPrint.orderType === 'takeout' ? '🛍️ [ 포 장 주 문 ]' : '🛵 [ 배 달 주 문 ]'}
+            </div>
+            <div className="text-[15px] font-extrabold mt-0.5">
+              조리/픽업 목표: <span className="underline text-[17px]">{selectedOrderForPrint.targetPickupTime || '즉시 조리'}</span>
+              <span className="block text-[12px] font-normal text-black mt-0.5">({selectedOrderForPrint.pickupTime || '약 25분 후'})</span>
+            </div>
           </div>
 
-          <div className="space-y-1 text-[11px] mb-2 border-b border-dashed border-black pb-2">
-            <div>주문 번호: {selectedOrderForPrint.id}</div>
-            <div>주문 시각: {selectedOrderForPrint.timestamp}</div>
-            <div className="font-bold">주문 유형: {selectedOrderForPrint.orderType === 'takeout' ? '🛍️ [포장/테이크아웃]' : '🛵 [배달 주문]'}</div>
-            <div>고객 성함: {selectedOrderForPrint.name} 님</div>
-            <div>연락처: {selectedOrderForPrint.phone}</div>
+          {/* 주문 기본 정보 (큰 폰트 13~15px) */}
+          <div className="space-y-1 text-[13px] font-bold mb-2 border-b-2 border-dashed border-black pb-2">
+            <div className="text-[15px] font-black">주문번호: #{selectedOrderForPrint.id}</div>
+            <div>접수일시: {selectedOrderForPrint.timestamp}</div>
+            <div className="text-[14px]">주문고객: <span className="font-black text-[15px]">{selectedOrderForPrint.name}</span> 님 ({selectedOrderForPrint.phone})</div>
             {selectedOrderForPrint.orderType === 'delivery' && (
-              <div className="font-bold">배달 주소: {selectedOrderForPrint.address}</div>
+              <div className="border-2 border-black p-1.5 my-1 bg-white text-[15px] font-black leading-snug">
+                📍 배달주소: {selectedOrderForPrint.address}
+              </div>
             )}
             {selectedOrderForPrint.requestText && (
-              <div className="bg-slate-100 p-1 rounded font-bold border border-slate-300">
-                요청: {selectedOrderForPrint.requestText}
+              <div className="border-2 border-black p-2 my-1 bg-white text-[15px] font-black leading-snug">
+                ★ [요청사항]: {selectedOrderForPrint.requestText}
               </div>
             )}
           </div>
 
-          <div className="border-b border-black pb-2 mb-2">
-            <div className="font-bold border-b border-slate-200 pb-1 mb-1 flex justify-between">
-              <span>품명 [부위]</span>
+          {/* 메뉴 상세 리스트 (가장 중요한 조리 내역: 16~18px 대형 폰트) */}
+          <div className="border-b-2 border-black pb-2 mb-2">
+            <div className="font-black text-[14px] border-b-2 border-black pb-1 mb-1.5 flex justify-between">
+              <span>[ 메뉴명 및 조리옵션 ]</span>
               <span>수량</span>
             </div>
             {selectedOrderForPrint.items.map((item, idx) => (
-              <div key={idx} className="flex justify-between py-0.5 font-bold">
-                <span>{item.name} [{item.type}]</span>
-                <span>{item.quantity}</span>
+              <div key={idx} className="py-1 border-b border-dotted border-slate-400 last:border-none">
+                <div className="flex justify-between items-start">
+                  <div className="text-[17px] font-black leading-tight flex-1 pr-2">
+                    {item.name} <span className="text-[14px] font-bold">[{item.type}]</span>
+                  </div>
+                  <div className="text-[19px] font-black border-2 border-black px-2 py-0.5 rounded shrink-0">
+                    {item.quantity} 개
+                  </div>
+                </div>
+                {/* 🍗 세부 맛 변경 / 반반 조합 / 추가 옵션 100% 출력 */}
+                {item.customDetails && (
+                  <div className="text-[14px] font-extrabold text-black pl-3 border-l-4 border-black my-1 py-0.5 bg-slate-50 leading-snug">
+                    ↳ [선택옵션] {item.customDetails}
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="text-right space-y-0.5 text-[11px]">
+          {/* 결제 및 금액 요약 */}
+          <div className="text-right space-y-0.5 text-[12px] font-bold border-b border-dashed border-black pb-2 mb-2">
             <div>주문 금액: {selectedOrderForPrint.subtotal.toLocaleString()}원</div>
             {selectedOrderForPrint.discount > 0 && (
-              <div>할인 (포장 혜택): -{selectedOrderForPrint.discount.toLocaleString()}원</div>
+              <div>자사몰 포장할인: -{selectedOrderForPrint.discount.toLocaleString()}원</div>
             )}
             {selectedOrderForPrint.usedPoints && selectedOrderForPrint.usedPoints > 0 && (
-              <div>포인트 사용 차감: -{selectedOrderForPrint.usedPoints.toLocaleString()}원</div>
+              <div>포인트 사용: -{selectedOrderForPrint.usedPoints.toLocaleString()}원</div>
             )}
             {selectedOrderForPrint.deliveryFee > 0 && (
               <div>배달 요금: +{selectedOrderForPrint.deliveryFee.toLocaleString()}원</div>
             )}
-            <div className="text-sm font-black border-t border-black pt-1 mt-1">
-              최종 결제: {selectedOrderForPrint.total.toLocaleString()}원
+            <div className="text-[16px] font-black border-t border-black pt-1 mt-1 flex justify-between">
+              <span>최종 결제액</span>
+              <span>{selectedOrderForPrint.total.toLocaleString()}원</span>
             </div>
             {selectedOrderForPrint.rewardPoints && selectedOrderForPrint.rewardPoints > 0 && (
-              <div className="text-[10px] font-bold text-black">적립 포인트: +{selectedOrderForPrint.rewardPoints.toLocaleString()}P</div>
+              <div className="text-[12px] font-bold">적립 예정 포인트: +{selectedOrderForPrint.rewardPoints.toLocaleString()}P</div>
             )}
-            <div className="text-[10px] text-slate-600">결제 방식: {getPaymentLabel(selectedOrderForPrint.paymentMethod)}</div>
+            <div className="text-[12px] font-bold text-slate-800">결제방식: {getPaymentLabel(selectedOrderForPrint.paymentMethod)}</div>
           </div>
 
+          {/* 주류 포함 시 청소년보호법 안내 */}
           {selectedOrderForPrint.items.some(i => isAlcoholItem(i.name)) && (
-            <div className="border-2 border-black p-1.5 my-2 text-center text-[10px] font-black bg-slate-100 leading-tight">
-              🚨 [청소년보호법 제28조 준수의무]<br/>
-              본 주문은 주류(생맥주/소주)가 포함되어 있습니다.<br/>
-              수령 시 성인 실물 신분증 대면 검사 필수!
+            <div className="border-2 border-black p-1.5 my-2 text-center text-[11px] font-black bg-white leading-tight">
+              🚨 [청소년보호법 준수: 주류 포함 주문]<br/>
+              수령 시 성인 실물 신분증 대면 확인 필수!
             </div>
           )}
 
-          <div className="text-center text-[10px] mt-4 border-t border-dashed border-black pt-2">
-            매일 새 기름(기름 한 통으로 60마리만!)<br/>
-            맛있고 정직하게 튀겼습니다. 감사합니다!
+          {/* 법적 매장 정보 및 원산지 표기 */}
+          <div className="text-[11px] leading-tight text-center border-t border-black pt-2 space-y-0.5">
+            <div className="font-bold">대표자: 박종숙 | 강원도 영월군 영월읍 관풍헌길 35</div>
+            <div className="font-bold">[원산지] 닭고기(국내산), 닭근위(국내산), 쌀/배추(국내산)</div>
+            <div className="text-[12px] font-black mt-1">
+              "매일 새 기름(기름 한 통으로 60마리만!) 정직하게 튀겼습니다."
+            </div>
           </div>
         </div>
       )}
@@ -2133,7 +2203,7 @@ export default function KitchenDashboardPage() {
                           className="h-8 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-[#3d2c27] hover:border-[#f39c12] text-slate-300 flex items-center gap-1 transition-all text-xs"
                         >
                           <Printer className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="hidden sm:inline text-[10px]">인쇄</span>
+                          <span className="hidden sm:inline text-[10px]">재인쇄</span>
                         </button>
 
                         {order.status === 'pending' && (
@@ -2142,17 +2212,19 @@ export default function KitchenDashboardPage() {
                               type="button"
                               onClick={() => handleRejectClick(order)}
                               title="주문 거절 및 사유 선택"
-                              className="h-8 px-3 rounded-xl bg-red-950/40 hover:bg-red-900 border border-red-800 text-red-400 hover:text-white flex items-center gap-1 transition-colors text-xs font-bold active:scale-95"
+                              className="h-10 px-3 rounded-xl bg-red-950/40 hover:bg-red-900 border border-red-800 text-red-400 hover:text-white flex items-center gap-1 transition-colors text-xs font-bold active:scale-95"
                             >
                               <X className="w-3.5 h-3.5" />
                               <span>거절</span>
                             </button>
                             <button
                               type="button"
-                              onClick={() => updateOrderStatus(order.id, 'cooking')}
-                              className="h-8 px-3.5 bg-[#f39c12] hover:bg-[#e67e22] text-[#1a1210] font-black rounded-xl text-xs flex items-center gap-1 transition-all shadow-md active:scale-95"
+                              onClick={() => handleAcceptAndPrint(order)}
+                              className="h-10 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg active:scale-95 ring-2 ring-amber-400/50"
+                              title="단 한 번의 터치로 주문 확인(접수)과 주방 영수증 즉시 자동 인쇄"
                             >
-                              <span>🔥 조리 시작</span>
+                              <Printer className="w-4 h-4 text-black" />
+                              <span>🔔 주문 확인 & 영수증 인쇄</span>
                             </button>
                           </>
                         )}
