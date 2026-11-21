@@ -1001,10 +1001,51 @@ export default function KitchenDashboardPage() {
     }, 250);
   };
 
+  // ⏱️ 피크타임 주문 밀림 시 조리 예상시간 원터치 연장 (+10분 / +20분)
+  const handleAddTime = async (orderId: string, minutes: number) => {
+    const updated = orders.map(ord => {
+      if (ord.id === orderId) {
+        const currentMin = ord.minutesToAdd || 25;
+        const newMin = currentMin + minutes;
+        const newTargetTime = new Date(Date.now() + newMin * 60000);
+        const targetFormatted = newTargetTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return {
+          ...ord,
+          minutesToAdd: newMin,
+          pickupTime: `약 ${newMin}분 후`,
+          targetPickupTime: targetFormatted
+        };
+      }
+      return ord;
+    });
+    setOrders(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
+      try {
+        const storedM = JSON.parse(localStorage.getItem('youngwol_mock_test_orders') || '[]');
+        const updatedM = storedM.map((m: any) => {
+          if (m.id === orderId) {
+            const currentMin = m.minutesToAdd || 25;
+            const newMin = currentMin + minutes;
+            const newTargetTime = new Date(Date.now() + newMin * 60000);
+            return {
+              ...m,
+              minutesToAdd: newMin,
+              pickupTime: `약 ${newMin}분 후`,
+              targetPickupTime: newTargetTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+            };
+          }
+          return m;
+        });
+        localStorage.setItem('youngwol_mock_test_orders', JSON.stringify(updatedM));
+      } catch (e) {}
+    }
+  };
+
   // 🔔 원터치 주문 확인 & 즉시 영수증 인쇄 핸들러
   const handleAcceptAndPrint = (order: Order) => {
-    // 1. 주문 상태를 즉시 '조리 중(cooking)'으로 변경 (고객 화면에도 실시간 반영)
-    updateOrderStatus(order.id, 'cooking');
+    // 1. 주문 상태를 '접수 완료(accepted)'로 변경하여 주문서 꽂이 대기열로 이동
+    updateOrderStatus(order.id, 'accepted');
     // 2. 인쇄할 주문 지정 및 즉시 인쇄 발동
     setSelectedOrderForPrint(order);
     setTimeout(() => {
@@ -1037,11 +1078,11 @@ export default function KitchenDashboardPage() {
           customDetails: "황금치즈가루 듬뿍"
         },
         {
-          name: "순살세트",
-          type: "순살",
-          price: 22000,
+          name: "크크크 반 + 크랑이 반",
+          type: "반반치킨",
+          price: 23900,
           quantity: 1,
-          customDetails: "맛1: 크크크치킨 (+2,000원) / 맛2: 호랑이치킨 (+1,000원)"
+          customDetails: "크크크소스 2종 + 콘마요소스 기본 제공"
         }
       ],
       subtotal: 48500,
@@ -2033,8 +2074,8 @@ export default function KitchenDashboardPage() {
                     : 'bg-[#1c1310] text-orange-400 hover:text-white border border-[#3d2c27]'
                 }`}
               >
-                <span>조리 중 🔥</span>
-                <span>({orders.filter(o => o.status === 'cooking').length})</span>
+                <span>조리 대기/진행 🔥</span>
+                <span>({orders.filter(o => o.status === 'cooking' || o.status === 'accepted').length})</span>
               </button>
               <button
                 type="button"
@@ -2096,6 +2137,7 @@ export default function KitchenDashboardPage() {
           {(() => {
             const filteredOrders = orders.filter(o => {
               if (filterTab === 'all') return true;
+              if (filterTab === 'cooking') return o.status === 'cooking' || o.status === 'accepted';
               return o.status === filterTab;
             });
 
@@ -2139,11 +2181,13 @@ export default function KitchenDashboardPage() {
                     className={`bg-[#1c1310] border rounded-2xl p-4 flex flex-col justify-between transition-all ${
                       order.status === 'pending' 
                         ? 'border-[#f39c12] shadow-lg shadow-[#f39c12]/15 ring-2 ring-[#f39c12]/40' 
-                        : order.status === 'cooking'
-                          ? 'border-orange-500/70 shadow-lg shadow-orange-500/10'
-                          : order.status === 'done'
-                            ? 'border-emerald-500/40 bg-[#161412]'
-                            : 'border-red-600/50 bg-[#190d0b]'
+                        : order.status === 'accepted'
+                          ? 'border-yellow-500/70 shadow-lg shadow-yellow-500/10'
+                          : order.status === 'cooking'
+                            ? 'border-orange-500/70 shadow-lg shadow-orange-500/10'
+                            : order.status === 'done'
+                              ? 'border-emerald-500/40 bg-[#161412]'
+                              : 'border-red-600/50 bg-[#190d0b]'
                     }`}
                   >
                     <div className="space-y-3">
@@ -2167,12 +2211,14 @@ export default function KitchenDashboardPage() {
                                   : 'bg-red-500/20 text-red-400 border border-red-500/40'
                           }`}>
                             {order.status === 'pending' 
-                              ? '⏳ 승인 대기' 
-                              : order.status === 'cooking' 
-                                ? '🔥 조리 중' 
-                                : order.status === 'done'
-                                  ? '🛍️ 준비 완료'
-                                  : '🚫 주문 거절됨'}
+                              ? '⏳ 신규 대기' 
+                              : order.status === 'accepted'
+                                ? '📋 접수 완료 (조리 대기)'
+                                : order.status === 'cooking' 
+                                  ? '🔥 튀기는 중 (조리 중)' 
+                                  : order.status === 'done'
+                                    ? '🛍️ 조리 완료'
+                                    : '🚫 주문 거절됨'}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                             order.orderType === 'takeout' 
@@ -2334,14 +2380,51 @@ export default function KitchenDashboardPage() {
                           </>
                         )}
 
+                        {order.status === 'accepted' && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* 주문 밀림 대비 조리 예상시간 원터치 연장 */}
+                            <div className="flex items-center gap-1 bg-[#140b09] border border-[#3d2c27] rounded-xl px-1.5 py-1">
+                              <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">대기:</span>
+                              <button
+                                type="button"
+                                onClick={() => handleAddTime(order.id, 10)}
+                                className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 text-[10px] font-bold rounded-lg border border-amber-500/40 active:scale-95 transition-all"
+                                title="조리 대기시간 10분 연장 (고객 안내 실시간 연동)"
+                              >
+                                +10분
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddTime(order.id, 20)}
+                                className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 text-[10px] font-bold rounded-lg border border-amber-500/40 active:scale-95 transition-all"
+                                title="조리 대기시간 20분 연장 (고객 안내 실시간 연동)"
+                              >
+                                +20분
+                              </button>
+                            </div>
+
+                            {/* 🔥 조리 시작 버튼 (닭을 튀기기 시작할 때 클릭!) */}
+                            <button
+                              type="button"
+                              onClick={() => updateOrderStatus(order.id, 'cooking')}
+                              className="h-10 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95 ring-2 ring-orange-400/50"
+                              title="치킨을 튀기기 시작할 때 클릭! (조리 중 상태로 전환)"
+                            >
+                              <Flame className="w-4 h-4 text-black" />
+                              <span>🔥 조리 시작</span>
+                            </button>
+                          </div>
+                        )}
+
                         {order.status === 'cooking' && (
                           <button
                             type="button"
                             onClick={() => updateOrderStatus(order.id, 'done')}
-                            className="h-8 px-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-xs flex items-center gap-1 transition-all shadow-md active:scale-95 animate-pulse"
+                            className="h-10 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95 ring-2 ring-emerald-400/50 animate-pulse"
+                            title="치킨 조리 및 박스 포장이 완료되었을 때 클릭! (고객에게 픽업 알림)"
                           >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>🛍️ 조리 완료</span>
+                            <Check className="w-4 h-4 text-black stroke-[3]" />
+                            <span>✅ 조리 완료 (포장 완료)</span>
                           </button>
                         )}
 
