@@ -2410,7 +2410,7 @@ export default function KitchenDashboardPage() {
                               className="h-10 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95 ring-2 ring-orange-400/50"
                               title="치킨을 튀기기 시작할 때 클릭! (조리 중 상태로 전환)"
                             >
-                              <Flame className="w-4 h-4 text-black" />
+                              <span className="text-sm">🔥</span>
                               <span>🔥 조리 시작</span>
                             </button>
                           </div>
