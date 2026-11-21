@@ -3756,17 +3756,19 @@ export default function G60gyeDemoPage() {
             <div className="mt-3">
               <button
                 onClick={() => {
-                  const live = checkLiveStoreStatus();
-                  if (!live.canOrder) {
-                    setStoreStatus(live);
-                    setShowClosedModal(true);
-                    return;
+                  if (!isAdminTestOrder) {
+                    const live = checkLiveStoreStatus();
+                    if (!live.canOrder) {
+                      setStoreStatus(live);
+                      setShowClosedModal(true);
+                      return;
+                    }
                   }
                   setShowCartSheet(false);
                   setCurrentStep(2);
                 }}
                 className={`w-full h-11 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
-                  storeStatus.canOrder 
+                  storeStatus.canOrder || isAdminTestOrder
                     ? 'bg-[#f39c12] hover:bg-[#f39c12]/95 text-[#1a1210]' 
                     : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
                 }`}
@@ -4387,6 +4389,17 @@ export default function G60gyeDemoPage() {
                 className="w-full h-11 bg-gradient-to-r from-amber-500 to-[#f39c12] hover:brightness-110 text-[#1a1210] font-black rounded-xl text-xs flex items-center justify-center shadow-lg transition-all"
               >
                 메뉴 계속 둘러보기 ➔
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdminTestOrder(true);
+                  setShowClosedModal(false);
+                  alert("🧪 [점주님 시험 주문 모드가 켜졌습니다!]\n\n영업시간 제한 없이 메뉴를 담고 [시험 주문서 작성]을 진행하실 수 있습니다.\n주방 전광판에 즉시 실시간 연동됩니다.");
+                }}
+                className="w-full h-10 bg-amber-950/60 hover:bg-amber-900 border border-amber-600/60 text-amber-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow active:scale-95"
+              >
+                <span>🧪 점주님 전용: 영업시간 외 시험 주문 모드 켜기 ➔</span>
               </button>
             </motion.div>
           </div>

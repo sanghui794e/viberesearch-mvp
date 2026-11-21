@@ -1728,6 +1728,17 @@ export default function KitchenDashboardPage() {
           </div>
 
           
+          {/* 🧪 24시간 언제든 영수증 출력 테스트 모의 주문 버튼 */}
+          <button
+            type="button"
+            onClick={handleCreateMockOrder}
+            className="h-9 px-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shadow-lg active:scale-95 ring-2 ring-amber-400/50"
+            title="24시간 언제든 영수증 프린터 출력 및 알림음을 테스트할 수 있는 모의 주문을 생성합니다"
+          >
+            <Sparkles className="w-4 h-4 text-slate-950" />
+            <span>🧪 모의 시험 주문</span>
+          </button>
+
           <button
             onClick={clearAllOrders}
             className="h-9 px-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs font-bold rounded-xl transition-all"
@@ -2071,6 +2082,16 @@ export default function KitchenDashboardPage() {
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                     손님이 스마트폰 주문앱에서 주문을 완료하면 실시간으로 띵동 소리와 함께 이곳에 주문 카드가 똬악 뜹니다!
                   </p>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateMockOrder}
+                      className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl text-xs inline-flex items-center gap-2 shadow-lg active:scale-95 ring-2 ring-amber-400/50"
+                    >
+                      <Sparkles className="w-4 h-4 text-slate-950" />
+                      <span>🧪 모의 시험 주문 1건 생성하기 (영수증 인쇄 테스트)</span>
+                    </button>
+                  </div>
                 </div>
               );
             }
