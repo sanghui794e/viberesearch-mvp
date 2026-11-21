@@ -420,6 +420,11 @@ export default function KitchenDashboardPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(nextDismissed));
       localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
+      try {
+        const storedM = JSON.parse(localStorage.getItem('youngwol_mock_test_orders') || '[]');
+        const filteredM = storedM.filter((m: Order) => m.id !== orderId);
+        localStorage.setItem('youngwol_mock_test_orders', JSON.stringify(filteredM));
+      } catch (e) {}
       window.dispatchEvent(new Event('storage'));
     }
 
@@ -492,7 +497,21 @@ export default function KitchenDashboardPage() {
               } catch (e) {}
             }
             const activeOrders = serverOrders.filter(o => !currentDismissed.includes(o.id));
-            const finalOrders = (activeOrders.length > 0) ? activeOrders : [];
+
+            // 🧪 [모의 주문 증발 방지] 1.5초 폴링 시에도 모의 시험 주문 카드가 사라지지 않도록 합산 보존
+            let mockOrders: Order[] = [];
+            if (typeof window !== 'undefined') {
+              try {
+                const storedM = localStorage.getItem('youngwol_mock_test_orders');
+                if (storedM) mockOrders = JSON.parse(storedM);
+              } catch (e) {}
+            }
+            const activeMocks = mockOrders.filter(m => !currentDismissed.includes(m.id));
+
+            const finalOrders = [
+              ...activeMocks,
+              ...activeOrders.filter(ao => !activeMocks.some(mo => mo.id === ao.id))
+            ];
             setOrders(finalOrders);
             if (typeof window !== 'undefined') {
               localStorage.setItem('youngwol_live_orders', JSON.stringify(finalOrders));
@@ -909,6 +928,13 @@ export default function KitchenDashboardPage() {
     });
     setOrders(updated);
     localStorage.setItem('youngwol_live_orders', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      try {
+        const storedM = JSON.parse(localStorage.getItem('youngwol_mock_test_orders') || '[]');
+        const updatedM = storedM.map((m: Order) => m.id === orderId ? { ...m, status: newStatus, ...(cancelReason ? { cancelReason } : {}) } : m);
+        localStorage.setItem('youngwol_mock_test_orders', JSON.stringify(updatedM));
+      } catch (e) {}
+    }
     window.dispatchEvent(new Event('storage'));
 
     // Sync to Central Server
@@ -1027,6 +1053,14 @@ export default function KitchenDashboardPage() {
       status: "pending"
     };
 
+    // 로컬 스토리지에 모의 주문 영구 저장 (1.5초 서버 폴링에 의한 증발 완전 차단)
+    if (typeof window !== 'undefined') {
+      try {
+        const storedM = JSON.parse(localStorage.getItem('youngwol_mock_test_orders') || '[]');
+        const updatedM = [mockOrder, ...storedM.filter((m: Order) => m.id !== mockOrder.id)];
+        localStorage.setItem('youngwol_mock_test_orders', JSON.stringify(updatedM));
+      } catch (e) {}
+    }
     setOrders(prev => [mockOrder, ...prev.filter(o => o.id !== mockOrder.id)]);
     
     unlockAudioContext();
@@ -1045,6 +1079,7 @@ export default function KitchenDashboardPage() {
       setDismissedIds(nextDismissed);
       if (typeof window !== 'undefined') {
         localStorage.setItem('youngwol_live_dismissed_orders', JSON.stringify(nextDismissed));
+        localStorage.removeItem('youngwol_mock_test_orders');
       }
     }
   };
