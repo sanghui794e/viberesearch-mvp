@@ -2311,8 +2311,10 @@ export default function KitchenDashboardPage() {
                                     }`}>
                                       {item.type}
                                     </span>
-                                    {item.isCustom && item.customDetails && (
-                                      <span className="block text-[9px] text-red-400 mt-0.5 font-normal italic">*요구사항: {item.customDetails}</span>
+                                    {item.customDetails && (
+                                      <span className="block text-[11px] text-amber-300 font-black mt-1 pl-2.5 py-0.5 border-l-2 border-amber-500 bg-amber-950/40 rounded-r leading-tight">
+                                        ↳ {item.customDetails}
+                                      </span>
                                     )}
                                     {isFreeGift && (
                                       <span className="block text-[9px] text-amber-300 font-black mt-0.5 animate-pulse">
