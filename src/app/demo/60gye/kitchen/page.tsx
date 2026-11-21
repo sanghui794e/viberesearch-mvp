@@ -986,6 +986,55 @@ export default function KitchenDashboardPage() {
     }, 250);
   };
 
+  // 🧪 24시간 언제든 영수증 출력과 음성 알림을 테스트하는 모의 주문 생성기
+  const handleCreateMockOrder = () => {
+    const pickupMinutes = 25;
+    const targetTime = new Date(Date.now() + pickupMinutes * 60000);
+    const targetFormatted = targetTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    
+    const mockOrder: Order = {
+      id: `TEST-${Date.now().toString().slice(-4)}`,
+      name: "김상희 대표님 (모의시험)",
+      phone: "010-6721-1156",
+      orderType: "takeout",
+      pickupTime: "약 25분 후",
+      targetPickupTime: targetFormatted,
+      minutesToAdd: pickupMinutes,
+      paymentMethod: "counter_card",
+      requestText: "★ 모의 시험 주문입니다! 크크크골드 바삭하게 튀겨주시고 치킨무 넉넉히 챙겨주세요.",
+      items: [
+        {
+          name: "크크크골드",
+          type: "콤보",
+          price: 26500,
+          quantity: 1,
+          customDetails: "황금치즈가루 듬뿍"
+        },
+        {
+          name: "순살세트",
+          type: "순살",
+          price: 22000,
+          quantity: 1,
+          customDetails: "맛1: 크크크치킨 (+2,000원) / 맛2: 호랑이치킨 (+1,000원)"
+        }
+      ],
+      subtotal: 48500,
+      discount: 2000,
+      deliveryFee: 0,
+      total: 46500,
+      rewardPoints: 1500,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      status: "pending"
+    };
+
+    setOrders(prev => [mockOrder, ...prev.filter(o => o.id !== mockOrder.id)]);
+    
+    unlockAudioContext();
+    playAlertSound(soundType, volume);
+    
+    alert("🎉 [모의 시험 주문 1건이 주방 전광판에 등록되었습니다!]\n\n황금색 [🔔 주문 확인 & 영수증 인쇄] 버튼을 눌러 영수증 출력을 테스트해 보세요!");
+  };
+
   const clearAllOrders = async () => {
     if (confirm("주방 화면의 주문 카드를 정리하시겠습니까?\n(서버의 실제 고객 주문과 매출 장부는 안전하게 보존됩니다)")) {
       const allIds = orders.map(o => o.id);

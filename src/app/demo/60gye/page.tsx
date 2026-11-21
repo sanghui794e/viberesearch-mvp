@@ -844,6 +844,7 @@ export default function G60gyeDemoPage() {
   });
 
   const [showClosedModal, setShowClosedModal] = useState<boolean>(false);
+  const [isAdminTestOrder, setIsAdminTestOrder] = useState<boolean>(false); // 🧪 영업시간 외 점주님 시험 주문 모드
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [adminPin, setAdminPin] = useState<string>('');
   const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
@@ -2604,6 +2605,12 @@ export default function G60gyeDemoPage() {
         {/* STEP 2: CHECKOUT & INFO */}
         {currentStep === 2 && (
           <form onSubmit={handleOrderSubmit} className="space-y-5 animate-fade-in">
+            {isAdminTestOrder && (
+              <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 text-xs text-amber-300 font-bold flex items-center justify-between shadow-md">
+                <span>🧪 [점주님 시험 주문 모드] 영업시간 제한 없이 실제 주문 및 영수증 출력을 테스트합니다.</span>
+                <button type="button" onClick={() => setIsAdminTestOrder(false)} className="text-[10px] underline text-slate-400 hover:text-white">모드 해제</button>
+              </div>
+            )}
             
             {/* Takeout/Delivery Toggle */}
             <div className="bg-[#1c1310] border border-[#3d2c27] p-1.5 rounded-xl grid grid-cols-2 gap-1.5">
@@ -3764,7 +3771,7 @@ export default function G60gyeDemoPage() {
                     : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
                 }`}
               >
-                <span>{storeStatus.canOrder ? '주문서 작성하러 가기' : `${storeStatus.badgeText} (주문 대기)`}</span>
+                <span>{storeStatus.canOrder || isAdminTestOrder ? (isAdminTestOrder ? '🧪 [점주 시험모드] 주문서 작성하러 가기' : '주문서 작성하러 가기') : `${storeStatus.badgeText} (주문 대기)`}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
